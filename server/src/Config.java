@@ -10,4 +10,5 @@ public abstract class Config {
             500L * 1024 * 1024,
             1L * 1024 * 1024 * 1024
     };
+    public static final int port = 5000;
 }

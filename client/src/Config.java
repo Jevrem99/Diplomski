@@ -11,4 +11,6 @@ public abstract class Config {
             500L * 1024 * 1024,
             1L * 1024 * 1024 * 1024
     };
+    public static final String serverHost = "192.168.1.8";
+    public static final int serverPort = 5000;
 }
