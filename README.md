@@ -2,7 +2,7 @@
 Tema: "Optimizacija prenosa podataka u racunarksim mrezama primenom kompresije"
 
 Klijent i server implementirani u 2 odvojena JAVA projekta.
-Klijent i server su dve odvojene masine ali povezane preko LANA-a.
+Klijent i server su dve odvojene masine ali povezane preko LAN mreze.
 Klijent meri vreme citanja podataka sa diska (PDF fajlovi velicina 5MB,30MB,100MB,200MB,500MB i 1GB)
 Server meri vreme pisanja na disk (Random bitovi)
 
