@@ -27,10 +27,11 @@ Za svaki VPN racunat je OVERHEAD - procenat usporenja mreze VPN-om.
 Sudeci po Overhead rezultatima svi VPN protokoli uvode značajan pad performansi u odnosu na scenario bez VPN-a.
 Negativan overhead se primecuje kod WIFI testova. Najverovatniji uzrok je nepouzdanost mreze.
 
-| VPN | Average | MAX | MIN | MAX Overhead | MIN Overhead | 
-| ------ | ------ | ------ | ------ | ------ | ------ |
-| OpenVPN | 2.24 MB/s | 4.50 MB/s | 1.59 MB/s | 88.01 % | 62.24 % |
-| Wireguard | 2.15 MB/s | 3.21 MB/s | 1.62 MB/s |  88.54 % | 73.08 % |
+| VPN | Average | MAX | MIN | Average Overhead |
+| ------ | ------ | ------ | ------ | ------ |
+| No VPN | 13.50 MB/s | 16.52 MB/s | 10.89 MB/s | / |
+| OpenVPN | 2.24 MB/s | 4.50 MB/s | 1.59 MB/s | 82.88 % |
+| Wireguard | 2.15 MB/s | 3.21 MB/s | 1.62 MB/s |  83.89 % |
 
 Standardna devijacija je u svim testovima najveca kod prenosa od 5 MB.
 Manji transferi pokazuju veću varijaciju rezultata jer kratko traju i osetljiviji su na trenutne promene u mreži.
