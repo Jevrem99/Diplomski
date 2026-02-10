@@ -9,8 +9,7 @@ class TCPClient {
 
         TCPClient client = new TCPClient();
 
-        client.ReadTest();
-        Thread.sleep(10000);
+        //client.ReadTest();
         client.SendToServer();
     }
 
@@ -47,92 +46,50 @@ class TCPClient {
 
     public void SendToServer() throws Exception
     {
-        byte[] buffer = new byte[Config.BUFFER_SIZE];
-        new Random().nextBytes(buffer);
+        for(int i = 0;i <= Config.numTests;i++) {
 
-        for (long size : Config.sizes) {
+            byte[] buffer = new byte[Config.BUFFER_SIZE];
+            new Random().nextBytes(buffer);
 
-            Socket socket = new Socket(Config.serverHost, Config.serverPort);
+            if(i == 0)
+                System.out.println("WARM UP\n");
+            else
+                System.out.println("TEST "+i+"\n");
 
-            BufferedOutputStream out =
-                    new BufferedOutputStream(socket.getOutputStream());
+            for (long size : Config.sizes) {
 
-            long sent = 0;
+                Socket socket = new Socket(Config.openVPNHost, Config.serverPort);
 
-            long start = System.nanoTime();
+                BufferedOutputStream out =
+                        new BufferedOutputStream(socket.getOutputStream());
 
-            while (sent < size) {
-                int toSend = (int) Math.min(Config.BUFFER_SIZE, size - sent);
-                out.write(buffer, 0, toSend);
-                sent += toSend;
+                long sent = 0;
+
+                long start = System.nanoTime();
+
+                while (sent < size) {
+                    int toSend = (int) Math.min(Config.BUFFER_SIZE, size - sent);
+                    out.write(buffer, 0, toSend);
+                    sent += toSend;
+                }
+
+                out.flush();
+                socket.close();
+
+                long end = System.nanoTime();
+
+                double seconds = (end - start) / 1_000_000_000.0;
+                double mb = size / (1024.0 * 1024.0);
+
+                System.out.printf(
+                        "Sent %.0f MB | Time: %.3f s | Throughput: %.2f MB/s%n",
+                        mb, seconds, mb / seconds
+                );
             }
 
-            out.flush();
-            socket.close();
-
-            long end = System.nanoTime();
-
-            double seconds = (end - start) / 1_000_000_000.0;
-            double mb = size / (1024.0 * 1024.0);
-
-            System.out.printf(
-                    "Sent %.0f MB | Time: %.3f s | Throughput: %.2f MB/s%n",
-                    mb, seconds, mb / seconds
-            );
+            System.out.println();
         }
     }
-
-    /*public void SendToServerChecksum() throws Exception
-    {
-        Socket socket = new Socket(Config.serverHost, Config.serverPort);
-
-        DataOutputStream out =
-                new DataOutputStream(new BufferedOutputStream(socket.getOutputStream()));
-
-        byte[] buffer = new byte[Config.BUFFER_SIZE];
-        new Random().nextBytes(buffer);
-
-        MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-
-        for (long size:Config.sizes) {
-            out.writeLong(size);
-
-            long sent = 0;
-            long start = System.nanoTime();
-
-            while (sent < size) {
-                int toSend = (int) Math.min(Config.BUFFER_SIZE, size - sent);
-                out.write(buffer, 0, toSend);
-                sha256.update(buffer, 0, toSend);
-                sent += toSend;
-            }
-
-            byte[] hash = sha256.digest();
-            out.write(hash);
-
-            out.flush();
-            socket.close();
-
-            long end = System.nanoTime();
-
-            double seconds = (end - start) / 1_000_000_000.0;
-            double mb = size / (1024.0 * 1024.0);
-
-            System.out.printf(
-                    "Sent %.0f MB | Time: %.3f s | Throughput: %.2f MB/s%n",
-                    mb, seconds, mb / seconds
-            );
-
-            System.out.println("Client checksum: " + bytesToHex(hash));
-        }
-    }
-
-    static String bytesToHex(byte[] bytes) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bytes)
-            sb.append(String.format("%02x", b));
-        return sb.toString();
-    }*/
     
 }
 
