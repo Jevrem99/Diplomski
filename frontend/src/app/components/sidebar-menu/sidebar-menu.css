@@ -38,7 +38,7 @@
 }
 
 mat-sidenav {
-    width: 250px;
+    width: 230px;
     display: flex;
     flex-direction: column;
 }
@@ -46,7 +46,14 @@ mat-sidenav {
 #menu_title{
     font-size: 2rem;
     font-weight: bold;
+}
+
+#menu_title_div{
     margin-left: 10px;
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 90%;
 }
 
 #logout_button{

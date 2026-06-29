@@ -1,0 +1,33 @@
+<mat-sidenav-container class="main-container">
+  
+  <mat-sidenav #drawer mode="over" position="end">
+    <div id="drawer_content">
+        <div id="menu_title_div">
+            <h2 id="menu_title">MENU</h2>
+            <span>User:{{username}}</span>
+        </div>
+        <div class="drawer_button" (click)="navigateToMain()">
+            <img src="assets/calendar_icon.png" alt="Database" class="drawer_icon">
+            <span>Schedule</span>
+        </div>
+        <div class="drawer_button" (click)="navigateToDatabaseManagement()">
+            <img src="assets/database_management_icon.png" alt="Database" class="drawer_icon">
+            <span>Database management</span>
+        </div>
+        <div class="drawer_button" (click)="navigateToSettings()">
+            <img src="assets/settings_icon.png" alt="Settings" class="drawer_icon">
+            <span>Settings</span>
+        </div>
+        <div id="logout_button" (click)="logout()">
+            <img src="assets/logout_icon.png" alt="Logout" class="drawer_icon">
+            <span>Logout</span>
+        </div>
+    </div> 
+  </mat-sidenav>
+
+  <mat-sidenav-content>
+    <app-header (toggleMenu)="drawer.toggle()"></app-header>
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+
+</mat-sidenav-container>

@@ -1,0 +1,34 @@
+.header_div{
+    background-color: var(--primary-blue);
+    padding: 10px;
+    text-align: center;
+    width: 100%;
+    height: 5vh;
+}
+
+.logo {
+    height: 100%;
+    width: auto;
+    float:left;
+}
+
+#logo_div{
+    height: 100%;
+    width: 25vh;
+    float:left;
+    display: flex;
+    align-items: center;
+    gap:1vh;
+}
+
+#logo_text{
+    color:white;
+    text-align: left;
+}
+
+.menu_icon {
+    height: 100%;
+    width: auto;
+    float:right;
+    margin-right: 1vw;
+}
