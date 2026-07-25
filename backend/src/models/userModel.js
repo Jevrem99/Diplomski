@@ -1,85 +1,102 @@
-
-const pool = require('../db/connection');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient({
+    datasourceUrl: process.env.DATABASE_URL
+});
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
 
-
 const getAllUsers = async () => {
-    const result = await pool.query('SELECT id, username, email FROM "User"');
-    return result.rows;
+    return await prisma.user.findMany({
+        select: { id: true, username: true, email: true, uloga: true }
+    });
 }
 
 const getUserById = async (id) => {
-    const result = await pool.query('SELECT id, username, email, password FROM "User" WHERE id = $1', [id]);
-    return result.rows[0];
+    return await prisma.user.findUnique({
+        where: { id: parseInt(id) },
+        select: { id: true, username: true, email: true, uloga: true, password: true }
+    });
 }
 
 const getUserByUsername = async (username) => {
-    const result = await pool.query('SELECT id, username, email FROM "User" WHERE username = $1', [username]);
-    return result.rows[0];
+    return await prisma.user.findUnique({
+        where: { username: username }
+    });
 }
 
-const registerUser = async (username, email, password) => {
-
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        const result = await pool.query(
-            'INSERT INTO "User" (username, email, password) VALUES ($1, $2, $3) RETURNING id, username, email', 
-            [username, email, hashedPassword]
-        );
-
-        return result.rows[0];
-}
-
-const updateUser = async (id, username, email, password) => {
-
+const registerUser = async (username, email, password, uloga = 'asistent') => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    const newUser = await prisma.user.create({
+        data: {
+            username: username,
+            email: email,
+            password: hashedPassword,
+            uloga: uloga
+        },
+        select: { id: true, username: true, email: true, uloga: true }
+    });
+    
+    return newUser;
+}
 
-    const result = await pool.query(
-        'UPDATE "User" SET username = $1, email = $2, password = $3 WHERE id = $4 RETURNING id, username, email', 
-        [username, email, hashedPassword, id]
-    );
-    return result.rows[0];
+const updateUser = async (id, username, email, password, uloga) => {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    
+    const updatedUser = await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: {
+            username: username,
+            email: email,
+            password: hashedPassword,
+            uloga: uloga
+        },
+        select: { id: true, username: true, email: true, uloga: true }
+    });
+
+    return updatedUser;
 }
 
 const deleteUser = async (id) => {
-    const result = await pool.query('DELETE FROM "User" WHERE id = $1 RETURNING id, username, email', [id]);
-    return result.rows[0];
+    const deletedUser = await prisma.user.delete({
+        where: { id: parseInt(id) },
+        select: { id: true, username: true, email: true }
+    });
+    
+    return deletedUser;
 }
 
 const validatePassword = async (username, password) => {
-
-    const result = await pool.query('SELECT password FROM "User" WHERE username = $1', [username]);
-
-    const hashedPassword = result.rows.length > 0 
-        ? result.rows[0].password 
+    const user = await prisma.user.findUnique({
+        where: { username: username }
+    });
+    
+    const hashedPassword = user 
+        ? user.password 
         : "$2b$10$fakehashfakehashfakehashfakehashfakehashfakehashf";
-
+    
     const isValid = await bcrypt.compare(password, hashedPassword);
-
-    if (result.rows.length === 0) {
+    if (!user) {
         return false;
     }
-
     return isValid;
 }
 
 const generateJwtToken = (user) => {
-
     var expire = new Date();
     expire.setDate(expire.getDate() + 7);
-
+    
     return jwt.sign({
         id: user.id,
         username: user.username,
         email: user.email,
+        uloga: user.uloga, 
         exp: parseInt(expire.getTime() / 1000),
     }, config.secret)
 }
-
 
 module.exports = {
     getAllUsers,

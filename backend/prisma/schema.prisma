@@ -1,0 +1,55 @@
+generator client {
+provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Mapiranje tabela iz starog SQL-a u Prisma modele (klase)
+
+model User {
+id       Int    @id @default(autoincrement())
+username String @unique
+email    String @unique
+password String
+uloga    String @default("asistent")
+}
+
+model Profesor {
+id          Int         @id @default(autoincrement())
+ime         String
+prezime     String
+is_saradnik Boolean
+predmeti    Predmet[]   // Relacija: Profesor drži više predmeta
+dezurstva   Dezurstva[] // Relacija: Profesor/asistent dežura na više ispita
+}
+
+model Predmet {
+id          Int       @id @default(autoincrement())
+naziv       String
+semestar    String
+status      String
+sifra       String
+profesor_id Int?
+profesor    Profesor? @relation(fields: [profesor_id], references: [id])
+ispiti      Ispit[]   // Relacija: Predmet ima više ispita/kolokvijuma
+}
+
+model Ispit {
+id         Int         @id @default(autoincrement())
+predmet_id Int?
+predmet    Predmet?    @relation(fields: [predmet_id], references: [id])
+datum      DateTime    @db.Date
+vreme      DateTime    @db.Time
+is_ispit   Boolean
+dezurstva  Dezurstva[]
+}
+
+model Dezurstva {
+id          Int       @id @default(autoincrement())
+ispit_id    Int?
+ispit       Ispit?    @relation(fields: [ispit_id], references: [id])
+saradnik_id Int?
+saradnik    Profesor? @relation(fields: [saradnik_id], references: [id])
+}
