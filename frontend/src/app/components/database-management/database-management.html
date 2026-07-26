@@ -1,1 +1,62 @@
-<p>Databasemanagement page</p>
+<div class="db-container">
+  <h2>Upravljanje bazom podataka</h2>
+
+  <!-- Dugmići za izbor entiteta -->
+  <div class="button-group">
+    <button 
+      class="nav-btn" 
+      [class.active]="activeEntity === 'profesori'" 
+      (click)="selectEntity('profesori')">
+      Profesori
+    </button>
+    <button 
+      class="nav-btn" 
+      [class.active]="activeEntity === 'predmeti'" 
+      (click)="selectEntity('predmeti')">
+      Predmeti
+    </button>
+    <button 
+      class="nav-btn" 
+      [class.active]="activeEntity === 'ispiti'" 
+      (click)="selectEntity('ispiti')">
+      Ispiti
+    </button>
+    <button 
+      class="nav-btn" id="import-btn">
+      Import EXCEL
+    </button>
+  </div>
+
+  <!-- Indikator učitavanja -->
+  @if (loading) {
+    <div class="loader">
+      Učitavanje podataka...
+    </div>
+  } @else {
+    <!-- Dinamička tabela -->
+    <div class="table-wrapper">
+      @if (tableData.length > 0) {
+        <table class="styled-table">
+          <thead>
+            <tr>
+              @for (col of currentColumnsDef; track col.key) {
+                <th>{{ col.label }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of tableData; track $index) {
+              <tr>
+                @for (col of currentColumnsDef; track col.key) {
+                  <td>{{ row[col.key] }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty-state">Nema dostupnih podataka za prikaz.</div>
+      }
+    </div>
+  }
+</div>

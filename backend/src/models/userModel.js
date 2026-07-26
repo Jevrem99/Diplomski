@@ -80,7 +80,6 @@ const generateJwtToken = (user) => {
     }, config.secret)
 }
 
-
 module.exports = {
     getAllUsers,
     getUserById,
