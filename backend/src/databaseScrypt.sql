@@ -54,7 +54,7 @@ INSERT INTO Predmet (naziv,godina,semestar,status,sifra,profesor_id) VALUES ('Uv
 INSERT INTO Predmet (naziv,godina,semestar,status,sifra,profesor_id) VALUES ('Logičko i funkcijsko programiranje',3,'letnji','O','19.FI2023',5);
 
 INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES (1,'2026-08-15','08:00:00',true);
-INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES (2,'2026-08-2','09:00:00',true);
+INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES (2,'2026-08-02','09:00:00',true);
 INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES (3,'2026-08-10','14:00:00',true);
 INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES (4,'2026-07-29','10:00:00',true);
 INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES (5,'2026-07-24','09:00:00',true);

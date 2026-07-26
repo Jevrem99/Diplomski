@@ -25,9 +25,9 @@ const getPredmetById = async (req, res) => {
 }
 
 const createPredmet = async (req, res) => {
-    const { naziv, semestar, status, sifra, profesor_id } = req.body;
+    const { naziv, godina, semestar, status, sifra, profesor_id } = req.body;
     try {
-        const newPredmet = await predmetModel.createPredmet(naziv, semestar, status, sifra, profesor_id);
+        const newPredmet = await predmetModel.createPredmet(naziv, godina, semestar, status, sifra, profesor_id);
         res.status(201).json(newPredmet);
     } catch (err) {
         console.error('Error creating predmet:', err);
@@ -37,9 +37,9 @@ const createPredmet = async (req, res) => {
 
 const updatePredmet = async (req, res) => {
     const { id } = req.params;
-    const { naziv, semestar, status, sifra, profesor_id } = req.body;
+    const { naziv, godina, semestar, status, sifra, profesor_id } = req.body;
     try {
-        const updatedPredmet = await predmetModel.updatePredmet(id, naziv, semestar, status, sifra, profesor_id);
+        const updatedPredmet = await predmetModel.updatePredmet(id, naziv, godina, semestar, status, sifra, profesor_id);
         if (!updatedPredmet) {
             return res.status(404).json({ error: 'Predmet not found' });
         }

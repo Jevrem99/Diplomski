@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  username String @db.VarChar(255) @unique
+  email    String @db.VarChar(255) @unique
+  password String @db.VarChar(60)
+}
+
+model dezurstva {
+  id          Int       @id @default(autoincrement())
+  ispit_id    Int?
+  saradnik_id Int?
+  ispit       ispit?    @relation(fields: [ispit_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  profesor    profesor? @relation(fields: [saradnik_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model ispit {
+  id         Int         @id @default(autoincrement())
+  predmet_id Int?
+  datum      DateTime    @db.Date
+  vreme      DateTime    @db.Time(6)
+  is_ispit   Boolean?
+  dezurstva  dezurstva[]
+  predmet    predmet?    @relation(fields: [predmet_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model predmet {
+  id          Int       @id @default(autoincrement())
+  sifra       String    @unique @db.VarChar(255)
+  naziv       String    @db.VarChar(255)
+  godina      Int
+  semestar    String    @db.VarChar(255)
+  status      String    @db.VarChar(1)
+  profesor_id Int?
+  ispit       ispit[]
+  profesor    profesor? @relation(fields: [profesor_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+}
+
+model profesor {
+  id          Int         @id @default(autoincrement())
+  ime         String      @db.VarChar(255)
+  prezime     String      @db.VarChar(255)
+  is_saradnik Boolean     @default(false)
+  email       String?     @db.VarChar(255)
+  dezurstva   dezurstva[]
+  predmet     predmet[]
+}

@@ -1,35 +1,72 @@
 const pool = require('../db/connection');
 const config = require('../config/config');
 
+const prisma = require('../db/prisma');
+
+//AKO TREBA DA SE FORMATIRA DATUM I VREME, OVO JE FUNKCIJA KOJA TO RADI, ALI SADA JE NE KORISTIMO JER SMO U PRISMA KONFIGURACIJI DEFINISALI FORMATIRANJE DATUMA I VREMENA
+// const formatIspit = (data) => {
+//   if (!data) return null;
+  
+//   if (Array.isArray(data)) {
+//     return data.map(item => formatIspit(item));
+//   }
+
+//   return {
+//     ...data,
+//     datum: data.datum ? data.datum.toISOString().split('T')[0] : null,
+//     vreme: data.vreme ? data.vreme.toISOString().substring(11, 19) : null
+//   };
+// };
+
+
 const getAllIspiti = async () => {
-    const result = await pool.query('SELECT id, predmet_id, datum, vreme, is_ispit FROM Ispit');
-    return result.rows;
+    const result = await prisma.ispit.findMany();
+    return result;
 }
 
 const getIspitById = async (id) => {
-    const result = await pool.query('SELECT id, predmet_id, datum, vreme, is_ispit FROM Ispit WHERE id = $1', [id]);
-    return result.rows[0];
+    const result = await prisma.ispit.findUnique({
+        where: {
+            id: Number(id)
+        }
+    });
+    return result;
 }
 
 const createIspit = async (predmet_id, datum, vreme, is_ispit) => {
-    const result = await pool.query(
-        'INSERT INTO Ispit (predmet_id, datum, vreme, is_ispit) VALUES ($1, $2, $3, $4) RETURNING id, predmet_id, datum, vreme, is_ispit',
-        [predmet_id, datum, vreme, is_ispit]
-    );
-    return result.rows[0];
+    const result = await prisma.ispit.create({
+        data: {
+            predmet_id: predmet_id,
+            datum: new Date(datum),
+            vreme: new Date(datum + 'T' + vreme +'Z'),
+            is_ispit: is_ispit
+        }
+    });
+    return result;
 }
 
 const updateIspit = async (id, predmet_id, datum, vreme, is_ispit) => {
-    const result = await pool.query(
-        'UPDATE Ispit SET predmet_id = $1, datum = $2, vreme = $3, is_ispit = $4 WHERE id = $5 RETURNING id, predmet_id, datum, vreme, is_ispit',
-        [predmet_id, datum, vreme, is_ispit, id]
-    );
-    return result.rows[0];
+    const result = await prisma.ispit.update({
+        where: {
+            id: Number(id)
+        },
+        data: {
+            predmet_id: predmet_id,
+            datum: new Date(datum),
+            vreme: new Date(datum + 'T' + vreme +'Z'),
+            is_ispit: is_ispit
+        }
+    });
+    return result;
 }
 
 const deleteIspit = async (id) => {
-    const result = await pool.query('DELETE FROM Ispit WHERE id = $1 RETURNING id, predmet_id, datum, vreme, is_ispit', [id]);
-    return result.rows[0];
+    const result = await prisma.ispit.delete({
+        where: {
+            id: Number(id)
+        }
+    });
+    return result;
 }
 
 module.exports = {
