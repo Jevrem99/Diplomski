@@ -1,9 +1,7 @@
-import multer from 'multer';
+const multer = require('multer');
 
-// Čuvamo fajl u RAM memoriji (bez pisanja na disk)
 const storage = multer.memoryStorage();
 
-// Opciono: filtriramo da dozvolimo samo Excel ekstenzije
 const fileFilter = (req, file, cb) => {
   if (
     file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
@@ -15,4 +13,8 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-export const uploadExcel = multer({ storage, fileFilter });
+const uploadExcel = multer({ storage, fileFilter });
+
+module.exports = {
+  uploadExcel
+};

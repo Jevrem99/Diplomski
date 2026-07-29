@@ -1,11 +1,31 @@
-const profesorModel = require('../models/profesorMode');
+const profesorModel = require('../models/profesorModel');
 
-const getAllProfesors = async (req, res) => {
+const getAllPredavaci = async (req, res) => {
     try {
-        const profesors = await profesorModel.getAllProfesors();
+        const predavaci = await profesorModel.getAllPredavaci();
+        res.status(200).json(predavaci);
+    } catch (err) {
+        console.error('Error fetching predavaci:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+const getAllProfesori = async (req, res) => {
+    try {
+        const profesors = await profesorModel.getAllProfesori();
         res.status(200).json(profesors);
     } catch (err) {
         console.error('Error fetching profesors:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
+
+const getAllSaradnici = async (req, res) => {
+    try {
+        const saradnici = await profesorModel.getAllSaradnici();
+        res.status(200).json(saradnici);
+    } catch (err) {
+        console.error('Error fetching saradnici:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 }
@@ -65,7 +85,9 @@ const deleteProfesor = async (req, res) => {
 } 
 
 module.exports = {
-    getAllProfesors,
+    getAllPredavaci,
+    getAllSaradnici,
+    getAllProfesori,
     getProfesorById,
     createProfesor,
     updateProfesor,

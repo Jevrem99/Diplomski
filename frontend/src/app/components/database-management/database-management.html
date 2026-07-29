@@ -1,13 +1,18 @@
 <div class="db-container">
   <h2>Upravljanje bazom podataka</h2>
 
-  <!-- Dugmići za izbor entiteta -->
   <div class="button-group">
     <button 
       class="nav-btn" 
       [class.active]="activeEntity === 'profesori'" 
       (click)="selectEntity('profesori')">
       Profesori
+    </button>
+    <button 
+      class="nav-btn" 
+      [class.active]="activeEntity === 'saradnici'" 
+      (click)="selectEntity('saradnici')">
+      Saradnici
     </button>
     <button 
       class="nav-btn" 
@@ -22,18 +27,30 @@
       Ispiti
     </button>
     <button 
-      class="nav-btn" id="import-btn">
-      Import EXCEL
+      class="nav-btn" id="delete-btn"
+      (click)="deleteDatabase()">
+      Obrisi sve podatke
+    </button>
+    <input 
+      type="file" 
+      #fileInput 
+      (change)="onFileSelected($event)" 
+      accept=".xlsx, .xls" 
+      style="display: none;" 
+    />
+    <button 
+      class="nav-btn" id="import-btn"
+      (click)="fileInput.click()" 
+      [disabled]="uploading">
+      {{ uploading ? 'Učitavanje...' : 'Import EXCEL' }}
     </button>
   </div>
 
-  <!-- Indikator učitavanja -->
   @if (loading) {
     <div class="loader">
       Učitavanje podataka...
     </div>
   } @else {
-    <!-- Dinamička tabela -->
     <div class="table-wrapper">
       @if (tableData.length > 0) {
         <table class="styled-table">

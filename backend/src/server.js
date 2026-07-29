@@ -7,6 +7,7 @@ const profesorRoutes = require('./routes/profesorRoutes');
 const predmetRoutes = require('./routes/predmetRoutes');
 const ispitRoutes = require('./routes/ispitRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use('/profesors', profesorRoutes);
 app.use('/predmet', predmetRoutes);
 app.use('/ispit', ispitRoutes);
 app.use('/admin', adminRoutes);
+app.use('/upload', uploadRoutes);
 
 app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);

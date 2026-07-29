@@ -3,8 +3,26 @@ const config = require('../config/config');
 
 const prisma = require('../db/prisma');
 
-const getAllProfesors = async () => {
+const getAllPredavaci = async () => {
     const result = await prisma.profesor.findMany();
+    return result;
+}
+
+const getAllProfesori = async () => {
+    const result = await prisma.profesor.findMany({
+        where: {
+            is_saradnik: false
+        }
+    });
+    return result;
+}
+
+const getAllSaradnici = async () => {
+    const result = await prisma.profesor.findMany({
+        where: {
+            is_saradnik: true
+        }
+    });
     return result;
 }
 
@@ -56,7 +74,9 @@ const deleteProfesor = async (id) => {
 }
 
 module.exports = {
-    getAllProfesors,
+    getAllPredavaci,
+    getAllSaradnici,
+    getAllProfesori,
     getProfesorById,
     createProfesor,
     updateProfesor,

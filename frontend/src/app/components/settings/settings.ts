@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
+import { ThemeService } from '../../services/theme';
 
 @Component({
   selector: 'app-settings',
@@ -9,4 +10,11 @@ import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
-export class Settings {}
+export class Settings {
+
+  themeService = inject(ThemeService);
+
+  toggleTheme() {
+    this.themeService.toggleTheme();
+  }
+}
