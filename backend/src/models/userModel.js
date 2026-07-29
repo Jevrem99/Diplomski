@@ -1,7 +1,14 @@
+require('dotenv').config();
+const { Pool } = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient({
-    datasourceUrl: process.env.DATABASE_URL
-});
+
+// Kreiramo sirovu konekciju koristeći tvoj .env fajl
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+
+// Ubacujemo tu konekciju u Prisma adapter
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');

@@ -6,7 +6,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button'
 import { MatIcon } from '@angular/material/icon';
 import { FormsModule } from '@angular/forms'; 
-import { AuthService } from '../../services/auth';
+import { AuthService } from '../../core/services/auth';
 
 @Component({
   selector: 'app-login',

@@ -1,6 +1,6 @@
 import { Component, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { SidebarMenu } from '../../features/sidebar-menu/sidebar-menu';
+import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { FullCalendarModule } from '@fullcalendar/angular'; 
 import { MatDialogModule } from '@angular/material/dialog'; 
 
@@ -17,30 +17,26 @@ import timeGridPlugin from '@fullcalendar/timegrid';
   styleUrl: './main.css',
 })
 export class Main implements AfterViewInit {
+  // Hvatamo div koji sadrži predmete (onaj sa #draggableContainer u HTML-u)
   @ViewChild('draggableContainer') draggableContainer!: ElementRef;
+  
   username = localStorage.getItem('username');
 
-  // Privremeni podaci (kasnije ćemo ovo vući sa bekenda iz baze)
-  predmeti = [
-    { id: 1, naziv: 'Osnove Programiranja', profesor: 'Petar Petrović', godina: 1, boja: 'bg-blue-100 border-blue-500 text-blue-900' },
-    { id: 2, naziv: 'Strukture Podataka', profesor: 'Marko Marković', godina: 2, boja: 'bg-emerald-100 border-emerald-500 text-emerald-900' },
-    { id: 3, naziv: 'Baze Podataka', profesor: 'Jovan Jovanović', godina: 3, boja: 'bg-purple-100 border-purple-500 text-purple-900' },
-    { id: 4, naziv: 'Veb Programiranje', profesor: 'Ana Anić', godina: 4, boja: 'bg-orange-100 border-orange-500 text-orange-900' }
-  ];
-
   calendarOptions: CalendarOptions = {
-    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],      
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
     themeSystem: 'standard', 
-    height: '100%',      
+    height: '100%',
     firstDay: 1,
-    droppable: true, // OVO JE KLJUČNO ZA DRAG AND DROP
-    editable: true,  // Dozvoljava pomeranje unutar samog kalendara
     
-    // Šta se dešava kada se predmet spusti na kalendar
+    // OVO JE KLJUČNO ZA DRAG & DROP
+    droppable: true, // Dozvoljava prevlačenje elemenata spolja na kalendar
+    editable: true,  // Dozvoljava pomeranje predmeta kada se već nalaze na kalendaru
+    
+    // Funkcija koja se okida kada pustiš predmet na datum
     drop: (info) => {
-      console.log('Predmet spušten na datum:', info.dateStr);
-      // Ovde ćemo kasnije otvarati Modal (Prozor) da asistent unese vreme i salu
+      console.log('Spustio si predmet na datum:', info.dateStr);
+      // Ovde ćemo kasnije pozivati funkciju da se otvori onaj Modal prozor za unos vremena i sale!
     },
 
     titleFormat: (arg) => {
@@ -48,7 +44,22 @@ export class Main implements AfterViewInit {
         'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 
         'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
       ];
-      return `${meseci[arg.date.month]} ${arg.date.year}.`;
+      const mesec = meseci[arg.date.month];
+      const godina = arg.date.year;
+      return `${mesec} ${godina}.`;
+    },
+    dayHeaderContent: (arg) => {
+      const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+      const daniPuni = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
+             
+      const indeksDana = arg.date.getDay();
+      const danUMesecu = arg.date.getDate();
+      const mesec = arg.date.getMonth() + 1;
+      
+      if (arg.view.type === 'dayGridMonth') {
+        return daniSkraceno[indeksDana];
+      }
+      return `${daniPuni[indeksDana]} ${danUMesecu}.${mesec}.`;
     },
     headerToolbar: {
       left: 'prev,next today',
@@ -64,14 +75,14 @@ export class Main implements AfterViewInit {
   };
 
   ngAfterViewInit() {
-    // Registrujemo levi meni kao kontejner iz kog mogu da se vuku stvari
+    // Kada se stranica učita, govorimo FullCalendar-u da obrati pažnju na levi panel
     if (this.draggableContainer) {
       new Draggable(this.draggableContainer.nativeElement, {
-        itemSelector: '.fc-event', // Traži elemente sa ovom klasom
+        itemSelector: '.fc-event', // Traži sve HTML elemente sa ovom klasom
         eventData: function(eventEl) {
-          // Kada uhvatimo element, čitamo njegov naziv
+          // Kada uhvatimo predmet, uzimamo njegov naziv (iz h3 taga)
           return {
-            title: eventEl.innerText
+            title: eventEl.querySelector('h3')?.innerText || 'Nepoznat predmet'
           };
         }
       });
