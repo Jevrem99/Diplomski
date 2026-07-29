@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 
-import { Theme } from './theme';
+import { Theme } from '@fullcalendar/core/internal';
 
 describe('Theme', () => {
   let service: Theme;

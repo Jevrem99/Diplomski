@@ -1,36 +1,10 @@
-/* You can add global styles to this file, and also import other style files */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+body { font-family: 'Montserrat', sans-serif; }
+
+/* Tvoj postojeći CSS ostaje ispod ovoga */
 :root {
- --primary-blue: #34b9f7;
- --blue_1: #006EA9;
- --blue_2: #004C99;
- --blue_3: #86B9EE;
- --danger: #d60101;
-}
-
-:root {
-  --bg-color: #ffffff;
-  --bg-secondary: #f4f6f9;
-  --text-color: #1a1a1a;
-  --text-muted: #6c757d;
-  --card-bg: #ffffff;
-  --border-color: #e0e0e0;
-  --primary-color: #007bff;
-}
-
-body.dark-theme {
-  --bg-color: #121212;
-  --bg-secondary: #1e1e1e;
-  --text-color: #f1f1f1;
-  --text-muted: #a0a0a0;
-  --card-bg: #1e1e1e;
-  --border-color: #333333;
-  --primary-color: #375a7f;
-}
-
-body {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  transition: background-color 0.3s ease, color 0.3s ease;
-  margin: 0;
-  font-family: Arial, sans-serif;
+  --primary-blue: #34b9f7;
 }

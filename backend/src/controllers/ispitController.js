@@ -8,47 +8,56 @@ const getAllIspiti = async (req, res) => {
         console.error('Error fetching ispiti:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
 const getIspitById = async (req, res) => {
     const { id } = req.params;
     try {
         const ispit = await ispitModel.getIspitById(id);
-        if (!ispit) {
-            return res.status(404).json({ error: 'Ispit not found' });
-        }
+        if (!ispit) return res.status(404).json({ error: 'Ispit not found' });
         res.status(200).json(ispit);
     } catch (err) {
-        console.error(`Error fetching ispit with id ${id}:`, err);
+        console.error(`Error fetching ispit ${id}:`, err);
         res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
 const createIspit = async (req, res) => {
-    const { predmet_id, datum, vreme, is_ispit } = req.body;
+    // Front šalje: { predmet_id (ili title ako tražimo ID), date, startTime, room }
+    const { predmet_id, datum, vreme, is_ispit, sala, date, startTime, room } = req.body;
+    
+    // Fallback ako sa fronta stigne nova struktura iz modala
+    const finalDatum = datum || date;
+    const finalVreme = vreme || startTime;
+    const finalSala = sala || room;
+
     try {
-        const newIspit = await ispitModel.createIspit(predmet_id, datum, vreme, is_ispit);
+        const newIspit = await ispitModel.createIspit(
+            predmet_id, 
+            finalDatum, 
+            finalVreme, 
+            is_ispit ?? true, 
+            finalSala
+        );
         res.status(201).json(newIspit);
     } catch (err) {
         console.error('Error creating ispit:', err);
         res.status(500).json({ error: 'Internal server error' });
-    }   
-}
+    }
+};
 
 const updateIspit = async (req, res) => {
     const { id } = req.params;
-    const { predmet_id, datum, vreme, is_ispit } = req.body;
+    const { predmet_id, datum, vreme, is_ispit, sala } = req.body;
     try {
-        const updatedIspit = await ispitModel.updateIspit(id, predmet_id, datum, vreme, is_ispit);
-        if (!updatedIspit) {
-            return res.status(404).json({ error: 'Ispit not found' });
-        }
+        const updatedIspit = await ispitModel.updateIspit(id, predmet_id, datum, vreme, is_ispit, sala);
+        if (!updatedIspit) return res.status(404).json({ error: 'Ispit not found' });
         res.status(200).json(updatedIspit);
     } catch (err) {
-        console.error(`Error updating ispit with id ${id}:`, err);
+        console.error(`Error updating ispit ${id}:`, err);
         res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
 const deleteIspit = async (req, res) => {
     const { id } = req.params;

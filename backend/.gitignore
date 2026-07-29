@@ -56,11 +56,30 @@ typings/
 
 # next.js build output
 .next
-
+.env
 node_modules
 
 .env
 /src/generated/prisma
-.agents
-.claude
-.windsurf
+# Skrivene lokalne varijable (OVO JE NAJVAŽNIJE)
+.env
+.env.*
+
+# Instalirani paketi (Ovo rešava hiljade fajlova)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Razni generisani cache i build fajlovi
+.DS_Store
+dist/
+build/
+.next/
+.cache/
+
+# Prisma specifično (ako generiše neku čudnu dokumentaciju ili agente)
+.agents/
+.windsurf/
+.claude/
+.prisma/
