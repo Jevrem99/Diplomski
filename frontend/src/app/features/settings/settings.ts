@@ -4,9 +4,7 @@ import { ThemeService } from '../../core/services/theme';
 
 @Component({
   selector: 'app-settings',
-  imports: [
-    SidebarMenu
-  ],
+  imports: [SidebarMenu],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })

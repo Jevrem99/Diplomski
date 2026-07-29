@@ -26,14 +26,15 @@ dezurstva   Dezurstva[] // Relacija: Profesor/asistent dežura na više ispita
 }
 
 model Predmet {
-id          Int       @id @default(autoincrement())
-naziv       String
-semestar    String
-status      String
-sifra       String
-profesor_id Int?
-profesor    Profesor? @relation(fields: [profesor_id], references: [id])
-ispiti      Ispit[]   // Relacija: Predmet ima više ispita/kolokvijuma
+  id          Int       @id @default(autoincrement())
+  sifra       String    @unique
+  naziv       String
+  godina      Int
+  semestar    String
+  status      String
+  profesor_id Int?
+  profesor    Profesor? @relation(fields: [profesor_id], references: [id])
+  ispiti      Ispit[]
 }
 
 model Ispit {

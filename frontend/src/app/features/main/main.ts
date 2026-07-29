@@ -1,69 +1,107 @@
-import { Component, AfterViewInit, ElementRef, ViewChild } from '@angular/core';
+import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
-import { FullCalendarModule } from '@fullcalendar/angular'; 
-import { MatDialogModule } from '@angular/material/dialog'; 
-
+import { FullCalendarModule } from '@fullcalendar/angular';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { CalendarOptions } from '@fullcalendar/core';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
+import { EventModal } from '../../shared/components/event-modal/event-modal.component';
+
+interface Profesor {
+  id?: number;
+  ime: string;
+  prezime: string;
+  email?: string;
+}
+
+interface Predmet {
+  id: number;
+  sifra: string;
+  naziv: string;
+  godina: number;
+  semestar?: string;
+  status?: string;
+  profesor_id?: number;
+  profesor?: Profesor;
+  profesorImePrezime?: string;
+}
 
 @Component({
   selector: 'app-main',
   standalone: true,
   imports: [SidebarMenu, CommonModule, FullCalendarModule, MatDialogModule],
   templateUrl: './main.html',
-  styleUrl: './main.css',
+  styleUrl: './main.css'
 })
-export class Main implements AfterViewInit {
-  // Hvatamo div koji sadrži predmete (onaj sa #draggableContainer u HTML-u)
+export class Main implements OnInit, AfterViewInit {
   @ViewChild('draggableContainer') draggableContainer!: ElementRef;
-  
+
+  private http = inject(HttpClient);
+  private dialog = inject(MatDialog);
+  private API_URL = 'http://localhost:5000';
+  private cdr = inject(ChangeDetectorRef);
   username = localStorage.getItem('username');
+  predmeti: Predmet[] = [];
+  draggableInstance: Draggable | null = null;
 
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
-    themeSystem: 'standard', 
+    themeSystem: 'standard',
     height: '100%',
     firstDay: 1,
-    
-    // OVO JE KLJUČNO ZA DRAG & DROP
-    droppable: true, // Dozvoljava prevlačenje elemenata spolja na kalendar
-    editable: true,  // Dozvoljava pomeranje predmeta kada se već nalaze na kalendaru
-    
-    // Funkcija koja se okida kada pustiš predmet na datum
-    drop: (info) => {
-      console.log('Spustio si predmet na datum:', info.dateStr);
-      // Ovde ćemo kasnije pozivati funkciju da se otvori onaj Modal prozor za unos vremena i sale!
+    dragRevertDuration: 0,
+    droppable: true,
+    editable: true,
+
+    eventReceive: (info) => {
+      const dialogRef = this.dialog.open(EventModal, {
+        width: '450px',
+        data: {
+          title: info.event.title,
+          date: info.event.startStr
+        },
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          // Slanje novog termina na backend
+          this.http.post(`${this.API_URL}/ispit`, result).subscribe({
+            next: (res) => {
+              console.log('Termin uspešno sačuvan u bazi:', res);
+            },
+            error: (err) => {
+              console.error('Greška pri čuvanju termina:', err);
+              info.event.remove(); // Brišemo sa kalendara ako backend odbije
+            }
+          });
+        } else {
+          info.event.remove();
+        }
+
+        // Čišćenje fokusa/selekcije teksta
+        window.getSelection()?.removeAllRanges();
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
     },
 
     titleFormat: (arg) => {
-      const meseci = [
-        'Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 
-        'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'
-      ];
-      const mesec = meseci[arg.date.month];
-      const godina = arg.date.year;
-      return `${mesec} ${godina}.`;
+      const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+      return `${meseci[arg.date.month]} ${arg.date.year}.`;
     },
     dayHeaderContent: (arg) => {
       const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-      const daniPuni = ['Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota', 'Nedelja'];
-             
-      const indeksDana = arg.date.getDay();
-      const danUMesecu = arg.date.getDate();
-      const mesec = arg.date.getMonth() + 1;
-      
-      if (arg.view.type === 'dayGridMonth') {
-        return daniSkraceno[indeksDana];
-      }
-      return `${daniPuni[indeksDana]} ${danUMesecu}.${mesec}.`;
+      return daniSkraceno[arg.date.getDay()];
     },
     headerToolbar: {
       left: 'prev,next today',
-      center: 'title',   
+      center: 'title',
       right: 'dayGridMonth,timeGridWeek,timeGridDay'
     },
     buttonText: {
@@ -71,21 +109,88 @@ export class Main implements AfterViewInit {
       month: 'Mesec',
       week: 'Nedelja',
       day: 'Dan'
-    },
+    }
   };
 
-  ngAfterViewInit() {
-    // Kada se stranica učita, govorimo FullCalendar-u da obrati pažnju na levi panel
-    if (this.draggableContainer) {
-      new Draggable(this.draggableContainer.nativeElement, {
-        itemSelector: '.fc-event', // Traži sve HTML elemente sa ovom klasom
-        eventData: function(eventEl) {
-          // Kada uhvatimo predmet, uzimamo njegov naziv (iz h3 taga)
-          return {
-            title: eventEl.querySelector('h3')?.innerText || 'Nepoznat predmet'
-          };
-        }
-      });
-    }
+  ngOnInit(): void {
+    this.fetchPredmeti();
+    this.fetchIspiti();
   }
+
+  ngAfterViewInit(): void {
+    this.initDraggable();
+  }
+
+  getGodinaColor(godina?: number): string {
+  switch (godina) {
+    case 1: return '#34b9f7'; // 1. godina -> Plava
+    case 2: return '#ef4444'; // 2. godina -> Crvena
+    case 3: return '#eab308'; // 3. godina -> Žuta
+    case 4: return '#10b981'; // 4. godina -> Zelena
+    default: return '#34b9f7';
+  }
+}
+
+fetchPredmeti(): void {
+  this.http.get<Predmet[]>(`${this.API_URL}/predmet`).subscribe({
+    next: (data) => {
+      this.predmeti = data.map(p => ({
+        ...p,
+        profesorImePrezime: p.profesor 
+          ? `Prof. ${p.profesor.ime} ${p.profesor.prezime}` 
+          : `Šifra: ${p.sifra}`
+      }));
+      
+      this.cdr.detectChanges(); 
+      this.initDraggable();
+    },
+    error: (err) => console.error('Greška pri dohvatanju predmeta:', err)
+  });
+}
+
+fetchIspiti(): void {
+  this.http.get<any[]>(`${this.API_URL}/ispit`).subscribe({
+    next: (ispiti) => {
+      const events = ispiti.map(i => {
+        const boja = this.getGodinaColor(i.predmet?.godina);
+
+        return {
+          id: i.id.toString(),
+          title: `${i.predmet?.naziv || 'Ispit'} (${i.sala || 'Bez sale'})`,
+          start: `${i.datum}T${i.vreme}`,
+          backgroundColor: boja,
+          borderColor: boja
+        };
+      });
+
+      this.calendarOptions.events = events;
+      this.cdr.detectChanges();
+    },
+    error: (err) => console.error('Greška pri dohvatanju ispita:', err)
+  });
+}
+
+private initDraggable(): void {
+  const self = this;
+
+  if (this.draggableContainer && this.draggableContainer.nativeElement) {
+    if (this.draggableInstance) {
+      this.draggableInstance.destroy();
+    }
+    this.draggableInstance = new Draggable(this.draggableContainer.nativeElement, {
+      itemSelector: '.fc-event',
+      eventData: function(eventEl) {
+        // Izvlačimo godinu iz dataset-a koji smo stavili u HTML
+        const godina = parseInt(eventEl.getAttribute('data-godina') || '1');
+        const boja = self.getGodinaColor(godina);
+
+        return {
+          title: eventEl.querySelector('h3')?.innerText || 'Nepoznat predmet',
+          backgroundColor: boja,
+          borderColor: boja
+        };
+      }
+    });
+  }
+}
 }

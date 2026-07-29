@@ -31,10 +31,12 @@
         "mandatoryenv": "^1.1.1",
         "module-alias": "^2.2.2",
         "morgan": "^1.9.1",
+        "multer": "^2.2.0",
         "pg": "^8.22.0",
         "pg-hstore": "^2.3.3",
         "rotating-file-stream": "^1.4.6",
-        "sequelize": "^5.19.2"
+        "sequelize": "^5.19.2",
+        "xlsx": "^0.18.5"
     },
     "devDependencies": {
         "prisma": "^7.9.0"

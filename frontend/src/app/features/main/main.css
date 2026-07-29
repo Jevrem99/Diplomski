@@ -94,28 +94,26 @@ margin: 6px;
 box-shadow: 0 4px 10px rgba(52, 185, 247, 0.25);
 }
 
-/* 6. DOGAĐAJI NA KALENDARU (Spušteni predmeti) */
+/* 6. DOGAĐAJI NA KALENDARU */
 :host ::ng-deep .fc-event {
-background-color: #34b9f7 !important;
-border: none !important;
-border-radius: 0.5rem !important;
-padding: 0.35rem 0.5rem !important;
-font-size: 0.75rem !important;
-font-weight: 600 !important;
-color: white !important;
-box-shadow: 0 2px 4px 0 rgba(52, 185, 247, 0.4) !important;
-cursor: pointer;
-transition: all 0.2s ease;
-margin: 2px 4px !important; /* Malo prostora izmedju njih */
+  border: none !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 600 !important;
+  color: white !important;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.12) !important;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  margin: 2px 4px !important;
+}
+
+/* Obezbeđuje da tekst ostane beo preko bilo koje boje kartice */
+:host ::ng-deep .fc-event-main {
+  color: white !important;
 }
 
 :host ::ng-deep .fc-event:hover {
-transform: scale(1.02);
-box-shadow: 0 4px 8px -1px rgba(52, 185, 247, 0.5) !important;
-}
-
-/* Vikendi - siva pozadina */
-:host ::ng-deep .fc-day-sat,
-:host ::ng-deep .fc-day-sun {
-background-color: #fafafa !important;
+  transform: scale(1.02);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2) !important;
 }
