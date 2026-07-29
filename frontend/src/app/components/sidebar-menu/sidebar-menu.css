@@ -38,9 +38,17 @@
 }
 
 mat-sidenav {
+    background-color: var(--bg-secondary);
+    color: var(--text-color);
     width: 230px;
     display: flex;
     flex-direction: column;
+}
+
+mat-sidenav-content{
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 #menu_title{

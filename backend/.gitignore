@@ -60,3 +60,7 @@ typings/
 node_modules
 
 .env
+/src/generated/prisma
+.agents
+.claude
+.windsurf
