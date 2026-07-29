@@ -1,6 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
-import { ThemeService } from '../../services/theme';
+import { ThemeService } from '../../core/services/theme';
 
 @Component({
   selector: 'app-settings',
