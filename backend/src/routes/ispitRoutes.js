@@ -8,5 +8,5 @@ router.get('/:id', ispitController.getIspitById);
 router.post('/', ispitController.createIspit);
 router.put('/:id', ispitController.updateIspit);
 router.delete('/:id', ispitController.deleteIspit);
-
+router.post('/bulk', ispitController.saveBulkIspiti);
 module.exports = router;

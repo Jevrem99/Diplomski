@@ -1,5 +1,5 @@
 const ispitModel = require('../models/ispitModel');
-
+const prisma = require('../db/prisma');
 const getAllIspiti = async (req, res) => {
     try {
         const ispiti = await ispitModel.getAllIspiti();
@@ -72,11 +72,33 @@ const deleteIspit = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+const saveBulkIspiti = async (req, res) => {
+    try {
+        const ispitiNiz = req.body;
+        const sacuvaniIspiti = await Promise.all(
+            ispitiNiz.map(async (ispit) => {
+                return await prisma.ispit.create({
+                    data: {
+                        predmet_id: parseInt(ispit.predmet_id),
+                        datum: new Date(ispit.datum),
+                        vreme: new Date(`1970-01-01T${ispit.vreme}`),
+                        is_ispit: true
+                    }
+                });
+            })
+        );
 
+        res.status(201).json({ message: 'Uspešno sačuvan raspored!', sacuvaniIspiti });
+    } catch (error) {
+        console.error('Greška pri bulk snimanju ispita:', error);
+        res.status(500).json({ error: 'Greška na serveru pri čuvanju rasporeda.' });
+    }
+};
 module.exports = {
     getAllIspiti,
     getIspitById,
     createIspit,
     updateIspit,
-    deleteIspit
+    deleteIspit,
+    saveBulkIspiti
 };
