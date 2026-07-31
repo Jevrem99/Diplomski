@@ -8,9 +8,11 @@ const getAllIspiti = async () => {
                     naziv: true,
                     sifra: true,
                     godina: true,
-                    status: true
+                    status: true,
+                    profesor: true 
                 }
-            }
+            },
+            sala: true 
         }
     });
     return result;

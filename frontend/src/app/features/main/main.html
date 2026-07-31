@@ -86,8 +86,9 @@
 
         <!-- Kontejner za Kalendar -->
         <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-hidden flex flex-col">
-            <full-calendar [options]="calendarOptions" class="h-full w-full"></full-calendar>
-        </div>
+    <!-- DODATO #calendar -->
+    <full-calendar #calendar [options]="calendarOptions" class="h-full w-full"></full-calendar>
+</div>
     </main>
 
 </div>
