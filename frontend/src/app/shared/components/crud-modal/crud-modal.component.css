@@ -1,0 +1,18 @@
+:host, :host *, ::ng-deep .mat-mdc-dialog-container, ::ng-deep .mat-mdc-form-field {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+::ng-deep .mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: 12px !important;
+  --mdc-outlined-text-field-focus-outline-width: 2px !important;
+}
+
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__trailing {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}

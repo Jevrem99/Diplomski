@@ -1,7 +1,9 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { HttpClient } from '@angular/common/http';
-
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
+import { ToastService } from '../../core/services/toast.service';
 export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici';
 
 interface ColumnDef {
@@ -13,7 +15,7 @@ interface ColumnDef {
   selector: 'app-database-management',
   standalone: true,
   imports: [
-    SidebarMenu
+    SidebarMenu,MatDialogModule
   ],
   templateUrl: './database-management.html',
   styleUrl: './database-management.css',
@@ -21,11 +23,13 @@ interface ColumnDef {
 export class DatabaseManagement implements OnInit {
   activeEntity: EntityType = 'profesori';
   tableData: any[] = [];
+  private readonly toast = inject(ToastService);
+  private readonly dialog = inject(MatDialog);
   displayedColumnsKeys: string[] = [];
   currentColumnsDef: ColumnDef[] = [];
   loading: boolean = false;
   uploading: boolean = false; // Status za učitavanje fajla
-
+  
   private API_URL = 'http://localhost:5000';
 
   // Konfiguracija kolona za svaku tabelu
@@ -75,17 +79,19 @@ export class DatabaseManagement implements OnInit {
     
     this.fetchData(entity);
   }
-
-  fetchData(entity: EntityType): void {
-    this.loading = true;
+  private getEndpoint(entity: EntityType): string {
     const endpointMap: Record<EntityType, string> = {
       profesori: '/profesors/profesori',
       saradnici: '/profesors/saradnici',
       predmeti: '/predmet',
       ispiti: '/ispit'
     };
+    return `${this.API_URL}${endpointMap[entity]}`;
+  }
 
-    this.http.get<any[]>(`${this.API_URL}${endpointMap[entity]}`).subscribe({
+  fetchData(entity: EntityType): void {
+    this.loading = true;
+    this.http.get<any[]>(this.getEndpoint(entity)).subscribe({
       next: (data) => {
         this.tableData = data;
         this.loading = false;
@@ -98,6 +104,80 @@ export class DatabaseManagement implements OnInit {
       }
     });
   }
+
+  // --- CRUD OPERACIJE ---
+
+  openCrudModal(): void {
+    const dialogRef = this.dialog.open(CrudModal, {
+      width: '500px',
+      data: {
+        title: `Dodaj: ${this.activeEntity}`,
+        columns: this.currentColumnsDef
+      },
+      disableClose: true // Sprečava zatvaranje klikom sa strane
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // HTTP POST za kreiranje novog entiteta
+        this.http.post(this.getEndpoint(this.activeEntity), result).subscribe({
+          next: () => {
+            this.toast.show('Uspešno dodato u bazu!', 'success');
+            this.fetchData(this.activeEntity); // Osvežavamo tabelu
+          },
+          error: (err) => {
+            console.error('Greška pri dodavanju:', err);
+            this.toast.show('Greška pri čuvanju podataka.', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  editRow(row: any): void {
+    const dialogRef = this.dialog.open(CrudModal, {
+      width: '500px',
+      data: {
+        title: `Izmeni: ${this.activeEntity}`,
+        columns: this.currentColumnsDef,
+        rowData: row // Šaljemo postojeće podatke da bi forma bila popunjena
+      },
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // HTTP PUT za ažuriranje postojećeg entiteta (gađamo /ruta/:id)
+        this.http.put(`${this.getEndpoint(this.activeEntity)}/${row.id}`, result).subscribe({
+          next: () => {
+            this.toast.show('Uspešno izmenjeno!', 'success');
+            this.fetchData(this.activeEntity);
+          },
+          error: (err) => {
+            console.error('Greška pri izmeni:', err);
+            this.toast.show('Greška pri izmeni podataka.', 'error');
+          }
+        });
+      }
+    });
+  }
+
+  deleteRow(id: number): void {
+    if (confirm('Da li ste sigurni da želite da obrišete ovaj zapis?')) {
+      // HTTP DELETE za brisanje entiteta (gađamo /ruta/:id)
+      this.http.delete(`${this.getEndpoint(this.activeEntity)}/${id}`).subscribe({
+        next: () => {
+          this.toast.show('Zapis je obrisan!', 'success');
+          this.fetchData(this.activeEntity);
+        },
+        error: (err) => {
+          console.error('Greška pri brisanju:', err);
+          this.toast.show('Greška pri brisanju zapisa.', 'error');
+        }
+      });
+    }
+  }
+  
 
   onFileSelected(event: any): void {
     const file: File = event.target.files[0];
@@ -143,4 +223,5 @@ export class DatabaseManagement implements OnInit {
       });
     }
   }
+  
 }

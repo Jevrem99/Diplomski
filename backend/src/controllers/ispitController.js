@@ -1,5 +1,5 @@
 const ispitModel = require('../models/ispitModel');
-
+const prisma = require('../db/prisma');
 const getAllIspiti = async (req, res) => {
     try {
         const ispiti = await ispitModel.getAllIspiti();
@@ -72,11 +72,59 @@ const deleteIspit = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+const saveBulkIspiti = async (req, res) => {
+    try {
+        const ispitiNiz = req.body;
+        const sacuvaniIspiti = await Promise.all(
+            ispitiNiz.map(async (ispit) => {
 
+                // 1. Nalazimo ili kreiramo Salu u bazi (jer front šalje string npr. "Sala A2")
+                let salaId = null;
+                if (ispit.sala && ispit.sala !== 'Bez sale') {
+                    let postojecaSala = await prisma.sala.findUnique({
+                        where: { naziv: ispit.sala }
+                    });
+                    
+                    // Ako sala ne postoji u tabeli, dodajemo je
+                    if (!postojecaSala) {
+                        postojecaSala = await prisma.sala.create({
+                            data: { naziv: ispit.sala }
+                        });
+                    }
+                    salaId = postojecaSala.id;
+                }
+
+                // 2. Kreiramo ispit koristeći bezbednu 'connect' sintaksu za relacije
+                return await prisma.ispit.create({
+                    data: {
+                        datum: new Date(ispit.datum),
+                        vreme: new Date(`1970-01-01T${ispit.vreme}`),
+                        is_ispit: true,
+                        
+                        // Povezujemo predmet preko relacije umesto raw ID-ja
+                        predmet: ispit.predmet_id ? { 
+                            connect: { id: parseInt(ispit.predmet_id) } 
+                        } : undefined,
+                        
+                        // Povezujemo salu preko relacije
+                        sala: salaId ? { 
+                            connect: { id: salaId } 
+                        } : undefined
+                    }
+                });
+            })
+        );
+        res.status(201).json({ message: 'Uspešno sačuvan raspored!', sacuvaniIspiti });
+    } catch (error) {
+        console.error('Greška pri bulk snimanju ispita:', error);
+        res.status(500).json({ error: 'Greška na serveru pri čuvanju rasporeda.' });
+    }
+};
 module.exports = {
     getAllIspiti,
     getIspitById,
     createIspit,
     updateIspit,
-    deleteIspit
+    deleteIspit,
+    saveBulkIspiti
 };

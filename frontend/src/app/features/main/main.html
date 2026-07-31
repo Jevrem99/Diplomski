@@ -21,35 +21,34 @@
 
         <!-- Lista predmeta iz baze -->
         <div class="flex-1 overflow-y-auto p-4 space-y-3" #draggableContainer>
-  @for (predmet of predmeti; track predmet.id) {
-    <div class="fc-event group cursor-grab active:cursor-grabbing p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col gap-1 relative overflow-hidden select-none"
-         [attr.data-godina]="predmet.godina">
-      
-      <!-- Leva trakica u boji godine -->
-      <div class="absolute left-0 top-0 bottom-0 w-1.5" 
-           [style.background-color]="getGodinaColor(predmet.godina)"></div>
-      
-      <h3 class="font-bold text-sm text-gray-800 transition-colors">
-        {{ predmet.naziv }}
-      </h3>
-      
-      <p class="text-xs text-gray-500 font-medium">
-        {{ predmet.profesorImePrezime }}
-      </p>
-      
-      <div class="mt-1">
-        <!-- Bedž sa dinamičkom pozadinom i tekstom u boji godine -->
-        <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
-              [style.color]="getGodinaColor(predmet.godina)"
-              [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
-          {{ predmet.godina }}. Godina
-        </span>
-      </div>
-    </div>
-  } @empty {
-    <p class="text-xs text-gray-400 text-center py-4">Nema dostupnih predmeta u bazi.</p>
-  }
-</div>
+            @for (predmet of predmeti; track predmet.id) {
+            <div class="fc-event group cursor-grab active:cursor-grabbing p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col gap-1 relative overflow-hidden select-none"
+                [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
+                <!-- Leva trakica u boji godine -->
+                <div class="absolute left-0 top-0 bottom-0 w-1.5"
+                    [style.background-color]="getGodinaColor(predmet.godina)"></div>
+
+                <h3 class="font-bold text-sm text-gray-800 transition-colors">
+                    {{ predmet.naziv }}
+                </h3>
+
+                <p class="text-xs text-gray-500 font-medium">
+                    {{ predmet.profesorImePrezime }}
+                </p>
+
+                <div class="mt-1">
+                    <!-- Bedž sa dinamičkom pozadinom i tekstom u boji godine -->
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold"
+                        [style.color]="getGodinaColor(predmet.godina)"
+                        [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
+                        {{ predmet.godina }}. Godina
+                    </span>
+                </div>
+            </div>
+            } @empty {
+            <p class="text-xs text-gray-400 text-center py-4">Nema dostupnih predmeta u bazi.</p>
+            }
+        </div>
 
     </aside>
     <!-- DESNI PANEL (Kalendar Oblast) -->
@@ -60,12 +59,15 @@
             class="h-16 mb-6 px-6 flex items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-100">
             <div class="flex items-center gap-4">
                 <h1 class="text-xl font-bold text-gray-800 tracking-tight">Raspored Kolokvijuma</h1>
-                <!-- Zastavica za izmene -->
+
+                <!-- Zastavica za izmene: Sada se prikazuje SAMO kada ima izmena -->
+                @if (hasUnsavedChanges) {
                 <span
                     class="px-3 py-1 bg-amber-50 border border-amber-100 text-amber-600 text-xs font-bold rounded-full flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
                     Nesacuvane izmene
                 </span>
+                }
             </div>
 
             <div class="flex items-center gap-3">
@@ -73,7 +75,9 @@
                     class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all">
                     Sinhronizuj IMI
                 </button>
-                <button
+
+                <!-- OVO JE BILO PROBLEM: Dodat (click) događaj -->
+                <button (click)="saveDraftSchedule()"
                     class="px-5 py-2 text-sm font-bold text-white bg-[#34b9f7] rounded-xl hover:bg-[#20a6e4] transition-all shadow-md">
                     Sačuvaj raspored
                 </button>

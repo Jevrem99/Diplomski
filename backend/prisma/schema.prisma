@@ -21,6 +21,7 @@ id          Int         @id @default(autoincrement())
 ime         String
 prezime     String
 is_saradnik Boolean
+email       String?
 predmeti    Predmet[]   // Relacija: Profesor drži više predmeta
 dezurstva   Dezurstva[] // Relacija: Profesor/asistent dežura na više ispita
 }
@@ -36,15 +37,26 @@ model Predmet {
   profesor    Profesor? @relation(fields: [profesor_id], references: [id])
   ispiti      Ispit[]
 }
-
+model Sala {
+  id        Int      @id @default(autoincrement())
+  naziv     String   @unique
+  kapacitet Int?     
+  ispiti    Ispit[]
+}
 model Ispit {
-id         Int         @id @default(autoincrement())
-predmet_id Int?
-predmet    Predmet?    @relation(fields: [predmet_id], references: [id])
-datum      DateTime    @db.Date
-vreme      DateTime    @db.Time
-is_ispit   Boolean
-dezurstva  Dezurstva[]
+  id         Int         @id @default(autoincrement())
+  predmet_id Int?
+  datum      DateTime
+  vreme      DateTime
+  sala_id    Int?
+  
+  is_ispit   Boolean     @default(true)
+  
+  predmet    Predmet?    @relation(fields: [predmet_id], references: [id])
+  
+  sala       Sala?       @relation(fields: [sala_id], references: [id])
+  
+  dezurstva  Dezurstva[] 
 }
 
 model Dezurstva {
