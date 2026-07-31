@@ -26,14 +26,29 @@ const getPredmetById = async (id) => {
 
 const createPredmet = async (naziv, godina, semestar, status, sifra, profesor_id) => {
     return await prisma.predmet.create({
-        data: { naziv, godina, semestar, status, sifra, profesor_id: Number(profesor_id) }
+        data: { 
+            naziv, 
+            godina: Number(godina), 
+            semestar, 
+            status, 
+            sifra, 
+            // Osiguravamo da undefined ne postane NaN
+            profesor_id: profesor_id ? Number(profesor_id) : null 
+        }
     });
 };
 
 const updatePredmet = async (id, naziv, godina, semestar, status, sifra, profesor_id) => {
     return await prisma.predmet.update({
         where: { id: Number(id) },
-        data: { naziv, godina, semestar, status, sifra, profesor_id: Number(profesor_id) }
+        data: { 
+            naziv, 
+            godina: Number(godina), 
+            semestar, 
+            status, 
+            sifra, 
+            profesor_id: profesor_id ? Number(profesor_id) : null 
+        }
     });
 };
 

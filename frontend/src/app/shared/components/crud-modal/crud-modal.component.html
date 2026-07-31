@@ -1,0 +1,25 @@
+<div class="p-6 bg-white rounded-xl font-montserrat">
+  <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ data.title }}</h2>
+
+  <div class="flex flex-col gap-4">
+    <!-- Dinamički prolazimo kroz sve kolone definisane za trenutnu tabelu -->
+    @for (col of data.columns; track col.key) {
+      
+      <!-- Skrivamo polje ID jer se ono uvek generiše automatski na bazi -->
+      @if (col.key !== 'id') {
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>{{ col.label }}</mat-label>
+          <input matInput 
+                 [(ngModel)]="formData[col.key]" 
+                 [type]="(col.key === 'godina' || col.key === 'predmet_id') ? 'number' : 'text'">
+        </mat-form-field>
+      }
+      
+    }
+  </div>
+
+  <div class="flex justify-end gap-3 mt-4">
+    <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
+    <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj</button>
+  </div>
+</div>

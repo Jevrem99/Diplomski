@@ -23,27 +23,30 @@ const getIspitById = async (id) => {
     });
 };
 
-const createIspit = async (predmet_id, datum, vreme, is_ispit = true, sala = null) => {
+const createIspit = async (predmet_id, datum, vreme, is_ispit = true, sala_id = null) => {
     return await prisma.ispit.create({
         data: {
-            predmet_id: Number(predmet_id),
             datum: new Date(datum),
             vreme: new Date(`${datum}T${vreme}Z`),
             is_ispit: Boolean(is_ispit),
-            sala: sala
+            
+            // Koristimo connect za bezbedno vezivanje stranog ključa
+            predmet: predmet_id ? { connect: { id: Number(predmet_id) } } : undefined,
+            sala: sala_id ? { connect: { id: Number(sala_id) } } : undefined
         }
     });
 };
 
-const updateIspit = async (id, predmet_id, datum, vreme, is_ispit, sala) => {
+const updateIspit = async (id, predmet_id, datum, vreme, is_ispit, sala_id) => {
     return await prisma.ispit.update({
         where: { id: Number(id) },
         data: {
-            predmet_id: Number(predmet_id),
             datum: new Date(datum),
             vreme: new Date(`${datum}T${vreme}Z`),
             is_ispit: Boolean(is_ispit),
-            sala: sala
+            
+            predmet: predmet_id ? { connect: { id: Number(predmet_id) } } : undefined,
+            sala: sala_id ? { connect: { id: Number(sala_id) } } : undefined
         }
     });
 };
