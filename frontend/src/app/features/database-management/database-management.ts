@@ -4,6 +4,7 @@ import { HttpClient } from '@angular/common/http';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
 import { ToastService } from '../../core/services/toast.service';
+import { forkJoin } from 'rxjs';
 export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici';
 
 interface ColumnDef {
@@ -31,7 +32,10 @@ export class DatabaseManagement implements OnInit {
   uploading: boolean = false; // Status za učitavanje fajla
   
   private API_URL = 'http://localhost:5000';
-
+  allSaradnici: any[] = []; // Dodaj ovu liniju blizu vrha klase
+  allProfesori: any[] = []; // DODATO
+  allPredmeti: any[] = [];
+  
   // Konfiguracija kolona za svaku tabelu
   private columnConfigurations: Record<EntityType, ColumnDef[]> = {
     profesori: [
@@ -52,13 +56,18 @@ export class DatabaseManagement implements OnInit {
       { key: 'naziv', label: 'Naziv predmeta' },
       { key: 'godina', label: 'Godina' },
       { key: 'semestar', label: 'Semestar' },
-      { key: 'status', label: 'Status' },
+      { key: 'profesor_id', label: 'Glavni profesor (ID)' }, 
+      { key: 'status', label: 'Status (O / I)' },// Ako i to želiš
+      { key: 'broj_studenata', label: 'Broj studenata' },
+      { key: 'saradnici_ids', label: 'Saradnici na predmetu' } // <--- DODATO
     ],
     ispiti: [
       { key: 'id', label: 'ID' },
-      { key: 'predmet_id', label: 'ID Predmeta' },
+      { key: 'predmet_id', label: 'Predmet' }, // Postaje padajući meni
       { key: 'datum', label: 'Datum polaganja' },
-      { key: 'vreme', label: 'Vreme' }
+      { key: 'vreme', label: 'Vreme početka' },
+      { key: 'vreme_kraja', label: 'Vreme kraja' }, // <--- DODATO
+      { key: 'sala_id', label: 'Sala' }
     ]
   };
 
@@ -68,10 +77,21 @@ export class DatabaseManagement implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    // Po učitavanju stranice odmah prikazujemo profesore
     this.selectEntity('profesori');
+    
+    // Povlačimo sve liste koje će nam trebati za padajuće menije u modalu
+    this.http.get<any[]>(`${this.API_URL}/profesors/saradnici`).subscribe(data => this.allSaradnici = data);
+    this.http.get<any[]>(`${this.API_URL}/profesors`).subscribe(data => this.allProfesori = data);
+    this.http.get<any[]>(`${this.API_URL}/predmet`).subscribe(data => this.allPredmeti = data);
   }
-
+  getSingularName(entity: string): string {
+    if (entity === 'predmeti') return 'predmet';
+    if (entity === 'ispiti') return 'ispit';
+    if (entity === 'profesori') return 'profesora';
+    if (entity === 'sale') return 'salu';
+    if (entity === 'saradnici') return 'saradnik';
+    return entity;
+  }
   selectEntity(entity: EntityType): void {
     this.activeEntity = entity;
     this.currentColumnsDef = this.columnConfigurations[entity];
@@ -109,12 +129,15 @@ export class DatabaseManagement implements OnInit {
 
   openCrudModal(): void {
     const dialogRef = this.dialog.open(CrudModal, {
-      width: '500px',
+      width: '850px',
       data: {
-        title: `Dodaj: ${this.activeEntity}`,
-        columns: this.currentColumnsDef
+        title: `Dodaj ${this.activeEntity === 'profesori' ? 'profesora' : this.activeEntity === 'saradnici' ? 'saradnika' : this.activeEntity === 'predmeti' ? 'predmet' : 'ispit'}`,
+        columns: this.currentColumnsDef,
+        saradniciList: this.allSaradnici,
+        profesoriList: this.allProfesori, 
+        predmetiList: this.allPredmeti
       },
-      disableClose: true // Sprečava zatvaranje klikom sa strane
+      disableClose: true
     });
 
     dialogRef.afterClosed().subscribe(result => {
@@ -135,12 +158,21 @@ export class DatabaseManagement implements OnInit {
   }
 
   editRow(row: any): void {
+    // Ako editujemo predmet, moramo njegove saradnike (objekte) da svedemo na niz ID-jeva za multiselect
+    const formDataRow = { ...row };
+    if (this.activeEntity === 'predmeti' && row.saradnici) {
+      formDataRow.saradnici_ids = row.saradnici.map((s: any) => s.id);
+    }
+
     const dialogRef = this.dialog.open(CrudModal, {
-      width: '500px',
+      width: '850px',
       data: {
-        title: `Izmeni: ${this.activeEntity}`,
+        title: `Izmeni ${this.activeEntity === 'profesori' ? 'profesora' : this.activeEntity === 'saradnici' ? 'saradnika' : this.activeEntity === 'predmeti' ? 'predmet' : 'ispit'}`,
         columns: this.currentColumnsDef,
-        rowData: row // Šaljemo postojeće podatke da bi forma bila popunjena
+        rowData: formDataRow, 
+        saradniciList: this.allSaradnici, // <--- DODATO
+        profesoriList: this.allProfesori, // <--- ŠALJEMO PROFESORE
+        predmetiList: this.allPredmeti
       },
       disableClose: true
     });
@@ -223,5 +255,40 @@ export class DatabaseManagement implements OnInit {
       });
     }
   }
-  
+  formatCellValue(row: any, colKey: string): string {
+    const val = row[colKey];
+    if (val === null || val === undefined || val === '') return '-';
+
+    // 1. Ako je u pitanju polje za vreme (vreme ili vreme_kraja)
+    if (colKey.includes('vreme') && typeof val === 'string' && val.includes('T')) {
+      return val.substring(11, 16); // Vraća samo "08:00"
+    }
+
+    // 2. Ako je u pitanju datum polaganja
+    if (colKey.includes('datum') && typeof val === 'string' && val.includes('T')) {
+      return val.split('T')[0]; // Vraća "2026-08-01"
+    }
+
+    // 3. Ako je relacija (npr. objekat predmeta ili sale)
+    if (typeof val === 'object') {
+      return val.naziv || `${val.ime || ''} ${val.prezime || ''}`.trim() || '-';
+    }
+
+    return val;
+  }
+  refreshDropdownData(callback?: () => void): void {
+    forkJoin({
+      saradnici: this.http.get<any[]>(`${this.API_URL}/profesors/saradnici`),
+      profesori: this.http.get<any[]>(`${this.API_URL}/profesors`),
+      predmeti: this.http.get<any[]>(`${this.API_URL}/predmet`)
+    }).subscribe({
+      next: (res) => {
+        this.allSaradnici = res.saradnici;
+        this.allProfesori = res.profesori;
+        this.allPredmeti = res.predmeti;
+        if (callback) callback();
+      },
+      error: (err) => console.error('Greška pri osvežavanju podataka:', err)
+    });
+  }
 }

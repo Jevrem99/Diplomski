@@ -55,35 +55,53 @@
     <main class="flex-1 flex flex-col min-w-0">
 
         <!-- Akciona Gornja Traka -->
-        <header
-            class="h-16 mb-6 px-6 flex items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-100">
+        <header class="mb-6 p-4 flex flex-wrap items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-100 gap-4">
             <div class="flex items-center gap-4">
                 <h1 class="text-xl font-bold text-gray-800 tracking-tight">Raspored Kolokvijuma</h1>
-
-                <!-- Zastavica za izmene: Sada se prikazuje SAMO kada ima izmena -->
+                
                 @if (hasUnsavedChanges) {
-                <span
-                    class="px-3 py-1 bg-amber-50 border border-amber-100 text-amber-600 text-xs font-bold rounded-full flex items-center gap-1.5">
+                <span class="px-3 py-1 bg-amber-50 border border-amber-100 text-amber-600 text-xs font-bold rounded-full flex items-center gap-1.5">
                     <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-                    Nesacuvane izmene
+                    Nesačuvane izmene
                 </span>
                 }
             </div>
 
+            <!-- FILTERI -->
             <div class="flex items-center gap-3">
-                <button
-                    class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-all">
-                    Sinhronizuj IMI
+                <!-- Filter po godini -->
+                <select [(ngModel)]="filterGodina" (change)="applyFilters()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
+                    <option value="sve">Sve godine</option>
+                    <option value="1">1. Godina</option>
+                    <option value="2">2. Godina</option>
+                    <option value="3">3. Godina</option>
+                    <option value="4">4. Godina</option>
+                </select>
+
+                <!-- Filter po sali -->
+                <select [(ngModel)]="filterSala" (change)="applyFilters()" class="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
+                    <option value="sve">Sve sale</option>
+                    @for (sala of dostupneSale; track sala) {
+                        <option [value]="sala">{{ sala }}</option>
+                    }
+                </select>
+            </div>
+
+            <!-- AKCIJE -->
+            <div class="flex items-center gap-3">
+                <!-- Dugme za štampu/PDF -->
+                <button (click)="exportToPrintView()" class="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 border border-gray-200 rounded-xl hover:bg-gray-200 transition-all flex items-center gap-2">
+                    <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+                    </svg>
+                    Izvezi Raspored
                 </button>
 
-                <!-- OVO JE BILO PROBLEM: Dodat (click) događaj -->
-                <button (click)="saveDraftSchedule()"
-                    class="px-5 py-2 text-sm font-bold text-white bg-[#34b9f7] rounded-xl hover:bg-[#20a6e4] transition-all shadow-md">
+                <button (click)="saveDraftSchedule()" class="px-5 py-2 text-sm font-bold text-white bg-[#34b9f7] rounded-xl hover:bg-[#20a6e4] transition-all shadow-md">
                     Sačuvaj raspored
                 </button>
             </div>
         </header>
-
         <!-- Kontejner za Kalendar -->
         <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 overflow-hidden flex flex-col">
     <!-- DODATO #calendar -->

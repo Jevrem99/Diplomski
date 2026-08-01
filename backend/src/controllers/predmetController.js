@@ -25,30 +25,32 @@ const getPredmetById = async (req, res) => {
 }
 
 const createPredmet = async (req, res) => {
-    const { naziv, godina, semestar, status, sifra, profesor_id } = req.body;
+    const { sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids } = req.body;
     try {
-        const newPredmet = await predmetModel.createPredmet(naziv, godina, semestar, status, sifra, profesor_id);
+        const newPredmet = await predmetModel.createPredmet(
+            sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids
+        );
         res.status(201).json(newPredmet);
     } catch (err) {
         console.error('Error creating predmet:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
 const updatePredmet = async (req, res) => {
     const { id } = req.params;
-    const { naziv, godina, semestar, status, sifra, profesor_id } = req.body;
+    const { sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids } = req.body;
     try {
-        const updatedPredmet = await predmetModel.updatePredmet(id, naziv, godina, semestar, status, sifra, profesor_id);
-        if (!updatedPredmet) {
-            return res.status(404).json({ error: 'Predmet not found' });
-        }
+        const updatedPredmet = await predmetModel.updatePredmet(
+            id, sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids
+        );
+        if (!updatedPredmet) return res.status(404).json({ error: 'Predmet not found' });
         res.status(200).json(updatedPredmet);
     } catch (err) {
-        console.error(`Error updating predmet with id ${id}:`, err);
+        console.error(`Error updating predmet ${id}:`, err);
         res.status(500).json({ error: 'Internal server error' });
     }
-}
+};
 
 const deletePredmet = async (req, res) => {
     const { id } = req.params;

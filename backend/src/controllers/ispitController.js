@@ -25,20 +25,14 @@ const getIspitById = async (req, res) => {
 const createIspit = async (req, res) => {
     // Front šalje: { predmet_id (ili title ako tražimo ID), date, startTime, room }
     const { predmet_id, datum, vreme, is_ispit, sala, date, startTime, room } = req.body;
-    
+
     // Fallback ako sa fronta stigne nova struktura iz modala
     const finalDatum = datum || date;
     const finalVreme = vreme || startTime;
     const finalSala = sala || room;
-
+    const finalVremeKraja = vreme_kraja || endTime;
     try {
-        const newIspit = await ispitModel.createIspit(
-            predmet_id, 
-            finalDatum, 
-            finalVreme, 
-            is_ispit ?? true, 
-            finalSala
-        );
+        const newIspit = await ispitModel.createIspit(predmet_id, finalDatum, finalVreme, finalVremeKraja, is_ispit ?? true, finalSala);
         res.status(201).json(newIspit);
     } catch (err) {
         console.error('Error creating ispit:', err);
@@ -48,10 +42,42 @@ const createIspit = async (req, res) => {
 
 const updateIspit = async (req, res) => {
     const { id } = req.params;
-    const { predmet_id, datum, vreme, is_ispit, sala } = req.body;
+    const { predmet_id, datum, vreme, vreme_kraja, is_ispit, sala, room, dezurni_ids } = req.body;
+
     try {
-        const updatedIspit = await ispitModel.updateIspit(id, predmet_id, datum, vreme, is_ispit, sala);
-        if (!updatedIspit) return res.status(404).json({ error: 'Ispit not found' });
+        const izabranaSala = sala || room;
+        let salaId = null;
+
+        // Proveravamo da li je izabranaSala objekat ili tekst
+        const salaNaziv = typeof izabranaSala === 'object' && izabranaSala !== null 
+            ? izabranaSala.naziv 
+            : izabranaSala;
+
+        // Nalaženje ili kreiranje sale po nazivu
+        if (salaNaziv && salaNaziv !== 'Bez sale') {
+            let postojecaSala = await prisma.sala.findUnique({
+                where: { naziv: salaNaziv }
+            });
+            
+            if (!postojecaSala) {
+                postojecaSala = await prisma.sala.create({
+                    data: { naziv: salaNaziv }
+                });
+            }
+            salaId = postojecaSala.id;
+        }
+
+        const updatedIspit = await ispitModel.updateIspit(
+            id, 
+            predmet_id, 
+            datum, 
+            vreme, 
+            vreme_kraja, 
+            is_ispit, 
+            salaId, 
+            dezurni_ids || []
+        );
+        
         res.status(200).json(updatedIspit);
     } catch (err) {
         console.error(`Error updating ispit ${id}:`, err);
@@ -73,51 +99,47 @@ const deleteIspit = async (req, res) => {
     }
 }
 const saveBulkIspiti = async (req, res) => {
+    const ispitiNiz = req.body;
+
     try {
-        const ispitiNiz = req.body;
-        const sacuvaniIspiti = await Promise.all(
-            ispitiNiz.map(async (ispit) => {
+        const sacuvaniIspiti = [];
 
-                // 1. Nalazimo ili kreiramo Salu u bazi (jer front šalje string npr. "Sala A2")
-                let salaId = null;
-                if (ispit.sala && ispit.sala !== 'Bez sale') {
-                    let postojecaSala = await prisma.sala.findUnique({
-                        where: { naziv: ispit.sala }
-                    });
-                    
-                    // Ako sala ne postoji u tabeli, dodajemo je
-                    if (!postojecaSala) {
-                        postojecaSala = await prisma.sala.create({
-                            data: { naziv: ispit.sala }
-                        });
-                    }
-                    salaId = postojecaSala.id;
-                }
+        for (let ispit of ispitiNiz) {
+            const izabranaSala = ispit.sala || ispit.room;
+            let salaId = null;
 
-                // 2. Kreiramo ispit koristeći bezbednu 'connect' sintaksu za relacije
-                return await prisma.ispit.create({
-                    data: {
-                        datum: new Date(ispit.datum),
-                        vreme: new Date(`1970-01-01T${ispit.vreme}`),
-                        is_ispit: true,
-                        
-                        // Povezujemo predmet preko relacije umesto raw ID-ja
-                        predmet: ispit.predmet_id ? { 
-                            connect: { id: parseInt(ispit.predmet_id) } 
-                        } : undefined,
-                        
-                        // Povezujemo salu preko relacije
-                        sala: salaId ? { 
-                            connect: { id: salaId } 
-                        } : undefined
-                    }
+            const salaNaziv = typeof izabranaSala === 'object' && izabranaSala !== null 
+                ? izabranaSala.naziv 
+                : izabranaSala;
+
+            if (salaNaziv && salaNaziv !== 'Bez sale') {
+                let postojecaSala = await prisma.sala.findUnique({
+                    where: { naziv: salaNaziv }
                 });
-            })
-        );
-        res.status(201).json({ message: 'Uspešno sačuvan raspored!', sacuvaniIspiti });
-    } catch (error) {
-        console.error('Greška pri bulk snimanju ispita:', error);
-        res.status(500).json({ error: 'Greška na serveru pri čuvanju rasporeda.' });
+                if (!postojecaSala) {
+                    postojecaSala = await prisma.sala.create({
+                        data: { naziv: salaNaziv }
+                    });
+                }
+                salaId = postojecaSala.id;
+            }
+
+            const newIspit = await ispitModel.createIspit(
+                ispit.predmet_id,
+                ispit.datum,
+                ispit.vreme || ispit.startTime,
+                ispit.vreme_kraja || ispit.endTime,
+                ispit.is_ispit ?? true,
+                salaId,
+                ispit.dezurni_ids || []
+            );
+            sacuvaniIspiti.push(newIspit);
+        }
+
+        res.status(201).json(sacuvaniIspiti);
+    } catch (err) {
+        console.error('Error in bulk save:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 };
 module.exports = {

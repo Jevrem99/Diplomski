@@ -1,53 +1,88 @@
-<div class="p-6 bg-white rounded-xl font-montserrat">
-  <h2 class="text-2xl font-bold text-gray-800 mb-2">Detalji termina</h2>
-  <p class="text-base text-gray-500 mb-6 border-b border-gray-100 pb-4">
-    Predmet: <span class="font-bold text-[#34b9f7]">{{data.title}}</span><br/>
-    Datum: <span class="font-bold text-gray-700">{{data.date | date:'dd.MM.yyyy'}}</span>
-  </p>
+<div class="p-6 bg-white rounded-xl font-montserrat flex flex-col sm:flex-row gap-6">
+  
+  <!-- LEVA KOLONA (Detalji termina) -->
+  <div class="flex-1 flex flex-col border-r border-gray-100 pr-6 min-w-[320px]">
+    <h2 class="text-2xl font-bold text-gray-800 mb-2">Detalji termina</h2>
+    <p class="text-base text-gray-500 mb-6 border-b border-gray-100 pb-4">
+      Predmet: <span class="font-bold text-[#34b9f7]">{{data.title}}</span><br/>
+      Datum: <span class="font-bold text-gray-700">{{data.date | date:'dd.MM.yyyy'}}</span>
+    </p>
 
-  <div class="flex flex-col gap-2">
-    <div class="flex gap-4">
-      <!-- Vreme početka -->
+    <div class="flex flex-col gap-4 flex-1">
+      <div class="flex gap-4 pt-2">
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Vreme početka</mat-label>
+          <mat-select [(ngModel)]="formData.startTime" required>
+            @for (time of timeSlots; track time) {
+              <mat-option [value]="time">{{ time }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="w-full">
+          <mat-label>Vreme kraja</mat-label>
+          <mat-select [(ngModel)]="formData.endTime" required>
+            @for (time of timeSlots; track time) {
+              <mat-option [value]="time">{{ time }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
       <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Vreme početka</mat-label>
-        <mat-select [(ngModel)]="formData.startTime" required>
-          @for (time of timeSlots; track time) {
-            <mat-option [value]="time">{{ time }}</mat-option>
-          }
+        <mat-label>Izaberi salu</mat-label>
+        <mat-select [(ngModel)]="formData.room" required>
+          <mat-option value="Sala A2">Sala A2</mat-option>
+          <mat-option value="Sala A3">Sala A3</mat-option>
+          <mat-option value="Svečana sala">Svečana sala</mat-option>
+          <mat-option value="Računarska 1">Računarska laboratorija 1</mat-option>
         </mat-select>
       </mat-form-field>
 
-      <!-- Vreme kraja -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Vreme kraja</mat-label>
-        <mat-select [(ngModel)]="formData.endTime" required>
-          @for (time of timeSlots; track time) {
-            <mat-option [value]="time">{{ time }}</mat-option>
+      <!-- Prikaz izabranih dežurnih -->
+      <div class="mt-2 bg-gray-50 rounded-lg p-4 border border-gray-100 flex-1">
+        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Dežurni na ispitu</span>
+        <div class="flex flex-wrap gap-2">
+          @for (saradnik of izabraniSaradnici; track saradnik.id) {
+            <div (click)="ukloniDezurnog(saradnik)" class="bg-[#34b9f7] text-white px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer hover:bg-red-500 transition-colors shadow-sm flex items-center gap-2">
+              {{ saradnik.ime }} {{ saradnik.prezime }} 
+              <span class="font-bold text-lg leading-none mb-0.5">×</span>
+            </div>
           }
-        </mat-select>
-      </mat-form-field>
+          @if (izabraniSaradnici.length === 0) {
+            <span class="text-sm text-gray-400">Nije izabran nijedan dežurni.</span>
+          }
+        </div>
+      </div>
     </div>
 
-    <!-- Izbor sale -->
-    <mat-form-field appearance="outline" class="w-full">
-      <mat-label>Izaberi salu</mat-label>
-      <mat-select [(ngModel)]="formData.room" required>
-        <mat-option value="Sala A2">Sala A2</mat-option>
-        <mat-option value="Sala A3">Sala A3</mat-option>
-        <mat-option value="Svečana sala">Svečana sala</mat-option>
-        <mat-option value="Računarska 1">Računarska laboratorija 1</mat-option>
-      </mat-select>
-    </mat-form-field>
-
     @if (showError) {
-      <p class="text-xs text-red-500 font-medium mt-[-10px] mb-2">
-        Sva polja moraju biti popunjena!
-      </p>
+      <p class="text-xs text-red-500 font-medium mt-2">Sva polja moraju biti popunjena!</p>
     }
   </div>
 
-  <div class="flex justify-end gap-3 mt-4">
-    <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
-    <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj termin</button>
+  <!-- DESNA KOLONA (Izbor dežurnih) -->
+  <div class="w-[300px] flex flex-col pt-2">
+    <h2 class="text-xl font-bold text-gray-800 mb-6">Dostupni saradnici</h2>
+    
+    <div class="flex flex-col gap-2 overflow-y-auto max-h-[350px] pr-2">
+      @for (saradnik of slobodniSaradnici; track saradnik.id) {
+        <div (click)="dodajDezurnog(saradnik)"
+             class="border border-gray-200 p-3 rounded-xl cursor-pointer hover:border-[#34b9f7] hover:bg-blue-50 transition-all text-sm font-semibold text-gray-700 flex justify-between items-center bg-white shadow-sm">
+          <span>{{ saradnik.ime }} {{ saradnik.prezime }}</span>
+          <span class="text-[#34b9f7] text-lg font-bold">+</span>
+        </div>
+      }
+      @if (slobodniSaradnici.length === 0) {
+        <div class="text-sm text-gray-500 text-center mt-4">Nema dostupnih saradnika.</div>
+      }
+    </div>
+    
+    <!-- Dugmići idu dole desno -->
+    <div class="flex justify-end gap-3 mt-auto pt-6">
+      <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
+      <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj</button>
+    </div>
   </div>
+
 </div>
