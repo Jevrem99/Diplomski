@@ -1,25 +1,138 @@
-<div class="p-6 bg-white rounded-xl font-montserrat">
-  <h2 class="text-2xl font-bold text-gray-800 mb-6">{{ data.title }}</h2>
+<div class="p-6 bg-white rounded-xl font-montserrat flex flex-col sm:flex-row gap-8 w-full max-h-[85vh] overflow-hidden">
+  
+  <!-- LEVA KOLONA: Podaci (Uvek vidljiva) -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <!-- Prikazujemo lep, dinamički naslov -->
+    <h2 class="text-2xl font-bold text-[#34b9f7] mb-4 border-b border-gray-100 pb-3 capitalize">{{ data.title }}</h2>
+    
+    <!-- Skrolabilna forma (samo po visini, bez horizontalnog skrola) -->
+    <div class="flex-1 overflow-y-auto pr-3 flex flex-col gap-2 pt-2">
+      @for (col of data.columns; track col.key) {
+        @if (col.key !== 'id' && col.key !== 'saradnici_ids') {
+          
+          <!-- GLAVNI PROFESOR: Padajući meni -->
+          @if (col.key === 'profesor_id') {
+             <mat-form-field appearance="outline" class="w-full">
+               <mat-label>Glavni profesor</mat-label>
+               <mat-select [(ngModel)]="formData[col.key]">
+                 @for (prof of data.profesoriList; track prof.id) {
+                   <mat-option [value]="prof.id">{{ prof.ime }} {{ prof.prezime }}</mat-option>
+                 }
+               </mat-select>
+             </mat-form-field>
+          } 
+          
+          <!-- PREDMET: Padajući meni -->
+          @else if (col.key === 'predmet_id') {
+             <mat-form-field appearance="outline" class="w-full">
+               <mat-label>Predmet</mat-label>
+               <mat-select [(ngModel)]="formData[col.key]">
+                 @for (predmet of data.predmetiList; track predmet.id) {
+                   <mat-option [value]="predmet.id">{{ predmet.naziv }}</mat-option>
+                 }
+               </mat-select>
+             </mat-form-field>
+          } 
 
-  <div class="flex flex-col gap-4">
-    <!-- Dinamički prolazimo kroz sve kolone definisane za trenutnu tabelu -->
-    @for (col of data.columns; track col.key) {
-      
-      <!-- Skrivamo polje ID jer se ono uvek generiše automatski na bazi -->
-      @if (col.key !== 'id') {
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>{{ col.label }}</mat-label>
-          <input matInput 
-                 [(ngModel)]="formData[col.key]" 
-                 [type]="(col.key === 'godina' || col.key === 'predmet_id') ? 'number' : 'text'">
-        </mat-form-field>
+          <!-- DATUM: Pravi kalendar -->
+          @else if (col.key.includes('datum')) {
+             <mat-form-field appearance="outline" class="w-full">
+               <mat-label>{{ col.label }}</mat-label>
+               <input matInput type="date" [(ngModel)]="formData[col.key]">
+             </mat-form-field>
+          }
+
+          <!-- VREME: Pravi birač vremena -->
+          @else if (col.key.includes('vreme')) {
+             <mat-form-field appearance="outline" class="w-full">
+               <mat-label>{{ col.label }}</mat-label>
+               <input matInput type="time" [(ngModel)]="formData[col.key]">
+             </mat-form-field>
+          }
+
+          <!-- STANDARDNA POLJA (Tekst ili broj) -->
+          @else {
+             <mat-form-field appearance="outline" class="w-full">
+               <mat-label>{{ col.label }}</mat-label>
+               <input matInput [(ngModel)]="formData[col.key]" [type]="col.key === 'godina' ? 'number' : 'text'">
+             </mat-form-field>
+          }
+
+        }
       }
-      
+    </div>
+
+    <!-- Prikaz izabranih saradnika na dnu leve kolone (samo ako editujemo Predmet) -->
+    @if (hasSaradniciColumn) {
+      <div class="mt-4 bg-gray-50 rounded-lg p-4 border border-gray-100 flex-shrink-0">
+        <span class="text-xs font-bold text-gray-500 uppercase mb-3 block">Izabrani saradnici</span>
+        <div class="flex flex-wrap gap-2">
+          @for (saradnik of izabraniSaradniciObjekti; track saradnik.id) {
+            <div (click)="ukloniSaradnika(saradnik.id)"
+                 class="bg-[#34b9f7] text-white px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer hover:bg-red-500 transition-colors shadow-sm flex items-center gap-2">
+              {{ saradnik.ime }} {{ saradnik.prezime }} <span class="font-bold text-lg leading-none">×</span>
+            </div>
+          }
+          @if (izabraniSaradniciObjekti.length === 0) {
+            <span class="text-sm text-gray-400">Izaberi saradnike iz desne kolone.</span>
+          }
+        </div>
+      </div>
+    }
+    @if (showError) {
+    <div class="flex items-center gap-2 text-red-500 text-xs font-bold mt-3">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 flex-shrink-0">
+        <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+      </svg>
+      <span>Sva polja moraju biti popunjena pre čuvanja!</span>
+    </div>
+  }
+    <!-- Dugmići idu na dno leve strane ako nema desne kolone -->
+    @if (!hasSaradniciColumn) {
+      <div class="flex justify-end gap-3 pt-6 border-t border-gray-100 mt-4">
+        <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
+        <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj</button>
+      </div>
     }
   </div>
 
-  <div class="flex justify-end gap-3 mt-4">
-    <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
-    <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj</button>
-  </div>
+  <!-- DESNA KOLONA: Izbor saradnika (Prikazuje se SAMO za Predmete) -->
+  @if (hasSaradniciColumn) {
+    <div class="w-[300px] flex-shrink-0 flex flex-col border-l border-gray-100 pl-6">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Dostupni saradnici</h2>
+      
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full mb-4">
+        <mat-label>Pretraži saradnike...</mat-label>
+        <input matInput [(ngModel)]="searchQuery">
+      </mat-form-field>
+
+      <!-- Scroll liste saradnika -->
+      <div class="flex flex-col gap-2 overflow-y-auto flex-1 pr-2">
+        @for (saradnik of dostupniSaradnici; track saradnik.id) {
+          <div (click)="dodajSaradnika(saradnik.id)"
+               class="border border-gray-200 p-3 rounded-xl cursor-pointer hover:border-[#34b9f7] hover:bg-blue-50 transition-all font-semibold text-gray-700 text-sm flex justify-between items-center bg-white shadow-sm">
+            <span>{{ saradnik.ime }} {{ saradnik.prezime }}</span>
+            <span class="text-[#34b9f7] text-lg font-bold">+</span>
+          </div>
+        }
+        @if (dostupniSaradnici.length === 0) {
+          <div class="text-sm text-gray-500 text-center mt-4">Nema rezultata.</div>
+        }
+      </div>
+        @if (showError) {
+      <div class="flex items-center gap-2 text-red-500 text-xs font-bold mt-3">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 flex-shrink-0">
+          <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+        </svg>
+        <span>Sva polja moraju biti popunjena pre čuvanja!</span>
+      </div>
+    }
+      <!-- Dugmići na dnu desne strane ako imamo dve kolone -->
+      <div class="flex justify-end gap-3 pt-4 mt-2">
+        <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
+        <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj</button>
+      </div>
+    </div>
+  }
+
 </div>

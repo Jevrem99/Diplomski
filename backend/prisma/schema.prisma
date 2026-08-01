@@ -17,24 +17,38 @@ uloga    String @default("asistent")
 }
 
 model Profesor {
-id          Int         @id @default(autoincrement())
-ime         String
-prezime     String
-is_saradnik Boolean
-email       String?
-predmeti    Predmet[]   // Relacija: Profesor drži više predmeta
-dezurstva   Dezurstva[] // Relacija: Profesor/asistent dežura na više ispita
+  id          Int         @id @default(autoincrement())
+  ime         String
+  prezime     String
+  is_saradnik Boolean     @default(false)
+  email       String?
+  
+  // Relacija kada je on GLAVNI profesor na predmetu
+  predmeti    Predmet[]   @relation("GlavniProfesor")
+  
+  // Relacija kada je on SARADNIK (asistent) na predmetima
+  angazovanja Predmet[]   @relation("AngazovaniSaradnici")
+  
+  dezurstva   Dezurstva[]
+  obaveze     Obaveza[]
 }
 
 model Predmet {
-  id          Int       @id @default(autoincrement())
-  sifra       String    @unique
+  id          Int      @id @default(autoincrement())
+  sifra       String   @unique
   naziv       String
   godina      Int
   semestar    String
-  status      String
+  status         String     // O ili I
+  broj_studenata Int        @default(0) // <--- DODATO
+  
+  // Glavni profesor
   profesor_id Int?
-  profesor    Profesor? @relation(fields: [profesor_id], references: [id])
+  profesor    Profesor?  @relation("GlavniProfesor", fields: [profesor_id], references: [id])
+  
+  // Lista saradnika (asistenata) koji drže vežbe na ovom predmetu
+  saradnici   Profesor[] @relation("AngazovaniSaradnici")
+  
   ispiti      Ispit[]
 }
 model Sala {
@@ -47,7 +61,8 @@ model Ispit {
   id         Int         @id @default(autoincrement())
   predmet_id Int?
   datum      DateTime
-  vreme      DateTime
+  vreme       DateTime  @db.Time(6)
+  vreme_kraja DateTime? @db.Time(6)
   sala_id    Int?
   
   is_ispit   Boolean     @default(true)
@@ -58,7 +73,16 @@ model Ispit {
   
   dezurstva  Dezurstva[] 
 }
-
+model Obaveza {
+  id            Int      @id @default(autoincrement())
+  saradnik_id   Int
+  dan_u_nedelji Int      // npr. 1 = Ponedeljak, 5 = Petak
+  vreme_pocetka DateTime @db.Time(6)
+  vreme_kraja   DateTime @db.Time(6)
+  tip_obaveze   String?  // npr. "Vežbe", "Konsultacije"
+  
+  saradnik      Profesor @relation(fields: [saradnik_id], references: [id], onDelete: Cascade)
+}
 model Dezurstva {
 id          Int       @id @default(autoincrement())
 ispit_id    Int?

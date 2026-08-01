@@ -1,19 +1,20 @@
 const prisma = require('../db/prisma');
 
 const getAllPredmets = async () => {
-    const predmeti = await prisma.predmet.findMany({
+    return await prisma.predmet.findMany({
         include: {
-            profesor: {
-                select: {
-                    ime: true,
-                    prezime: true
+            profesor: true, // Glavni profesor
+            saradnici: {    // Asistenti na predmetu
+                include: {
+                    obaveze: true, // Fiksni nedeljni raspored
+                    dezurstva: {   // Već zakazani ispiti
+                        include: { ispit: true }
+                    }
                 }
             }
         }
     });
-    return predmeti;
 };
-
 const getPredmetById = async (id) => {
     const predmet = await prisma.predmet.findUnique({
         where: { id: Number(id) },
@@ -24,30 +25,38 @@ const getPredmetById = async (id) => {
     return predmet;
 };
 
-const createPredmet = async (naziv, godina, semestar, status, sifra, profesor_id) => {
+const createPredmet = async (sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids = []) => {
     return await prisma.predmet.create({
-        data: { 
-            naziv, 
-            godina: Number(godina), 
-            semestar, 
-            status, 
-            sifra, 
-            // Osiguravamo da undefined ne postane NaN
-            profesor_id: profesor_id ? Number(profesor_id) : null 
+        data: {
+            sifra,
+            naziv,
+            godina: Number(godina),
+            semestar: String(semestar),
+            status: String(status),
+            broj_studenata: Number(broj_studenata || 0),
+            profesor: profesor_id ? { connect: { id: Number(profesor_id) } } : undefined,
+            saradnici: {
+                connect: (saradnici_ids || []).map(id => ({ id: Number(id) }))
+            }
         }
     });
 };
 
-const updatePredmet = async (id, naziv, godina, semestar, status, sifra, profesor_id) => {
+const updatePredmet = async (id, sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids = []) => {
     return await prisma.predmet.update({
         where: { id: Number(id) },
-        data: { 
-            naziv, 
-            godina: Number(godina), 
-            semestar, 
-            status, 
-            sifra, 
-            profesor_id: profesor_id ? Number(profesor_id) : null 
+        data: {
+            sifra,
+            naziv,
+            godina: Number(godina),
+            semestar: String(semestar),
+            status: String(status),
+            broj_studenata: Number(broj_studenata || 0),
+            profesor: profesor_id ? { connect: { id: Number(profesor_id) } } : undefined,
+            saradnici: {
+                set: [],
+                connect: (saradnici_ids || []).map(id => ({ id: Number(id) }))
+            }
         }
     });
 };

@@ -36,33 +36,27 @@ const getProfesorById = async (id) => {
 }
 
 //is_saradnik mozda nepotreban ako se na frotnu dodavanje profesora i saradnika odvaja
-const createProfesor = async (ime, prezime, is_saradnik, email) => {
-    const result = await prisma.profesor.create({
-        data: {
-            ime: ime,
-            prezime: prezime,
-            is_saradnik: Boolean(is_saradnik),
-            email: email
-        }
-    });
-    return result;
+const createProfesor = async (ime, prezime, email, is_saradnik = false) => { // <--- DRUGAČIJI REDOSLED!
+  return await prisma.profesor.create({
+    data: {
+      ime: String(ime).trim(),
+      prezime: String(prezime).trim(),
+      email: String(email).trim(),
+      is_saradnik: Boolean(is_saradnik)
+    }
+  });
 }
 
-//is_saradnik mozda nepotreban ako se na frotnu dodavanje profesora i saradnika odvaja
-const updateProfesor = async (id, ime, prezime, is_saradnik, email) => {
-    const result = await prisma.profesor.update({
-        where: {
-            id: Number(id)
-        },
+const updateProfesor = async (id, ime, prezime, email) => {
+    return await prisma.profesor.update({
+        where: { id: Number(id) },
         data: {
-            ime: ime,
-            prezime: prezime,
-            is_saradnik: Boolean(is_saradnik),
-            email: email
+            ime: String(ime).trim(),
+            prezime: String(prezime).trim(),
+            email: String(email).trim()
         }
     });
-    return result;
-}
+};
 
 const deleteProfesor = async (id) => {
     const result = await prisma.profesor.delete({
