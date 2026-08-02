@@ -64,3 +64,9 @@
   background-color: rgba(52, 185, 247, 0.12) !important;
   color: #0284c7 !important;
 }
+/* DIREKTNO PROŠIRENJE ŠIRINE MODALA */
+::ng-deep .mat-mdc-dialog-container,
+::ng-deep .mdc-dialog__surface {
+  max-width: 1050px !important;
+  width: 1050px !important;
+}

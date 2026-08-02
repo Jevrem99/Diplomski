@@ -74,14 +74,16 @@ model Ispit {
   dezurstva  Dezurstva[] 
 }
 model Obaveza {
-  id            Int      @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   saradnik_id   Int
-  dan_u_nedelji Int      // npr. 1 = Ponedeljak, 5 = Petak
-  vreme_pocetka DateTime @db.Time(6)
-  vreme_kraja   DateTime @db.Time(6)
-  tip_obaveze   String?  // npr. "Vežbe", "Konsultacije"
-  
-  saradnik      Profesor @relation(fields: [saradnik_id], references: [id], onDelete: Cascade)
+  dan_u_nedelji Int?
+  datum         DateTime? @db.Date // Datum od
+  datum_do      DateTime? @db.Date // DODATO: Datum do (za višednevne obaveze)
+  vreme_pocetka DateTime? @db.Time(6) // Sada je opcionalno jer višednevne nemaju satnicu
+  vreme_kraja   DateTime? @db.Time(6) // Takođe opcionalno
+  tip_obaveze   String?
+
+  saradnik      Profesor  @relation(fields: [saradnik_id], references: [id], onDelete: Cascade)
 }
 model Dezurstva {
 id          Int       @id @default(autoincrement())

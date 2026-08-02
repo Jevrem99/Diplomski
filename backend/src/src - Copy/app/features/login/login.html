@@ -1,0 +1,26 @@
+<div class="main-div">
+    <div class="login-div">
+        <img ngSrc="assets/logopmf.png" width="30" height="30" class="logo-image">
+        <div class="form-fields">
+            <mat-form-field>
+                <mat-label>Username or email</mat-label>
+                <input matInput id="usernameInput" placeholder="ime@primer.com" autofocus [(ngModel)]="loginData.username">
+            </mat-form-field>
+            <mat-form-field>
+                <mat-label>Password</mat-label>
+                <input matInput id="passwordInput" [type]="hide ? 'password' : 'text'" placeholder="********" [(ngModel)]="loginData.password">
+                 <button 
+                    mat-icon-button 
+                    matSuffix 
+                    (click)="hide = !hide" 
+                    [attr.aria-label]="'Hide password'" 
+                    [attr.aria-pressed]="hide"
+                    type="button">
+                    <mat-icon>{{hide ? 'visibility_off' : 'visibility'}}</mat-icon>
+                </button>
+            </mat-form-field>
+        </div>
+        aaa
+        <button mat-raised-button color="primary" class="login-button" (click)="onLogin()">Login</button>
+    </div>
+</div>

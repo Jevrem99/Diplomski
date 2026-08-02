@@ -8,7 +8,8 @@ const predmetRoutes = require('./routes/predmetRoutes');
 const ispitRoutes = require('./routes/ispitRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
-
+const dezurstvaRoutes = require('./routes/dezurstvaRoutes');
+const obavezaRoutes = require('./routes/obavezaRoutes');
 const app = express();
 
 app.use(cors());
@@ -21,7 +22,8 @@ app.use('/predmet', predmetRoutes);
 app.use('/ispit', ispitRoutes);
 app.use('/admin', adminRoutes);
 app.use('/upload', uploadRoutes);
-
+app.use('/dezurstva', dezurstvaRoutes);
+app.use('/obaveze', obavezaRoutes);
 app.listen(config.port, () => {
     console.log(`Server is running on port ${config.port}`);
 });

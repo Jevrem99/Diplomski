@@ -15,17 +15,20 @@ import { RouterOutlet } from '@angular/router';
   styleUrl: './sidebar-menu.css',
 })
 export class SidebarMenu {
-
-  username = localStorage.getItem('username');
+ username = localStorage.getItem('username');
+  uloga = localStorage.getItem('uloga') || 'asistent';
+  
   private router = inject(Router);
-
   @ViewChild('drawer') drawer!: MatSidenav;
 
-  navigateToMain(){
+  navigateToMain() {
     this.drawer.close();
     this.router.navigate(['/main']);
   }
-
+  navigateToMojaDezurstva() {
+    this.drawer.close();
+    this.router.navigate(['/moja-dezurstva']);
+  }
   navigateToSettings() {
     this.drawer.close();
     this.router.navigate(['/settings']);
@@ -36,10 +39,14 @@ export class SidebarMenu {
     this.router.navigate(['/database-management']);
   }
 
+  // Nova funkcija za asistente
+  navigateToMojeObaveze() {
+    this.drawer.close();
+    this.router.navigate(['/moje-obaveze']);
+  }
+
   logout() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('isLoggedIn');
+    localStorage.clear(); // Briše sve ključeve odjednom
     this.router.navigate(['/login']);
   }
 }

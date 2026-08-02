@@ -1,0 +1,51 @@
+<mat-sidenav-container class="main-container">
+
+    <mat-sidenav #drawer mode="over" position="end">
+        <div id="drawer_content">
+            <div id="menu_title_div">
+                <h2 id="menu_title">MENU</h2>
+                <span>Korisnik: {{username}}</span>
+                <span class="text-xs font-bold uppercase text-[#34b9f7] mt-1">Uloga: {{uloga}}</span>
+            </div>
+
+            <!-- PRIKAZ SAMO ZA ADMINA -->
+            @if (uloga === 'admin') {
+            <div class="drawer_button" (click)="navigateToMain()">
+                <img src="assets/calendar_icon.png" alt="Calendar" class="drawer_icon">
+                <span>Raspored</span>
+            </div>
+            <div class="drawer_button" (click)="navigateToDatabaseManagement()">
+                <img src="assets/database_management_icon.png" alt="Database" class="drawer_icon">
+                <span>Upravljaj bazom</span>
+            </div>
+            }
+            @if (uloga === 'asistent') {
+            <div class="drawer_button" (click)="navigateToMojaDezurstva()">
+                <img src="assets/calendar_icon.png" alt="Raspored" class="drawer_icon">
+                <span>Moj Raspored</span>
+            </div>
+            <div class="drawer_button" (click)="navigateToMojeObaveze()">
+                <img src="assets/calendar_icon.png" alt="Odsustva" class="drawer_icon">
+                <span>Prijavi Odsustvo</span>
+            </div>
+            }
+
+            <!-- PRIKAZ ZA SVE (ZAJEDNIČKO) -->
+            <div class="drawer_button" (click)="navigateToSettings()">
+                <img src="assets/settings_icon.png" alt="Settings" class="drawer_icon">
+                <span>Podešavanja</span>
+            </div>
+
+            <div id="logout_button" (click)="logout()">
+                <img src="assets/logout_icon.png" alt="Logout" class="drawer_icon">
+                <span>Odjavi se</span>
+            </div>
+        </div>
+    </mat-sidenav>
+
+    <mat-sidenav-content>
+        <app-header (toggleMenu)="drawer.toggle()"></app-header>
+        <router-outlet></router-outlet>
+    </mat-sidenav-content>
+
+</mat-sidenav-container>

@@ -20,22 +20,33 @@ const getAllUsers = async () => {
 }
 
 const getUserById = async (id) => {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) return null; // Sprečava Prisma grešku ako id nije broj
+
     return await prisma.user.findUnique({
-        where: { id: parseInt(id) },
+        where: { id: numericId },
         select: { id: true, username: true, email: true, uloga: true, password: true }
     });
-}
+};
 
-const getUserByUsername = async (username) => {
-    return await prisma.user.findUnique({
-        where: { username: username }
+const getUserByUsername = async (identifier) => {
+    return await prisma.user.findFirst({
+        where: {
+            OR: [
+                { username: identifier },
+                { email: identifier }
+            ]
+        }
     });
-}
+};
+
+
 
 const registerUser = async (username, email, password, uloga = 'asistent') => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
     
+    // 1. Kreiramo korisnički nalog
     const newUser = await prisma.user.create({
         data: {
             username: username,
@@ -45,27 +56,47 @@ const registerUser = async (username, email, password, uloga = 'asistent') => {
         },
         select: { id: true, username: true, email: true, uloga: true }
     });
-    
-    return newUser;
-}
 
-const updateUser = async (id, username, email, password, uloga) => {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    
-    const updatedUser = await prisma.user.update({
-        where: { id: parseInt(id) },
-        data: {
-            username: username,
-            email: email,
-            password: hashedPassword,
-            uloga: uloga
-        },
-        select: { id: true, username: true, email: true, uloga: true }
+    // 2. Proveravamo da li već postoji profil saradnika/profesora sa tim mejlom
+    const postojeciProfesor = await prisma.profesor.findFirst({
+        where: { email: email }
     });
 
+    // 3. Ako ne postoji, kreiramo ga automatski
+    if (!postojeciProfesor) {
+        await prisma.profesor.create({
+            data: {
+                ime: username,
+                prezime: '',
+                email: email,
+                is_saradnik: uloga === 'asistent'
+            }
+        });
+    }
+    
+    return newUser;
+};
+
+const updateUser = async (id, username, email, password, uloga) => {
+    let dataToUpdate = {
+        username: username,
+        email: email,
+        uloga: uloga
+    };
+
+    // Ažurira lozinku samo ako je poslata nova vrednost
+    if (password && password.trim() !== '') {
+        const saltRounds = 10;
+        dataToUpdate.password = await bcrypt.hash(password, saltRounds);
+    }
+
+    const updatedUser = await prisma.user.update({
+        where: { id: parseInt(id) },
+        data: dataToUpdate,
+        select: { id: true, username: true, email: true, uloga: true }
+    });
     return updatedUser;
-}
+};
 
 const deleteUser = async (id) => {
     const deletedUser = await prisma.user.delete({
@@ -76,21 +107,13 @@ const deleteUser = async (id) => {
     return deletedUser;
 }
 
-const validatePassword = async (username, password) => {
-    const user = await prisma.user.findUnique({
-        where: { username: username }
-    });
-    
-    const hashedPassword = user 
-        ? user.password 
-        : "$2b$10$fakehashfakehashfakehashfakehashfakehashfakehashf";
-    
-    const isValid = await bcrypt.compare(password, hashedPassword);
-    if (!user) {
-        return false;
-    }
-    return isValid;
-}
+// Validira lozinku za uneti username ili email
+const validatePassword = async (identifier, password) => {
+    const user = await getUserByUsername(identifier);
+    if (!user) return false;
+
+    return await bcrypt.compare(password, user.password);
+};
 
 const generateJwtToken = (user) => {
     var expire = new Date();
