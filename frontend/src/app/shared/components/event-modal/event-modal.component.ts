@@ -7,14 +7,16 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { HttpClient } from '@angular/common/http';
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
   selector: 'app-event-modal',
   standalone: true,
   imports: [
     CommonModule, DatePipe, FormsModule, MatDialogModule,
-    MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule
-  ],
+    MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule,
+    MatIcon
+],
   templateUrl: './event-modal.component.html',
   styleUrl: './event-modal.component.css'
 })
@@ -61,15 +63,20 @@ export class EventModal implements OnInit {
     slots.push('22:00');
     this.timeSlots = slots;
   }
-
-  fetchDostupneSaradnike(): void {
-    // Ovde možemo napraviti logiku da dovuče samo saradnike sa ovog predmeta, 
-    // ali za početak vučemo sve saradnike da bi radilo vizuelno
-    this.http.get<any[]>('http://localhost:5000/profesors/saradnici').subscribe({
+  onDelete(): void {
+    if (confirm('Da li ste sigurni da želite da obrišete ovaj termin?')) {
+      // Vraćamo poseban signal roditelju da obriše event
+      this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
+    }
+  }
+fetchDostupneSaradnike(): void {
+    // Gađamo sve predavače i asistente
+    this.http.get<any[]>('http://localhost:5000/profesors').subscribe({
       next: (data) => {
-        // Prikazujemo samo one koji nisu već izabrani
+        // Filtriramo one koji već nisu izabrani kao dežurni
         this.slobodniSaradnici = data.filter(s => !this.formData.dezurni_ids.includes(s.id));
-      }
+      },
+      error: (err) => console.error('Greška pri dohvatanju saradnika:', err)
     });
   }
 

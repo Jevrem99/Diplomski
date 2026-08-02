@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+body { font-family: 'Montserrat', sans-serif; }
+
+/* Tvoj postojeći CSS ostaje ispod ovoga */
+:root {
+  --primary-blue: #34b9f7;
+}

@@ -1,46 +1,150 @@
-.main-div{
-    background-color: var(--blue_2);
-    width: 100%;
-    height: 100vh;
-    margin: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* GLAVNI OMOTAČ SA GRADIENT POZADINOM */
+.login-wrapper {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 40%, #7dd3fc 100%);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  font-family: 'Montserrat', sans-serif !important;
 }
 
-.login-div{
-    background-color: white;
-    width: 25vw;
-    height: 40vh;
-    display: flex;
-    justify-content: space-around;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    border:1px solid var(--blue_2);
-    border-radius: 10px;
+/* KROGOVI U POZADINI ZA GLASSMORPHISM EFEKAT */
+.bg-shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  z-index: 1;
 }
 
-.logo-image{
-    width: 10vw;
-    height: 13vh;
-    object-fit: contain;
-    margin-top: 1vh;
+.circle-1 {
+  width: 380px;
+  height: 380px;
+  background: #34b9f7;
+  top: -50px;
+  left: -50px;
+  opacity: 0.6;
 }
 
-.form-fields{
-    display: flex;
-    flex-direction: column;
-    margin-top: 3vh;
-    height: 20vh;
-    width: 70%;
+.circle-2 {
+  width: 450px;
+  height: 450px;
+  background: #0284c7;
+  bottom: -100px;
+  right: -100px;
+  opacity: 0.5;
 }
 
-.login-button{
-    background-color: var(--blue_2) !important;
-    color:white !important;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-    margin-bottom: 1vh;
+/* UVEĆANA GLASSMORPHISM KARTICA */
+.login-card {
+  position: relative;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  width: 100%;
+  max-width: 460px; /* Znatno uvećana forma */
+  padding: 2.5rem 2.25rem;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* HEADER SECTION */
+.header-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.logo-image {
+  width: 75px;
+  height: 75px;
+  object-fit: contain;
+  margin-bottom: 1rem;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.05));
+}
+
+.portal-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.portal-subtitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 0.25rem;
+}
+
+/* FORMA I POLJA */
+.form-fields {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* PODEŠAVANJE ANGULAR MATERIAL POLJA */
+:host ::ng-deep .custom-field {
+  width: 100% !important;
+}
+
+:host ::ng-deep .custom-field .mdc-text-field--outlined {
+  --mdc-outlined-text-field-container-shape: 14px !important;
+  background-color: rgba(248, 250, 252, 0.8) !important;
+}
+
+:host ::ng-deep .custom-field .mdc-floating-label {
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+}
+
+:host ::ng-deep .custom-field input {
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+.field-icon {
+  color: #94a3b8;
+}
+
+/* PUNODUGME SA SENKOM I TRANZICIJOM */
+.submit-button {
+  width: 100%;
+  height: 52px;
+  background-color: #34b9f7;
+  color: #ffffff;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  box-shadow: 0 8px 20px rgba(52, 185, 247, 0.35);
+  transition: all 0.25s ease;
+}
+
+.submit-button:hover {
+  background-color: #20a6e4;
+  box-shadow: 0 12px 24px rgba(52, 185, 247, 0.45);
+  transform: translateY(-2px);
+}
+
+.submit-button:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(52, 185, 247, 0.25);
 }

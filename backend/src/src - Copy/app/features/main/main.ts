@@ -1,0 +1,622 @@
+import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
+import { forkJoin, Observable } from 'rxjs';
+import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
+import { MatDialogModule, MatDialog } from '@angular/material/dialog';
+import { CalendarOptions } from '@fullcalendar/core';
+import dayGridPlugin from '@fullcalendar/daygrid';
+import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
+import timeGridPlugin from '@fullcalendar/timegrid';
+import { EventModal } from '../../shared/components/event-modal/event-modal.component';
+import { ToastService } from '../../core/services/toast.service';
+import { FormsModule } from '@angular/forms'; // <--- OBAVEZNO DODATI U IMPORTS
+interface Profesor {
+  id?: number;
+  ime: string;
+  prezime: string;
+  email?: string;
+}
+
+interface Predmet {
+  id: number;
+  sifra: string;
+  naziv: string;
+  godina: number;
+  semestar?: string;
+  status?: string;
+  profesor_id?: number;
+  profesor?: Profesor;
+  profesorImePrezime?: string;
+}
+
+@Component({
+  selector: 'app-main',
+  standalone: true,
+  imports: [SidebarMenu, CommonModule, FullCalendarModule, MatDialogModule,FormsModule],
+  templateUrl: './main.html',
+  styleUrl: './main.css'
+})
+export class Main implements OnInit, AfterViewInit {
+  @ViewChild('draggableContainer') draggableContainer!: ElementRef;
+  @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
+  private http = inject(HttpClient);
+  private dialog = inject(MatDialog);
+  private API_URL = 'http://localhost:5000';
+  private cdr = inject(ChangeDetectorRef);
+  private toastService = inject(ToastService);
+  username = localStorage.getItem('username');
+  predmeti: Predmet[] = [];
+  draggableInstance: Draggable | null = null;
+  modifiedEvents: any[] = [];
+  unsavedEvents: any[] = [];
+  hasUnsavedChanges: boolean = false;
+  filterGodina: string = 'sve';
+  filterSala: string = 'sve';
+  allLoadedEvents: any[] = [];
+  dostupneSale: string[] = [];
+  applyFilters(): void {
+    let filtered = [...this.allLoadedEvents];
+
+    if (this.filterGodina !== 'sve') {
+      const godNum = Number(this.filterGodina);
+      filtered = filtered.filter(e => e.extendedProps?.godina === godNum);
+    }
+
+    if (this.filterSala !== 'sve') {
+      filtered = filtered.filter(e => e.extendedProps?.sala === this.filterSala);
+    }
+
+    this.calendarOptions.events = filtered;
+    this.cdr.detectChanges();
+  }
+  calendarOptions: CalendarOptions = {
+    plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
+    initialView: 'dayGridMonth',
+    themeSystem: 'standard',
+    height: '100%',
+    firstDay: 1,
+    displayEventEnd: true,
+    eventTimeFormat: {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false
+    },
+    dragRevertDuration: 0,
+    droppable: true,
+    editable: true,
+    eventClick: (info) => {
+      const cistNaslov = info.event.title.split(' (')[0];
+      const eventDate = info.event.startStr.split('T')[0];
+
+      const dialogRef = this.dialog.open(EventModal, {
+        width: '850px',
+        data: {
+          title: cistNaslov,
+          date: eventDate,
+          startTime: info.event.extendedProps['vreme'],
+          endTime: info.event.extendedProps['vremeKraja'],
+          room: info.event.extendedProps['sala'],
+          predmetId: info.event.extendedProps['predmetId'],
+          // 1. Šaljemo zatečeno stanje dežurnih u modal:
+          dezurni: info.event.extendedProps['dezurni'] || []
+        },
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          this.hasUnsavedChanges = true;
+
+          // Extrahujemo ID-jeve dežurnih koje je korisnik izabrao u modalu
+          const dezurniIds = result.dezurni_ids || result.formData?.dezurni_ids || [];
+
+          // 2. Ažuriramo extendedProps na kalendaru da zapamti izmenu lokalno
+          info.event.setExtendedProp('dezurni', result.izabraniSaradnici || []);
+
+          const payload = {
+            id: info.event.id,
+            datum: eventDate,
+            vreme: result.startTime,
+            vreme_kraja: result.endTime,
+            sala: result.room,
+            predmet_id: info.event.extendedProps['predmetId'],
+            is_ispit: true,
+            dezurni_ids: dezurniIds // <--- ŠALJE SE U BACKEND PRI SACUVAVANJU
+          };
+
+          if (info.event.id) {
+            const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
+            if (existingIndex > -1) {
+              this.modifiedEvents[existingIndex] = payload;
+            } else {
+              this.modifiedEvents.push(payload);
+            }
+          }
+
+          // Ažuriramo vizuelno vreme na kalendaru
+          info.event.setExtendedProp('vreme', result.startTime);
+          info.event.setExtendedProp('vremeKraja', result.endTime);
+          info.event.setExtendedProp('sala', result.room);
+          info.event.setStart(`${eventDate}T${result.startTime}`);
+          if (result.endTime) {
+            info.event.setEnd(`${eventDate}T${result.endTime}`);
+          }
+          info.event.setProp('title', `${cistNaslov} (${result.room})`);
+
+          this.cdr.detectChanges();
+        }
+      });
+    },
+    eventDrop: (info) => {
+      this.hasUnsavedChanges = true;
+      const newDate = info.event.startStr.split('T')[0]; // Novi datum gde je spušten
+
+      if (info.event.id) {
+        // 1. Ako ima ID, znači da je iz Baze
+        const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
+        const payload = {
+          id: info.event.id,
+          datum: newDate,
+          vreme: info.event.extendedProps['vreme'],
+          sala: info.event.extendedProps['sala'],
+          predmet_id: info.event.extendedProps['predmetId'],
+          is_ispit: true
+        };
+
+        if (existingIndex > -1) {
+          this.modifiedEvents[existingIndex] = payload; // Ažuriraj ako si ga pomerao više puta
+        } else {
+          this.modifiedEvents.push(payload); // Dodaj kao novu izmenu
+        }
+      } else {
+        // 2. Ako nema ID, znači da je onaj tek dodati iz banke predmeta
+        const unsavedEvent = this.unsavedEvents.find(e => e.title === info.event.title);
+        if (unsavedEvent) unsavedEvent.datum = newDate;
+      }
+
+      this.cdr.detectChanges();
+
+      // Pokrećemo provere odmah - LIVE!
+      setTimeout(() => this.detectConflicts(), 300);
+    },
+    eventReceive: (info) => {
+      // 1. Otvaramo modal kada se predmet spusti na kalendar
+      const dialogRef = this.dialog.open(EventModal, {
+        width: '850px',
+        data: { title: info.event.title, date: info.event.startStr },
+        disableClose: true
+      });
+
+      dialogRef.afterClosed().subscribe(result => {
+        if (result) {
+          const predmetId = info.event.extendedProps['predmetId'];
+          const droppedPredmet = this.predmeti.find(p => p.id == predmetId);
+
+          // 2. Čuvamo u lokalni niz, koristeći tačna imena polja koja modal vraća (startTime i room)
+          this.unsavedEvents.push({
+            predmet_id: predmetId,
+            title: result.title, // Koristimo čist naslov iz modala
+            datum: info.event.startStr.split('T')[0],
+            vreme: result.startTime,
+            sala: result.room,
+            backgroundColor: info.event.backgroundColor,
+            borderColor: info.event.borderColor
+          });
+
+          // 3. Upisujemo atribute neophodne za funkciju koja traži konflikte
+          info.event.setExtendedProp('vreme', result.startTime);
+          info.event.setExtendedProp('sala', result.room);
+          info.event.setExtendedProp('profesorId', droppedPredmet?.profesor_id);
+          info.event.setExtendedProp('profesorIme', droppedPredmet?.profesorImePrezime);
+
+          this.hasUnsavedChanges = true;
+
+          // 4. OVO REŠAVA PROBLEM PRIKAZA: Precizno formiramo novi tekst na kartici
+          info.event.setProp('title', `${result.title} (${result.room})`);
+
+          this.cdr.detectChanges();
+
+          // 5. Pokrećemo detekciju konflikata da proverimo da li treba da farbamo dan u žuto
+          setTimeout(() => this.detectConflicts(), 100);
+
+        } else {
+          // Ako je kliknuo "Otkaži" u modalu, brišemo event sa kalendara
+          info.event.remove();
+        }
+
+        // Čišćenje fokusa/selekcije teksta (da ne ostane plavo)
+        window.getSelection()?.removeAllRanges();
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      });
+    },
+    titleFormat: (arg) => {
+      const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+      return `${meseci[arg.date.month]} ${arg.date.year}.`;
+    },
+    dayHeaderContent: (arg) => {
+      const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+      return daniSkraceno[arg.date.getDay()];
+    },
+    headerToolbar: {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay'
+    },
+    buttonText: {
+      today: 'Danas',
+      month: 'Mesec',
+      week: 'Nedelja',
+      day: 'Dan'
+    }
+  };
+
+  saveDraftSchedule() {
+    if (!this.hasUnsavedChanges) return;
+
+    const requests: Observable<any>[] = [];
+
+    // 1. Snimanje novih dodatih ispita (POST)
+    if (this.unsavedEvents.length > 0) {
+      requests.push(this.http.post(`${this.API_URL}/ispit/bulk`, this.unsavedEvents));
+    }
+
+    // 2. Snimanje izmenjenih starih ispita (PUT)
+    if (this.modifiedEvents.length > 0) {
+      this.modifiedEvents.forEach(evt => {
+        requests.push(this.http.put(`${this.API_URL}/ispit/${evt.id}`, evt));
+      });
+    }
+
+    if (requests.length === 0) return;
+
+    // forkJoin izvršava SVE zahteve odjednom
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.toastService.show('Raspored je uspešno sačuvan!', 'success');
+
+        // Resetujemo stanja
+        this.unsavedEvents = [];
+        this.modifiedEvents = [];
+        this.hasUnsavedChanges = false;
+
+        // Osvežavamo kalendar čistim podacima iz baze
+        this.fetchIspiti();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Greška pri čuvanju rasporeda:', err);
+        this.toastService.show('Došlo je do greške pri čuvanju.', 'error');
+      }
+    });
+  }
+
+  ngOnInit(): void {
+    this.fetchPredmeti();
+    this.fetchIspiti();
+  }
+
+  ngAfterViewInit(): void {
+    this.initDraggable();
+  }
+
+  getGodinaColor(godina?: number): string {
+    switch (godina) {
+      case 1: return '#34b9f7';
+      case 2: return '#ef4444';
+      case 3: return '#eab308';
+      case 4: return '#10b981';
+      default: return '#34b9f7';
+    }
+  }
+
+  fetchPredmeti(): void {
+    this.http.get<Predmet[]>(`${this.API_URL}/predmet`).subscribe({
+      next: (data) => {
+        this.predmeti = data.map(p => ({
+          ...p,
+          profesorImePrezime: p.profesor
+            ? `Prof. ${p.profesor.ime} ${p.profesor.prezime}`
+            : `Šifra: ${p.sifra}`
+        }));
+        this.cdr.detectChanges();
+        this.initDraggable();
+      },
+      error: (err) => console.error('Greška pri dohvatanju predmeta:', err)
+    });
+  }
+
+  fetchIspiti(): void {
+    this.http.get<any[]>(`${this.API_URL}/ispit`).subscribe({
+      next: (ispiti) => {
+        const events = ispiti.map(i => {
+          const boja = this.getGodinaColor(i.predmet?.godina);
+          const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
+
+          const formatiranoVreme = i.vreme ? (i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5)) : '00:00';
+          const formatiranoVremeKraja = i.vreme_kraja ? (i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5)) : '';
+
+          return {
+            id: i.id.toString(),
+            title: `${i.predmet?.naziv || 'Ispit'} (${salaNaziv})`,
+            start: `${i.datum}T${formatiranoVreme}`,
+            end: formatiranoVremeKraja ? `${i.datum}T${formatiranoVremeKraja}` : undefined,
+            display: 'block',
+            backgroundColor: boja,
+            borderColor: boja,
+            extendedProps: {
+              vreme: formatiranoVreme,
+              vremeKraja: formatiranoVremeKraja,
+              sala: salaNaziv,
+              predmetId: i.predmet_id,
+              // OVO UČITAVA VEĆ DODELJENE DEŽURNE:
+              dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : []
+            }
+          };
+        });
+
+        this.calendarOptions.events = events;
+        this.cdr.detectChanges();
+        setTimeout(() => this.detectConflicts(), 200);
+        this.allLoadedEvents = events;
+        this.dostupneSale = [...new Set(events.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
+        this.applyFilters()
+      },
+      error: (err) => console.error('Greška pri dohvatanju ispita:', err)
+    });
+  }
+
+  private initDraggable(): void {
+    const self = this;
+    if (this.draggableContainer && this.draggableContainer.nativeElement) {
+      if (this.draggableInstance) {
+        this.draggableInstance.destroy();
+      }
+      this.draggableInstance = new Draggable(this.draggableContainer.nativeElement, {
+        itemSelector: '.fc-event',
+        eventData: function (eventEl) {
+          const godina = parseInt(eventEl.getAttribute('data-godina') || '1');
+          const boja = self.getGodinaColor(godina);
+
+          // DODATO: Izvlačimo ID predmeta kako bi bek znao koji predmet se čuva
+          const id = eventEl.getAttribute('data-id');
+
+          return {
+            title: eventEl.querySelector('h3')?.innerText || 'Nepoznat predmet',
+            backgroundColor: boja,
+            borderColor: boja,
+            extendedProps: {
+              predmetId: id // Prosleđujemo u FullCalendar podatak da ga pokupimo u eventReceive
+            }
+          };
+        }
+      });
+    }
+  }
+  detectConflicts() {
+    if (!this.calendarComponent) return;
+    const allEvents = this.calendarComponent.getApi().getEvents();
+    const conflictsByDate = new Map<string, string[]>();
+    const eventsByDate: Record<string, any[]> = {};
+
+    allEvents.forEach(evt => {
+      const dateStr = evt.start?.toISOString().split('T')[0] || evt.startStr.split('T')[0];
+      if (!eventsByDate[dateStr]) eventsByDate[dateStr] = [];
+      eventsByDate[dateStr].push(evt);
+    });
+
+    for (const date in eventsByDate) {
+      const evts = eventsByDate[date];
+      const razlozi: string[] = [];
+
+      for (let i = 0; i < evts.length; i++) {
+        for (let j = i + 1; j < evts.length; j++) {
+          const e1 = evts[i];
+          const e2 = evts[j];
+
+          // Pretvaramo u minute za precizno poređenje
+          const start1 = this.timeToMins(String(e1.extendedProps['vreme'] || '').trim());
+          const end1 = this.timeToMins(String(e1.extendedProps['vremeKraja'] || '').trim()) || (start1 + 120);
+
+          const start2 = this.timeToMins(String(e2.extendedProps['vreme'] || '').trim());
+          const end2 = this.timeToMins(String(e2.extendedProps['vremeKraja'] || '').trim()) || (start2 + 120);
+
+          // Formula za preklapanje vremenskih intervala
+          if (start1 < end2 && start2 < end1) {
+
+            // 1. Sukob sala
+            const s1 = String(e1.extendedProps['sala'] || '').trim();
+            const s2 = String(e2.extendedProps['sala'] || '').trim();
+            if (s1 && s2 && s1 === s2 && s1 !== 'Bez sale' && s1 !== 'undefined') {
+              razlozi.push(`Sala "${s1}" je zauzeta u periodu od ${e1.extendedProps['vreme']} do ${e1.extendedProps['vremeKraja'] || '(?)\n'}`);
+            }
+
+            // 2. Sukob profesora
+            const p1 = String(e1.extendedProps['profesorId'] || 'P1');
+            const p2 = String(e2.extendedProps['profesorId'] || 'P2');
+            if (p1 === p2 && p1 !== 'undefined') {
+              const profIme = e1.extendedProps['profesorIme'] || 'Profesor';
+              razlozi.push(`${profIme} već drži ispit od ${e1.extendedProps['vreme']} do ${e1.extendedProps['vremeKraja'] || '(?)\n'}`);
+            }
+          }
+        }
+      }
+
+      if (razlozi.length > 0) conflictsByDate.set(date, [...new Set(razlozi)]);
+    }
+
+    // Prikaz novog SVETLOG pop-up-a na klik
+    document.querySelectorAll('.fc-daygrid-day').forEach((cell: any) => {
+      const date = cell.getAttribute('data-date');
+      const frame = cell.querySelector('.fc-daygrid-day-frame');
+
+      cell.style.backgroundColor = '';
+      const oldWarning = frame?.querySelector('.conflict-warning');
+      if (oldWarning) oldWarning.remove();
+
+      if (date && conflictsByDate.has(date)) {
+        cell.style.backgroundColor = '#fff9c4';
+
+        if (frame) {
+          frame.style.position = 'relative';
+          const warning = document.createElement('div');
+          warning.className = 'conflict-warning';
+
+          // PRELEP BELI POP-UP SA BLAGOM SENKOM
+          warning.innerHTML = `
+            <div style="position: relative; display: inline-block;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 22px; height: 22px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.15));">
+                <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
+              </svg>
+              <div class="custom-conflict-tooltip" style="display: none; position: absolute; bottom: 120%; right: -10px; background-color: #ffffff; color: #334155; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 600; white-space: pre; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); z-index: 9999; pointer-events: none;">${conflictsByDate.get(date)!.join('\n')}</div>
+            </div>
+          `;
+
+          warning.style.position = 'absolute';
+          warning.style.top = '4px';
+          warning.style.right = '4px';
+          warning.style.cursor = 'pointer';
+          warning.style.zIndex = '10';
+
+          warning.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tooltip = warning.querySelector('.custom-conflict-tooltip') as HTMLElement;
+            const isCurrentlyVisible = tooltip.style.display === 'block';
+            document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => el.style.display = 'none');
+            tooltip.style.display = isCurrentlyVisible ? 'none' : 'block';
+          });
+
+          frame.appendChild(warning);
+        }
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!(e.target as HTMLElement).closest('.conflict-warning')) {
+        document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => el.style.display = 'none');
+      }
+    }, { once: true });
+  }
+  private timeToMins(timeStr: string): number {
+    if (!timeStr || !timeStr.includes(':')) return 0;
+    const [h, m] = timeStr.split(':').map(Number);
+    return (h * 60) + m;
+  }
+  exportToPrintView(): void {
+    const events = (this.calendarOptions.events as any[]) || [];
+    if (events.length === 0) {
+      alert('Nema ispita na rasporedu za izvoz.');
+      return;
+    }
+
+    // Sortiramo događaje po datumu
+    const sorted = [...events].sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+    
+    // Grupišemo po nedeljama (Pon - Ned)
+    const weeksMap = new Map<string, Record<number, any[]>>();
+
+    sorted.forEach(evt => {
+      const d = new Date(evt.start);
+      const dayOfWeek = (d.getDay() + 6) % 7; // 0 = Ponedeljak, 6 = Nedelja
+      
+      // Računamo ponedeljak te nedelje
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - dayOfWeek);
+      const weekKey = monday.toISOString().split('T')[0];
+
+      if (!weeksMap.has(weekKey)) {
+        weeksMap.set(weekKey, { 0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [] });
+      }
+
+      weeksMap.get(weekKey)![dayOfWeek].push(evt);
+    });
+
+    // Pravimo HTML prozor za štampu
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    let htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Raspored kolokvijuma - PMF Kragujevac</title>
+        <style>
+          body { font-family: 'Arial', sans-serif; padding: 20px; color: #1e293b; }
+          h1 { text-align: center; font-size: 20px; font-weight: bold; margin-bottom: 5px; }
+          h2 { text-align: center; font-size: 16px; color: #475569; margin-bottom: 25px; }
+          .week-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; page-break-inside: avoid; }
+          .week-table th, .week-table td { border: 1.5px solid #000; width: 14.28%; vertical-align: top; text-align: center; font-size: 12px; }
+          .week-table th { background-color: #e2e8f0; padding: 6px 2px; font-weight: bold; }
+          .date-sub { font-weight: normal; font-size: 11px; display: block; }
+          .exam-box { padding: 6px 4px; margin: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 11px; font-weight: bold; }
+          .exam-time { font-weight: normal; font-size: 10px; color: #334155; margin-top: 2px; }
+          @media print {
+            body { padding: 0; }
+            .no-print { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="no-print" style="margin-bottom: 20px; text-align: right;">
+          <button onclick="window.print()" style="padding: 10px 20px; background: #34b9f7; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Štampaj / Snimi u PDF</button>
+        </div>
+
+        <h1>Raspored kolokvijuma na OAS Informatika</h1>
+        <h2>Fakultet (PMF Kragujevac) - Letnji semestar</h2>
+    `;
+
+    const dayNames = ['ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota', 'nedelja'];
+
+    weeksMap.forEach((days, mondayStr) => {
+      const mondayDate = new Date(mondayStr);
+
+      htmlContent += `<table class="week-table"><thead><tr>`;
+      
+      // Zaglavlje za 7 dana sa tačnim datumima
+      for (let i = 0; i < 7; i++) {
+        const currentDay = new Date(mondayDate);
+        currentDay.setDate(mondayDate.getDate() + i);
+        const formatDatum = `${String(currentDay.getDate()).padStart(2, '0')}.${String(currentDay.getMonth() + 1).padStart(2, '0')}.${currentDay.getFullYear()}.`;
+
+        htmlContent += `
+          <th>
+            ${dayNames[i]}
+            <span class="date-sub">${formatDatum}</span>
+          </th>`;
+      }
+
+      htmlContent += `</tr></thead><tbody><tr>`;
+
+      // Ćelije za svaki dan
+      for (let i = 0; i < 7; i++) {
+        const dayExams = days[i] || [];
+        htmlContent += `<td>`;
+
+        dayExams.forEach(e => {
+          const title = e.title.split(' (')[0];
+          const sala = e.extendedProps?.sala || '';
+          const vreme = e.extendedProps?.vreme || '';
+          const bg = e.backgroundColor || '#f1f5f9';
+
+          htmlContent += `
+            <div class="exam-box" style="background-color: ${bg}22; border-color: ${bg};">
+              ${title}
+              <div class="exam-time">- I kolokvijum - ${vreme}h (${sala})</div>
+            </div>`;
+        });
+
+        htmlContent += `</td>`;
+      }
+
+      htmlContent += `</tr></tbody></table>`;
+    });
+
+    htmlContent += `</body></html>`;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  }
+}

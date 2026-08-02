@@ -1,0 +1,10 @@
+<div class="settings-container">
+  <h2>Settings</h2>
+  <button class="theme-toggle-btn" (click)="toggleTheme()">
+    @if (themeService.isDarkMode()) {
+        ☀️ Svetla tema
+    } @else {
+        🌙 Tamna tema
+    }
+    </button>
+</div>

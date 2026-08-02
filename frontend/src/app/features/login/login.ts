@@ -29,15 +29,23 @@ export class Login{
   loginData = { username: '', password: '' };
 
   onLogin() {
-
     this.authService.login(this.loginData).subscribe({
       next: (response) => {
-        
+        // Dekodiramo ulogu iz JWT tokena ili iz servisa
+        const payload = JSON.parse(atob(response.token.split('.')[1]));
+        const uloga = payload.uloga || 'asistent';
+
         localStorage.setItem('token', response.token);
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('username', this.loginData.username);
-        
-        this.router.navigate(['/main']);
+        localStorage.setItem('email', payload.email || '');
+        localStorage.setItem('uloga', uloga);
+
+        if (uloga === 'asistent') {
+          this.router.navigate(['/moja-dezurstva']);
+        } else {
+          this.router.navigate(['/main']);
+        }
       },
       error: (err) => {
         console.error('Greška pri prijavi:', err);

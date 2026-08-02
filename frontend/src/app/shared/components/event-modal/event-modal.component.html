@@ -1,27 +1,32 @@
-<div class="p-6 bg-white rounded-xl font-montserrat flex flex-col sm:flex-row gap-6">
+<div class="p-8 bg-white rounded-2xl font-montserrat flex flex-col justify-between w-full">
   
-  <!-- LEVA KOLONA (Detalji termina) -->
-  <div class="flex-1 flex flex-col border-r border-gray-100 pr-6 min-w-[320px]">
-    <h2 class="text-2xl font-bold text-gray-800 mb-2">Detalji termina</h2>
-    <p class="text-base text-gray-500 mb-6 border-b border-gray-100 pb-4">
-      Predmet: <span class="font-bold text-[#34b9f7]">{{data.title}}</span><br/>
-      Datum: <span class="font-bold text-gray-700">{{data.date | date:'dd.MM.yyyy'}}</span>
-    </p>
+  <!-- GORNJI DEO: Dve kolone (Leva uža, Desna šira) -->
+  <div class="flex flex-col sm:flex-row gap-8 w-full">
+    
+    <!-- LEVA STRANA: Detalji termina (Sužena) -->
+    <div class="w-full sm:w-7/12 flex flex-col gap-5">
+      <div>
+        <h2 class="text-xl font-extrabold text-slate-800 m-0">Detalji termina</h2>
+        <p class="text-sm font-semibold text-slate-500 mt-1">
+          Predmet: <span class="text-[#34b9f7] font-bold">{{ data.title }}</span><br>
+          Datum: <span class="text-slate-700 font-bold">{{ data.date }}</span>
+        </p>
+      </div>
 
-    <div class="flex flex-col gap-4 flex-1">
-      <div class="flex gap-4 pt-2">
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Vreme početka</mat-label>
-          <mat-select [(ngModel)]="formData.startTime" required>
+      <!-- Vreme početka i kraja -->
+      <div class="flex gap-4">
+        <mat-form-field appearance="outline" class="custom-field w-1/2">
+          <mat-label>Vreme početka*</mat-label>
+          <mat-select [(ngModel)]="formData.startTime">
             @for (time of timeSlots; track time) {
               <mat-option [value]="time">{{ time }}</mat-option>
             }
           </mat-select>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Vreme kraja</mat-label>
-          <mat-select [(ngModel)]="formData.endTime" required>
+        <mat-form-field appearance="outline" class="custom-field w-1/2">
+          <mat-label>Vreme kraja*</mat-label>
+          <mat-select [(ngModel)]="formData.endTime">
             @for (time of timeSlots; track time) {
               <mat-option [value]="time">{{ time }}</mat-option>
             }
@@ -29,59 +34,71 @@
         </mat-form-field>
       </div>
 
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Izaberi salu</mat-label>
-        <mat-select [(ngModel)]="formData.room" required>
-          <mat-option value="Sala A2">Sala A2</mat-option>
-          <mat-option value="Sala A3">Sala A3</mat-option>
-          <mat-option value="Svečana sala">Svečana sala</mat-option>
-          <mat-option value="Računarska 1">Računarska laboratorija 1</mat-option>
+      <!-- Izaberi salu -->
+      <mat-form-field appearance="outline" class="custom-field w-full">
+        <mat-label>Izaberi salu*</mat-label>
+        <mat-select [(ngModel)]="formData.room">
+          @for (sala of ['Sala A1', 'Sala A2', 'Sala A3', 'Svečana sala', 'Amfiteatar']; track sala) {
+            <mat-option [value]="sala">{{ sala }}</mat-option>
+          }
         </mat-select>
       </mat-form-field>
 
-      <!-- Prikaz izabranih dežurnih -->
-      <div class="mt-2 bg-gray-50 rounded-lg p-4 border border-gray-100 flex-1">
-        <span class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2 block">Dežurni na ispitu</span>
+      <!-- Dežurni na ispitu -->
+      <div class="bg-slate-50 border border-slate-100 rounded-xl p-4 flex flex-col gap-2">
+        <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Dežurni na ispitu</span>
         <div class="flex flex-wrap gap-2">
           @for (saradnik of izabraniSaradnici; track saradnik.id) {
-            <div (click)="ukloniDezurnog(saradnik)" class="bg-[#34b9f7] text-white px-3 py-1.5 rounded-full text-sm font-medium cursor-pointer hover:bg-red-500 transition-colors shadow-sm flex items-center gap-2">
-              {{ saradnik.ime }} {{ saradnik.prezime }} 
-              <span class="font-bold text-lg leading-none mb-0.5">×</span>
-            </div>
-          }
-          @if (izabraniSaradnici.length === 0) {
-            <span class="text-sm text-gray-400">Nije izabran nijedan dežurni.</span>
+            <span class="inline-flex items-center gap-1.5 bg-[#34b9f7] text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-sm">
+              {{ saradnik.ime }} {{ saradnik.prezime }}
+              <button class="hover:bg-black/10 rounded-full p-0.5" (click)="ukloniDezurnog(saradnik)">✕</button>
+            </span>
+          } @empty {
+            <span class="text-xs font-semibold text-slate-400 italic">Nema izabranih dežurnih saradnika.</span>
           }
         </div>
       </div>
     </div>
 
-    @if (showError) {
-      <p class="text-xs text-red-500 font-medium mt-2">Sva polja moraju biti popunjena!</p>
-    }
+    <!-- DESNA STRANA: Dostupni saradnici (Proširena) -->
+    <div class="w-full sm:w-5/12 flex flex-col border-l border-slate-100 sm:pl-8">
+      <h3 class="text-lg font-extrabold text-slate-800 mb-4">Dostupni saradnici</h3>
+      
+      <div class="flex flex-col gap-2 max-h-[320px] overflow-y-auto pr-1">
+        @for (saradnik of slobodniSaradnici; track saradnik.id) {
+          <div class="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-xl hover:border-[#34b9f7] transition-all shadow-xs">
+            <span class="text-sm font-bold text-slate-700">{{ saradnik.ime }} {{ saradnik.prezime }}</span>
+            
+            <!-- ČIST SVG PLUS UMESTO MAT-ICON-A -->
+            <button class="w-8 h-8 flex items-center justify-center text-[#34b9f7] hover:bg-sky-50 rounded-full transition-all border-none bg-transparent cursor-pointer" (click)="dodajDezurnog(saradnik)">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+              </svg>
+            </button>
+          </div>
+        } @empty {
+          <p class="text-xs font-semibold text-slate-400 italic text-center py-6">Nema slobodnih saradnika u ovom terminu.</p>
+        }
+      </div>
+    </div>
+
   </div>
 
-  <!-- DESNA KOLONA (Izbor dežurnih) -->
-  <div class="w-[300px] flex flex-col pt-2">
-    <h2 class="text-xl font-bold text-gray-800 mb-6">Dostupni saradnici</h2>
-    
-    <div class="flex flex-col gap-2 overflow-y-auto max-h-[350px] pr-2">
-      @for (saradnik of slobodniSaradnici; track saradnik.id) {
-        <div (click)="dodajDezurnog(saradnik)"
-             class="border border-gray-200 p-3 rounded-xl cursor-pointer hover:border-[#34b9f7] hover:bg-blue-50 transition-all text-sm font-semibold text-gray-700 flex justify-between items-center bg-white shadow-sm">
-          <span>{{ saradnik.ime }} {{ saradnik.prezime }}</span>
-          <span class="text-[#34b9f7] text-lg font-bold">+</span>
-        </div>
-      }
-      @if (slobodniSaradnici.length === 0) {
-        <div class="text-sm text-gray-500 text-center mt-4">Nema dostupnih saradnika.</div>
-      }
-    </div>
-    
-    <!-- Dugmići idu dole desno -->
-    <div class="flex justify-end gap-3 mt-auto pt-6">
-      <button mat-button color="warn" (click)="onCancel()">Otkaži</button>
-      <button mat-flat-button class="!bg-[#34b9f7] !text-white font-bold" (click)="onSave()">Sačuvaj</button>
+  <!-- DONJI DEO: Dugmad u jednoj liniji preko cele širine -->
+  <div class="flex flex-row justify-between items-center pt-6 border-t border-slate-100 mt-6 w-full">
+    <!-- Dugme za brisanje (levo) -->
+    @if (data.predmetId && formData.startTime) {
+      <button mat-flat-button color="warn" class="!font-bold !bg-red-500 !text-white !px-6 !rounded-xl !h-11" (click)="onDelete()">
+        Obriši termin
+      </button>
+    } @else {
+      <div></div>
+    }
+
+    <!-- Dugmad Otkaži / Sačuvaj (desno) -->
+    <div class="flex flex-row items-center gap-3">
+      <button mat-button class="!font-bold !text-slate-500 !px-6 !h-11 hover:!bg-slate-100 !rounded-xl" (click)="onCancel()">Otkaži</button>
+      <button mat-flat-button class="!bg-[#34b9f7] !text-white !font-bold !px-8 !h-11 !rounded-xl shadow-md hover:!bg-[#20a6e4]" (click)="onSave()">Sačuvaj</button>
     </div>
   </div>
 
