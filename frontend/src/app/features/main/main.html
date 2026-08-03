@@ -1,8 +1,9 @@
 <!-- Glavni omotač -->
 <div class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full bg-[#f4f7fb] p-3 sm:p-4 md:p-6 gap-4 md:gap-6">
   
+  <!-- LEVI PANEL (Banka Predmeta) -> Izmenjena visina na kraju klase -->
   <!-- LEVI PANEL (Banka Predmeta) -->
-  <aside class="w-full lg:w-80 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 max-h-[300px] lg:max-h-none">
+  <aside class="w-full lg:w-80 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 max-h-[300px] lg:max-h-none lg:h-[calc(100vh-3rem)]">
 <div class="p-4 sm:p-5 border-b border-gray-100">
       <h2 class="text-base sm:text-lg font-bold text-gray-800">Banka predmeta</h2>
       <p class="text-xs text-gray-500 mt-0.5">Prevuci predmet na željeni datum</p>
@@ -35,6 +36,13 @@
         </div>
       } @empty {
         <p class="text-xs text-gray-400 text-center py-4">Nema dostupnih predmeta u bazi.</p>
+      }
+
+      <!-- DODATO DUGME "VIDI VIŠE" -->
+      @if (!searchPredmet && predmeti.length > prikazaniBrojPredmeta) {
+        <button (click)="vidiVisePredmeta()" class="w-full py-2.5 mt-1 bg-blue-50 text-[#34b9f7] text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors shadow-sm">
+          Vidi više predmeta
+        </button>
       }
     </div>
   </aside>
@@ -95,13 +103,16 @@
         <button (click)="saveDraftSchedule()" class="flex-1 sm:flex-none justify-center px-5 py-2 text-sm font-bold text-white bg-[#34b9f7] rounded-xl hover:bg-[#20a6e4] transition-all shadow-md">
           Sačuvaj
         </button>
+        <button (click)="objaviRaspored()" class="px-3 py-1.5 sm:px-5 sm:py-2 text-xs sm:text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all shadow-md">
+            Objavi
+          </button>
       </div>
       
     </header>
 
     <!-- Kontejner za Kalendar: DODATA FIKSNA VISINA `h-[600px]` KADA JE EKRAN MANJI OD 1025px -->
-    <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 flex flex-col h-[650px] lg:h-full min-h-[550px]">
-      <full-calendar #calendar [options]="calendarOptions" class="h-full w-full flex-1"></full-calendar>
-    </div>
+    <div class="flex-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-3 sm:p-5 flex flex-col h-[650px] lg:h-[calc(100vh-14rem)] min-h-[550px]">
+  <full-calendar #calendar [options]="calendarOptions" class="h-full w-full flex-1"></full-calendar>
+</div>
   </main>
 </div>

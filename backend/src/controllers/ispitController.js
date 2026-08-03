@@ -142,11 +142,25 @@ const saveBulkIspiti = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+const publishAll = async (req, res) => {
+    try {
+        // Prebacujemo sve ispite iz statusa nacrta u objavljeno
+        const result = await prisma.ispit.updateMany({
+            where: { is_published: false },
+            data: { is_published: true }
+        });
+        res.status(200).json({ message: `Uspešno objavljeno ${result.count} ispita!` });
+    } catch (err) {
+        console.error('Greška pri objavljivanju:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 module.exports = {
     getAllIspiti,
     getIspitById,
     createIspit,
     updateIspit,
     deleteIspit,
-    saveBulkIspiti
+    saveBulkIspiti,
+    publishAll
 };

@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Zaobilazimo i FullCalendar ikonice (.fc-icon) da ne bi bile pregažene */
+*:not(.material-icons):not(.material-symbols-outlined):not(mat-icon):not(.fa):not(.fas):not(.fc-icon) {
+  font-family: 'Montserrat', sans-serif !important;
+}
+/* ========================================================= */
+/* FIX ZA CENTRIRANJE I RASPAGINACIJU MAT-DIALOG MODALA       */
+/* ========================================================= */
+
+/* 1. Centriranje overlay kontejnera na nivou celog ekrana */
+.cdk-global-overlay-wrapper,
+.cdk-overlay-container {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* 2. Prisilno centriranje same modalne površine */
+.cdk-overlay-pane:has(app-event-modal),
+.cdk-overlay-pane:has(.mat-mdc-dialog-container) {
+  position: static !important;
+  margin: auto !important;
+  max-width: 90vw !important;
+}
+
+/* 3. Sređivanje bela kartice modala da ne pomera desnu kolonu van okvira */
+.mat-mdc-dialog-container,
+.mdc-dialog__surface {
+  border-radius: 1.5rem !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* 4. Osiguravamo da unutrašnja componentska struktura ne preliva */
+app-event-modal {
+  display: block !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+:root {
+  --primary-blue: #34b9f7;
+}

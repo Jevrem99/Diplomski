@@ -565,3 +565,6 @@
 :host ::ng-deep .custom-multi-select .mdc-text-field--outlined {
   --mdc-outlined-text-field-container-shape: 12px !important;
 }
+:host ::ng-deep .fc, :host ::ng-deep .fc-view-harness, :host ::ng-deep .fc-view-harness-active, :host ::ng-deep .fc-scroller, :host ::ng-deep .fc-daygrid-body, :host ::ng-deep .fc-scrollgrid-section, :host ::ng-deep .fc-scrollgrid-section > * {
+  overflow: visible !important;
+}

@@ -1,0 +1,108 @@
+/* Glavni kontejner i font */
+.main-container {
+    height: 100vh;
+    width: 100vw;
+    font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Podešavanje Angular Material Sidenav-a */
+mat-sidenav {
+    background-color: #ffffff;
+    width: 260px;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.03);
+}
+
+mat-sidenav-content {
+    background-color: #f4f7fb;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Unutrašnji raspored menija */
+#drawer_content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+/* Zaglavlje menija (User info) */
+#menu_title_div {
+    padding: 0 20px 20px 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#menu_title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0;
+    letter-spacing: 0.5px;
+}
+
+#menu_title_div span {
+    font-size: 0.75rem;
+    color: #64748b;
+    font-weight: 600;
+}
+
+/* Standardna dugmad za navigaciju */
+.drawer_button {
+    width: 85%;
+    margin: 4px auto;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #475569;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.drawer_button:hover {
+    background-color: #f0f9ff; /* Blago plava pozadina */
+    color: #34b9f7; /* Tvoja glavna plava boja za tekst */
+    transform: translateX(5px); /* Suptilna animacija pomeranja */
+}
+
+/* Ikonice */
+.drawer_icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 15px;
+    opacity: 0.7;
+    transition: all 0.2s ease;
+}
+
+.drawer_button:hover .drawer_icon {
+    opacity: 1;
+}
+
+/* Dugme za odjavu (Odvojeno na dnu sa crvenom temom) */
+#logout_button {
+    width: 85%;
+    margin: auto auto 20px auto;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #ef4444;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+#logout_button:hover {
+    background-color: #fef2f2;
+    transform: translateX(5px);
+}

@@ -20,7 +20,21 @@ interface Profesor {
   prezime: string;
   email?: string;
 }
+function presloviULatinicu(tekst: string): string {
+  if (!tekst) return '';
+  
+  const cirilicaToLatinica: { [key: string]: string } = {
+    'а':'a', 'б':'b', 'в':'v', 'г':'g', 'д':'d', 'ђ':'dj', 'е':'e', 'ж':'z', 'з':'z', 'и':'i',
+    'ј':'j', 'к':'k', 'л':'l', 'љ':'lj', 'м':'m', 'н':'n', 'њ':'nj', 'о':'o', 'п':'p', 'р':'r',
+    'с':'s', 'т':'t', 'ћ':'c', 'у':'u', 'ф':'f', 'х':'h', 'ц':'c', 'ч':'c', 'џ':'dz', 'ш':'s',
+    'А':'a', 'Б':'b', 'В':'v', 'Г':'g', 'Д':'d', 'Ђ':'dj', 'Е':'e', 'Ж':'z', 'З':'z', 'И':'i',
+    'Ј':'j', 'К':'k', 'Л':'l', 'Љ':'lj', 'М':'m', 'Н':'n', 'Њ':'nj', 'О':'o', 'П':'p', 'Р':'r',
+    'С':'s', 'Т':'t', 'Ћ':'c', 'У':'u', 'Ф':'f', 'Х':'h', 'Ц':'c', 'Ч':'c', 'Џ':'dz', 'Ш':'s',
+    'č':'c', 'ć':'c', 'š':'s', 'ž':'z', 'đ':'dj', 'Č':'c', 'Ć':'c', 'Š':'s', 'Ž':'z', 'Đ':'dj'
+  };
 
+  return tekst.split('').map(char => cirilicaToLatinica[char] || char).join('').toLowerCase();
+}
 interface Predmet {
   id: number;
   sifra: string;
@@ -64,18 +78,31 @@ export class Main implements OnInit, AfterViewInit {
   sveObaveze: any[] = [];
   filterSaradnici: number[] = [];
   searchPredmet: string = ''; // <--- DODATO
-
+prikazaniBrojPredmeta: number = 5; // <--- DODATO
   // <--- DODATO: Automatski filtrira listu predmeta levo
   get filtriraniPredmeti() {
-    if (!this.searchPredmet) return this.predmeti;
-    const q = this.searchPredmet.toLowerCase();
-    return this.predmeti.filter(p => 
-      p.naziv.toLowerCase().includes(q) || 
-      p.profesorImePrezime?.toLowerCase().includes(q) || 
-      p.sifra.toLowerCase().includes(q)
-    );
-  };
+    // 1. Ako ima pretrage
+    if (this.searchPredmet) {
+      const q = presloviULatinicu(this.searchPredmet);
+      
+      return this.predmeti.filter(p => {
+        const nazivLat = presloviULatinicu(p.naziv);
+        const profLat = presloviULatinicu(p.profesorImePrezime || '');
+        const sifraLat = presloviULatinicu(p.sifra || '');
 
+        return nazivLat.includes(q) || profLat.includes(q) || sifraLat.includes(q);
+      });
+    }
+    
+    // 2. Ako nema pretrage, prikazujemo samo prvih N predmeta
+    return this.predmeti.slice(0, this.prikazaniBrojPredmeta);
+  }
+
+  // <--- DODATA FUNKCIJA ZA DUGME --->
+  vidiVisePredmeta() {
+    this.prikazaniBrojPredmeta += 10;
+  }
+  
   applyFilters(): void {
     let filtered = [...this.allLoadedEvents];
     
@@ -847,5 +874,18 @@ export class Main implements OnInit, AfterViewInit {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
+  }
+  objaviRaspored() {
+    if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu.')) {
+      this.http.put(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
+        next: (res: any) => {
+          this.toastService.show('Raspored je uspešno objavljen!', 'success');
+        },
+        error: (err) => {
+          console.error('Greška pri objavljivanju:', err);
+          this.toastService.show('Došlo je do greške pri objavljivanju.', 'error');
+        }
+      });
+    }
   }
 }
