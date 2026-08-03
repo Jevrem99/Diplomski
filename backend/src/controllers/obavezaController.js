@@ -1,14 +1,17 @@
 const obavezaModel = require('../models/obavezaModel');
 
 const getObaveze = async (req, res) => {
+  try {
     const { saradnik_id } = req.params;
-    try {
-        const obaveze = await obavezaModel.getObavezeBySaradnikId(saradnik_id);
-        res.status(200).json(obaveze);
-    } catch (error) {
-        console.error('Greška pri dohvatanju obaveza:', error);
-        res.status(500).json({ error: 'Internal server error' });
-    }
+    
+    // Ako stigne saradnik_id prosleđujemo ga, ako ne stigne prosleđujemo undefined
+    const obaveze = await obavezaModel.getObavezeBySaradnikId(saradnik_id);
+    
+    res.json(obaveze);
+  } catch (error) {
+    console.error('Greška pri dohvatanju obaveza:', error);
+    res.status(500).json({ message: 'Greška na serveru pri dohvatanju obaveza.' });
+  }
 };
 
 const createObaveza = async (req, res) => {
