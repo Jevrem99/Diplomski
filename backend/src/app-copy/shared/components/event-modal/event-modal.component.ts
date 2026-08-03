@@ -40,7 +40,7 @@ export class EventModal implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[] ,zauzeteSaleNaDan?: any[]} 
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[] } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
@@ -151,29 +151,7 @@ export class EventModal implements OnInit {
       this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
     }
   }
-private timeToMins(timeStr: string): number {
-    if (!timeStr || !timeStr.includes(':')) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
-    return (h * 60) + m;
-  }
 
-  // Funkcija koja proverava da li se izabrano vreme preklapa sa postojećim za datu salu
-  isSalaZauzeta(salaNaziv: string): boolean {
-    if (!this.formData.startTime || !this.data.zauzeteSaleNaDan) return false;
-    
-    const start1 = this.timeToMins(this.formData.startTime);
-    // Ako nema kraja, pretpostavljamo trajanje od 2 sata (120 min)
-    const end1 = this.formData.endTime ? this.timeToMins(this.formData.endTime) : (start1 + 120);
-
-    return this.data.zauzeteSaleNaDan.some((z: any) => {
-      if (z.sala !== salaNaziv || z.sala === 'Bez sale') return false;
-      const start2 = this.timeToMins(z.vreme);
-      const end2 = z.vremeKraja ? this.timeToMins(z.vremeKraja) : (start2 + 120);
-      
-      // Formula za preklapanje vremenskih raspona
-      return start1 < end2 && start2 < end1; 
-    });
-  }
   onCancel(): void {
     this.dialogRef.close();
   }

@@ -35,16 +35,11 @@
       </div>
 
       <!-- Izaberi salu -->
-     <mat-form-field appearance="outline" class="custom-field w-full">
+      <mat-form-field appearance="outline" class="custom-field w-full">
         <mat-label>Izaberi salu*</mat-label>
         <mat-select [(ngModel)]="formData.room">
           @for (sala of ['Sala A1', 'Sala A2', 'Sala A3', 'Svečana sala', 'Amfiteatar']; track sala) {
-            <mat-option [value]="sala" [disabled]="isSalaZauzeta(sala)" [ngClass]="isSalaZauzeta(sala) ? 'opacity-50 bg-gray-50' : ''">
-              {{ sala }}
-              @if (isSalaZauzeta(sala)) {
-                <span class="text-[10px] text-red-500 font-bold ml-2">(Zauzeta)</span>
-              }
-            </mat-option>
+            <mat-option [value]="sala">{{ sala }}</mat-option>
           }
         </mat-select>
       </mat-form-field>
