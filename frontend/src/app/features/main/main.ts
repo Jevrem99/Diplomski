@@ -548,15 +548,18 @@ prikazaniBrojPredmeta: number = 5; // <--- DODATO
   }
 
   fetchIspiti(): void {
-    this.http.get<any[]>(`${this.API_URL}/ispit`).subscribe({
-      next: (ispiti) => {
-        const events = ispiti.map(i => {
+    forkJoin({
+      ispiti: this.http.get<any[]>(`${this.API_URL}/ispit`),
+      redovnaNastava: this.http.get<any[]>(`${this.API_URL}/ispit/zauzeti-termini`)
+    }).subscribe({
+      next: ({ ispiti, redovnaNastava }) => {
+        // 1. Obrada regularnih ispita/kolokvijuma
+        const ispitEvents = ispiti.map(i => {
           const boja = this.getGodinaColor(i.predmet?.godina);
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
-
           const formatiranoVreme = i.vreme ? (i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5)) : '00:00';
           const formatiranoVremeKraja = i.vreme_kraja ? (i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5)) : '';
-
+          
           return {
             id: i.id.toString(),
             title: `${i.predmet?.naziv || 'Ispit'} (${salaNaziv})`,
@@ -570,20 +573,49 @@ prikazaniBrojPredmeta: number = 5; // <--- DODATO
               vremeKraja: formatiranoVremeKraja,
               sala: salaNaziv,
               predmetId: i.predmet_id,
-              godina: i.predmet?.godina, // <--- DODATO! Zbog ovog filter nije radio
+              godina: i.predmet?.godina,
               dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : []
             }
           };
         });
 
-        this.calendarOptions.events = events;
+        // 2. Obrada redovne nastave DIRECTNO iz baze (BEZ IKAKVIH HARDKODOVANIH DATUMA)
+        const nastavaEvents: any[] = [];
+        if (Array.isArray(redovnaNastava)) {
+          redovnaNastava.forEach(cas => {
+            // Datum iz baze u formatu YYYY-MM-DD
+            const dStr = cas.datum ? cas.datum.split('T')[0] : null;
+            if (!dStr) return;
+
+            nastavaEvents.push({
+              id: `nastava_${cas.id}`,
+              title: `Nastava: ${cas.predmet} (${cas.sala?.naziv || 'Sala'})`,
+              start: `${dStr}T${cas.vreme_pocetka}:00`,
+              end: `${dStr}T${cas.vreme_kraja}:00`,
+              display: 'block',
+              backgroundColor: '#f3f4f6', // Svetlo siva kartica
+              borderColor: '#ef4444',     // Crvena ivica sa strane
+              textColor: '#1f2937',
+              editable: false,
+              extendedProps: {
+                vreme: cas.vreme_pocetka,
+                vremeKraja: cas.vreme_kraja,
+                sala: cas.sala?.naziv,
+                isNastava: true
+              }
+            });
+          });
+        }
+
+        const sviDogadjaji = [...ispitEvents, ...nastavaEvents];
+        this.allLoadedEvents = sviDogadjaji;
+        this.calendarOptions.events = sviDogadjaji;
+        
+        this.dostupneSale = [...new Set(ispitEvents.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
         this.cdr.detectChanges();
         setTimeout(() => this.detectConflicts(), 200);
-        this.allLoadedEvents = events;
-        this.dostupneSale = [...new Set(events.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
-        this.applyFilters()
       },
-      error: (err) => console.error('Greška pri dohvatanju ispita:', err)
+      error: (err) => console.error('Greška pri dohvatanju ispita i nastave:', err)
     });
   }
 
@@ -874,6 +906,21 @@ prikazaniBrojPredmeta: number = 5; // <--- DODATO
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
+  }
+  sinhronizujIMI() {
+    this.toastService.show('Započinjem sinhronizaciju sa IMI serverom, molimo sačekajte...', 'success');
+    
+    // Gađamo onu rutu koju smo napravili u adminRoutes.js
+    this.http.post(`${this.API_URL}/admin/sync-imi`, {}).subscribe({
+      next: (res: any) => {
+        console.log('Odgovor sa bekenda:', res);
+        this.toastService.show(res.poruka || 'Sinhronizacija uspešna!', 'success');
+      },
+      error: (err) => {
+        console.error('Greška pri IMI sinhronizaciji:', err);
+        this.toastService.show('Došlo je do greške pri sinhronizaciji.', 'error');
+      }
+    });
   }
   objaviRaspored() {
     if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu.')) {

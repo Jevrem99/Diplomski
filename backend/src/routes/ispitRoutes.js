@@ -2,7 +2,7 @@ const express = require('express');
 const ispitController = require('../controllers/ispitController');
 
 const router = express.Router();
-
+router.get('/zauzeti-termini', ispitController.getZauzetiTermini); // <--- DODATO
 router.get('/', ispitController.getAllIspiti);
 router.get('/:id', ispitController.getIspitById);
 router.post('/', ispitController.createIspit);

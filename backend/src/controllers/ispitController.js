@@ -155,6 +155,23 @@ const publishAll = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+// Dohvata redovnu nastavu sa IMI-ja za blokiranje kalendara
+const getZauzetiTermini = async (req, res) => {
+    try {
+        const { sala_id } = req.query;
+        const whereClause = sala_id ? { sala_id: Number(sala_id) } : {};
+
+        const redovnaNastava = await prisma.redovnaNastava.findMany({
+            where: whereClause,
+            include: { sala: true }
+        });
+
+        res.status(200).json(redovnaNastava);
+    } catch (err) {
+        console.error('Greška pri dohvatanju zauzetih termina:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 module.exports = {
     getAllIspiti,
     getIspitById,
@@ -162,5 +179,6 @@ module.exports = {
     updateIspit,
     deleteIspit,
     saveBulkIspiti,
-    publishAll
+    publishAll,
+    getZauzetiTermini
 };

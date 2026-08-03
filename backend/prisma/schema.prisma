@@ -78,9 +78,9 @@ model RedovnaNastava {
   id             Int      @id @default(autoincrement())
   sala_id        Int
   sala           Sala     @relation(fields: [sala_id], references: [id])
-  dan_u_nedelji  Int      // 1 = Ponedeljak, 2 = Utorak...
-  vreme_pocetka  String   // npr. "08:15"
-  vreme_kraja    String   // npr. "10:00"
+  datum          DateTime // <--- Tačan datum nastave iz IMI kalendara!
+  vreme_pocetka  String
+  vreme_kraja    String
   predmet        String
   nastavnik      String?
 }
