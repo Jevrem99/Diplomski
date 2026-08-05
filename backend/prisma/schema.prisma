@@ -56,6 +56,7 @@ model Sala {
   naziv     String   @unique
   kapacitet Int?     
   ispiti    Ispit[]
+  redovnaNastava RedovnaNastava[]
 }
 model Ispit {
   id         Int         @id @default(autoincrement())
@@ -66,12 +67,22 @@ model Ispit {
   sala_id    Int?
   
   is_ispit   Boolean     @default(true)
-  
+  is_izmenjen  Boolean     @default(false)
   predmet    Predmet?    @relation(fields: [predmet_id], references: [id])
-  
+  is_published Boolean    @default(false)
   sala       Sala?       @relation(fields: [sala_id], references: [id])
   
   dezurstva  Dezurstva[] 
+}
+model RedovnaNastava {
+  id             Int      @id @default(autoincrement())
+  sala_id        Int
+  sala           Sala     @relation(fields: [sala_id], references: [id])
+  datum          DateTime // <--- Tačan datum nastave iz IMI kalendara!
+  vreme_pocetka  String
+  vreme_kraja    String
+  predmet        String
+  nastavnik      String?
 }
 model Obaveza {
   id            Int       @id @default(autoincrement())

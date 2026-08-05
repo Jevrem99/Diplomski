@@ -74,11 +74,37 @@ const getRoles = async (req, res) => {
     ];
     res.status(200).json(uloge);
 };
+const changePassword = async (req, res) => {
+    const { username, oldPassword, newPassword } = req.body;
+
+    try {
+        // 1. Proveravamo da li je stara lozinka tačna
+        const isValid = await userModel.validatePassword(username, oldPassword);
+        if (!isValid) {
+            return res.status(400).json({ error: 'Trenutna lozinka nije tačna!' });
+        }
+
+        // 2. Nalazimo korisnika i ažuriramo mu lozinku
+        const user = await userModel.getUserByUsername(username);
+        if (!user) {
+            return res.status(404).json({ error: 'Korisnik nije pronađen!' });
+        }
+
+        // Koristimo postojeću updateUser funkciju koja će automatski heširati novu lozinku
+        await userModel.updateUser(user.id, user.username, user.email, newPassword, user.uloga);
+
+        res.status(200).json({ message: 'Lozinka uspešno promenjena!' });
+    } catch (error) {
+        console.error('Greška pri promeni lozinke:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
 module.exports = {
     registerUser,
     getAllUsers,
     getUserById,
     updateUser,
     deleteUser,
-    getRoles
+    getRoles,
+    changePassword
 }

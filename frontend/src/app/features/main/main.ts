@@ -20,7 +20,21 @@ interface Profesor {
   prezime: string;
   email?: string;
 }
+function presloviULatinicu(tekst: string): string {
+  if (!tekst) return '';
+  
+  const cirilicaToLatinica: { [key: string]: string } = {
+    'а':'a', 'б':'b', 'в':'v', 'г':'g', 'д':'d', 'ђ':'dj', 'е':'e', 'ж':'z', 'з':'z', 'и':'i',
+    'ј':'j', 'к':'k', 'л':'l', 'љ':'lj', 'м':'m', 'н':'n', 'њ':'nj', 'о':'o', 'п':'p', 'р':'r',
+    'с':'s', 'т':'t', 'ћ':'c', 'у':'u', 'ф':'f', 'х':'h', 'ц':'c', 'ч':'c', 'џ':'dz', 'ш':'s',
+    'А':'a', 'Б':'b', 'В':'v', 'Г':'g', 'Д':'d', 'Ђ':'dj', 'Е':'e', 'Ж':'z', 'З':'z', 'И':'i',
+    'Ј':'j', 'К':'k', 'Л':'l', 'Љ':'lj', 'М':'m', 'Н':'n', 'Њ':'nj', 'О':'o', 'П':'p', 'Р':'r',
+    'С':'s', 'Т':'t', 'Ћ':'c', 'У':'u', 'Ф':'f', 'Х':'h', 'Ц':'c', 'Ч':'c', 'Џ':'dz', 'Ш':'s',
+    'č':'c', 'ć':'c', 'š':'s', 'ž':'z', 'đ':'dj', 'Č':'c', 'Ć':'c', 'Š':'s', 'Ž':'z', 'Đ':'dj'
+  };
 
+  return tekst.split('').map(char => cirilicaToLatinica[char] || char).join('').toLowerCase();
+}
 interface Predmet {
   id: number;
   sifra: string;
@@ -59,23 +73,53 @@ export class Main implements OnInit, AfterViewInit {
   filterSala: string = 'sve';
   allLoadedEvents: any[] = [];
   dostupneSale: string[] = [];
-
+isDashboardOpen: boolean = false;
  sviSaradnici: any[] = [];
   sveObaveze: any[] = [];
   filterSaradnici: number[] = [];
   searchPredmet: string = ''; // <--- DODATO
+prikazaniBrojPredmeta: number = 5; // <--- DODATO
 
+stats = {
+    totalIspiti: 0,
+    totalSaradnici: 0,
+    topDezurni: 'Učitavanje...',
+    konflikti: 0
+  };
+  fetchStats(): void {
+    this.http.get<any>(`${this.API_URL}/ispit/stats`).subscribe({
+      next: (data) => {
+        this.stats.totalIspiti = data.totalIspiti;
+        this.stats.totalSaradnici = data.totalSaradnici;
+        this.stats.topDezurni = data.topDezurni;
+      },
+      error: (err) => console.error('Greška pri dohvatanju statistike:', err)
+    });
+  }
   // <--- DODATO: Automatski filtrira listu predmeta levo
   get filtriraniPredmeti() {
-    if (!this.searchPredmet) return this.predmeti;
-    const q = this.searchPredmet.toLowerCase();
-    return this.predmeti.filter(p => 
-      p.naziv.toLowerCase().includes(q) || 
-      p.profesorImePrezime?.toLowerCase().includes(q) || 
-      p.sifra.toLowerCase().includes(q)
-    );
-  };
+    // 1. Ako ima pretrage
+    if (this.searchPredmet) {
+      const q = presloviULatinicu(this.searchPredmet);
+      
+      return this.predmeti.filter(p => {
+        const nazivLat = presloviULatinicu(p.naziv);
+        const profLat = presloviULatinicu(p.profesorImePrezime || '');
+        const sifraLat = presloviULatinicu(p.sifra || '');
 
+        return nazivLat.includes(q) || profLat.includes(q) || sifraLat.includes(q);
+      });
+    }
+    
+    // 2. Ako nema pretrage, prikazujemo samo prvih N predmeta
+    return this.predmeti.slice(0, this.prikazaniBrojPredmeta);
+  }
+
+  // <--- DODATA FUNKCIJA ZA DUGME --->
+  vidiVisePredmeta() {
+    this.prikazaniBrojPredmeta += 10;
+  }
+  
   applyFilters(): void {
     let filtered = [...this.allLoadedEvents];
     
@@ -375,44 +419,45 @@ export class Main implements OnInit, AfterViewInit {
     },
 
     eventDrop: (info) => {
-      this.hasUnsavedChanges = true;
-      const newDate = info.event.startStr.split('T')[0];
+    this.hasUnsavedChanges = true;
+    const newDate = info.event.startStr.split('T')[0];
+    
+    // Izvlačimo ID-jeve dežurnih asistenata da ne bi bili prazni
+    const dezurniLica = info.event.extendedProps['dezurni'] || [];
+    const dezurniIds = dezurniLica.map((d: any) => d.id || d);
 
-      if (info.event.id && !info.event.id.startsWith('temp_')) {
-        // Ako je iz baze
-        const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
-        const payload = {
-          id: info.event.id,
-          datum: newDate,
-          vreme: info.event.extendedProps['vreme'],
-          vreme_kraja: info.event.extendedProps['vremeKraja'],
-          sala: info.event.extendedProps['sala'],
-          predmet_id: info.event.extendedProps['predmetId'],
-          is_ispit: true
-        };
-        if (existingIndex > -1) {
-          this.modifiedEvents[existingIndex] = payload;
-        } else {
-          this.modifiedEvents.push(payload);
-        }
+    if (info.event.id && !info.event.id.startsWith('temp_')) {
+      const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
+      const payload = {
+        id: info.event.id,
+        datum: newDate,
+        vreme: info.event.extendedProps['vreme'],
+        vreme_kraja: info.event.extendedProps['vremeKraja'],
+        sala: info.event.extendedProps['sala'],
+        predmet_id: info.event.extendedProps['predmetId'],
+        is_ispit: true,
+        dezurni_ids: dezurniIds // <--- DODATO DA PUT ZAHTEV IMA DEŽURNE
+      };
+      if (existingIndex > -1) {
+        this.modifiedEvents[existingIndex] = payload;
       } else {
-          // Ako je tek dodati nesSaved event (tražimo po tempId)
-          const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
-          if (unsavedEvent) unsavedEvent.datum = newDate;
-        }
+        this.modifiedEvents.push(payload);
+      }
+    } else {
+      const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
+      if (unsavedEvent) unsavedEvent.datum = newDate;
+    }
 
-        // DODATO: Ažuriraj datum u glavnom nizu za filtere
-        const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
-        if (evtIndex > -1) {
-          this.allLoadedEvents[evtIndex].start = `${newDate}T${info.event.extendedProps['vreme']}:00`;
-          if (info.event.extendedProps['vremeKraja']) {
-              this.allLoadedEvents[evtIndex].end = `${newDate}T${info.event.extendedProps['vremeKraja']}:00`;
-          }
-        }
-        
-        this.applyFilters();
-        setTimeout(() => this.detectConflicts(), 300);
-      }, // Kraj eventDrop funkcije
+    const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
+    if (evtIndex > -1) {
+      this.allLoadedEvents[evtIndex].start = `${newDate}T${info.event.extendedProps['vreme']}:00`;
+      if (info.event.extendedProps['vremeKraja']) {
+        this.allLoadedEvents[evtIndex].end = `${newDate}T${info.event.extendedProps['vremeKraja']}:00`;
+      }
+    }
+    this.applyFilters();
+    setTimeout(() => this.detectConflicts(), 300);
+  }, // Kraj eventDrop funkcije
     titleFormat: (arg) => {
       const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
       return `${meseci[arg.date.month]} ${arg.date.year}.`;
@@ -488,6 +533,7 @@ export class Main implements OnInit, AfterViewInit {
     this.fetchPredmeti();
     this.fetchIspiti();
     this.fetchSviSaradniciIObaveze();
+    this.fetchStats();
   }
 
   ngAfterViewInit(): void {
@@ -521,15 +567,18 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   fetchIspiti(): void {
-    this.http.get<any[]>(`${this.API_URL}/ispit`).subscribe({
-      next: (ispiti) => {
-        const events = ispiti.map(i => {
+    forkJoin({
+      ispiti: this.http.get<any[]>(`${this.API_URL}/ispit`),
+      redovnaNastava: this.http.get<any[]>(`${this.API_URL}/ispit/zauzeti-termini`)
+    }).subscribe({
+      next: ({ ispiti, redovnaNastava }) => {
+        // 1. Obrada regularnih ispita/kolokvijuma
+        const ispitEvents = ispiti.map(i => {
           const boja = this.getGodinaColor(i.predmet?.godina);
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
-
           const formatiranoVreme = i.vreme ? (i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5)) : '00:00';
           const formatiranoVremeKraja = i.vreme_kraja ? (i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5)) : '';
-
+          
           return {
             id: i.id.toString(),
             title: `${i.predmet?.naziv || 'Ispit'} (${salaNaziv})`,
@@ -543,20 +592,49 @@ export class Main implements OnInit, AfterViewInit {
               vremeKraja: formatiranoVremeKraja,
               sala: salaNaziv,
               predmetId: i.predmet_id,
-              godina: i.predmet?.godina, // <--- DODATO! Zbog ovog filter nije radio
+              godina: i.predmet?.godina,
               dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : []
             }
           };
         });
 
-        this.calendarOptions.events = events;
+        // 2. Obrada redovne nastave DIRECTNO iz baze (BEZ IKAKVIH HARDKODOVANIH DATUMA)
+        const nastavaEvents: any[] = [];
+        if (Array.isArray(redovnaNastava)) {
+          redovnaNastava.forEach(cas => {
+            // Datum iz baze u formatu YYYY-MM-DD
+            const dStr = cas.datum ? cas.datum.split('T')[0] : null;
+            if (!dStr) return;
+
+            nastavaEvents.push({
+              id: `nastava_${cas.id}`,
+              title: `Nastava: ${cas.predmet} (${cas.sala?.naziv || 'Sala'})`,
+              start: `${dStr}T${cas.vreme_pocetka}:00`,
+              end: `${dStr}T${cas.vreme_kraja}:00`,
+              display: 'block',
+              backgroundColor: '#f3f4f6', // Svetlo siva kartica
+              borderColor: '#ef4444',     // Crvena ivica sa strane
+              textColor: '#1f2937',
+              editable: false,
+              extendedProps: {
+                vreme: cas.vreme_pocetka,
+                vremeKraja: cas.vreme_kraja,
+                sala: cas.sala?.naziv,
+                isNastava: true
+              }
+            });
+          });
+        }
+
+        const sviDogadjaji = [...ispitEvents, ...nastavaEvents];
+        this.allLoadedEvents = sviDogadjaji;
+        this.calendarOptions.events = sviDogadjaji;
+        
+        this.dostupneSale = [...new Set(ispitEvents.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
         this.cdr.detectChanges();
         setTimeout(() => this.detectConflicts(), 200);
-        this.allLoadedEvents = events;
-        this.dostupneSale = [...new Set(events.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
-        this.applyFilters()
       },
-      error: (err) => console.error('Greška pri dohvatanju ispita:', err)
+      error: (err) => console.error('Greška pri dohvatanju ispita i nastave:', err)
     });
   }
 
@@ -723,6 +801,11 @@ export class Main implements OnInit, AfterViewInit {
               tooltip.style.setProperty('display', 'block', 'important');
             }
           });
+          let ukupanBrojKonflikata = 0;
+          for (const razlozi of conflictsByDate.values()) {
+              ukupanBrojKonflikata += razlozi.length;
+          }
+          this.stats.konflikti = ukupanBrojKonflikata;
           
           frame.appendChild(warning);
         }
@@ -847,5 +930,33 @@ export class Main implements OnInit, AfterViewInit {
 
     printWindow.document.write(htmlContent);
     printWindow.document.close();
+  }
+  sinhronizujIMI() {
+    this.toastService.show('Započinjem sinhronizaciju sa IMI serverom, molimo sačekajte...', 'success');
+    
+    // Gađamo onu rutu koju smo napravili u adminRoutes.js
+    this.http.post(`${this.API_URL}/admin/sync-imi`, {}).subscribe({
+      next: (res: any) => {
+        console.log('Odgovor sa bekenda:', res);
+        this.toastService.show(res.poruka || 'Sinhronizacija uspešna!', 'success');
+      },
+      error: (err) => {
+        console.error('Greška pri IMI sinhronizaciji:', err);
+        this.toastService.show('Došlo je do greške pri sinhronizaciji.', 'error');
+      }
+    });
+  }
+  objaviRaspored() {
+    if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu.')) {
+      this.http.put(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
+        next: (res: any) => {
+          this.toastService.show('Raspored je uspešno objavljen!', 'success');
+        },
+        error: (err) => {
+          console.error('Greška pri objavljivanju:', err);
+          this.toastService.show('Došlo je do greške pri objavljivanju.', 'error');
+        }
+      });
+    }
   }
 }

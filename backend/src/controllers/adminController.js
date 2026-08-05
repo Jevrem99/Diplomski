@@ -1,5 +1,17 @@
 const pool = require('../db/connection');
 const prisma = require('../db/prisma');
+const { syncZauzetostSala } = require('../services/imiSyncService');
+
+
+const runImiSync = async (req, res) => {
+    try {
+        const rezultat = await syncZauzetostSala();
+        res.status(200).json(rezultat);
+    } catch (error) {
+        console.error('Greška pri IMI sinhronizaciji:', error);
+        res.status(500).json({ message: 'Greška pri obradi IMI podataka', error: error.message });
+    }
+};
 
 const resetDatabase = async (req, res) => {
   try {
@@ -81,5 +93,6 @@ const insertTestData = async (req, res) => {
 
 module.exports = {
   resetDatabase,
-  insertTestData
+  insertTestData,
+  runImiSync
 };

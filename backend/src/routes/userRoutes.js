@@ -4,7 +4,7 @@ const userController = require('../controllers/userController');
 //const { protect, restrictToAdmin } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
-
+router.post('/change-password', userController.changePassword);
 router.post('/', userController.registerUser); // Promenjeno sa /register na /
 router.get('/', userController.getAllUsers);
 router.get('/roles', userController.getRoles);

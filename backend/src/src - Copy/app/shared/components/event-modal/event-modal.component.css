@@ -1,0 +1,57 @@
+/* 1. HOST I GLOBALNA KUTIJA MODALA */
+:host {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+:host *, 
+::ng-deep .mat-mdc-dialog-container, 
+::ng-deep .mdc-dialog__surface {
+  font-family: 'Montserrat', sans-serif !important;
+  box-sizing: border-box !important;
+}
+
+/* 2. POTPUNO UKLANJANJE MATERIAL MARGINA I PADDING-A KOJI GURAJU DESNU STRANU */
+::ng-deep .cdk-overlay-pane:has(app-event-modal) {
+  max-width: 95vw !important;
+  padding: 0 !important;
+}
+
+::ng-deep .mat-mdc-dialog-container {
+  padding: 0 !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+::ng-deep .mdc-dialog__surface {
+  padding: 0 !important;
+  border-radius: 1.25rem !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* 3. MATERIAL FORM FIELD POPRAVKA SHIRINE */
+::ng-deep .mat-mdc-form-field {
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  --mdc-outlined-text-field-container-shape: 12px !important;
+}
+
+::ng-deep .mat-mdc-form-field .mdc-floating-label {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 500 !important;
+}
+
+::ng-deep .mat-mdc-input-element, 
+::ng-deep .mat-mdc-select-value, 
+::ng-deep .mat-mdc-select-placeholder {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  color: #334155 !important;
+}

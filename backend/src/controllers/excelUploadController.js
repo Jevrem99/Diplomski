@@ -1,162 +1,191 @@
 const XLSX = require('xlsx');
-const pool = require('../db/connection.js');
+const prisma = require('../db/prisma'); // Koristimo Prismu za čist i bezbedan upis
 
-// Lista reči iz zaglavlja koje moramo ignorisati
-const IGNORISI_TEKST = [
-  'предавања', 'наставник', 'сарадник', 'вежбе', 'шифра', 'предмет', 
-  'статус предмета', 'бр. ч.', 'врста', 'срт', 'оас', 'рн', 'си', 'икт','ментор','O','И'
-];
+// Reči koje sistem treba da ignoriše u ćelijama (zaglavlja)
+const IGNORISI_TEKST = ['шифра', 'предмет', 'наставник', 'сарадник', 'статус предмета', 'редни број', 'врста вежби', 'модули'];
 
 function jeZaglavljeIliPrazno(tekst) {
-  if (!tekst) return true;
-  const t = String(tekst).trim().toLowerCase();
-  return IGNORISI_TEKST.includes(t);
+    if (!tekst || String(tekst).trim() === '') return true;
+    const t = String(tekst).trim().toLowerCase();
+    return IGNORISI_TEKST.includes(t);
+}
+
+// Funkcija za pametno pronalaženje godine
+function parseGodina(text) {
+    if (!text) return null;
+    const t = text.toLowerCase();
+    if (t.includes('iv ') || t.includes('iv година') || t.includes('4. година') || t.includes('четврта')) return 4;
+    if (t.includes('iii ') || t.includes('iii година') || t.includes('3. година') || t.includes('трећа')) return 3;
+    if (t.includes('ii ') || t.includes('ii година') || t.includes('2. година') || t.includes('друга')) return 2;
+    if (t.includes('i ') || t.includes('i година') || t.includes('1. година') || t.includes('прва')) return 1;
+    return null;
+}
+
+// Pronalazi ili kreira profesora u bazi
+async function findOrCreateProfesor(imePrezime, isSaradnik) {
+    if (jeZaglavljeIliPrazno(imePrezime)) return null;
+
+    const cisto = String(imePrezime).replace(/\s+/g, ' ').trim();
+    const delovi = cisto.split(' ');
+    const ime = delovi[0];
+    const prezime = delovi.slice(1).join(' ') || 'Nepoznato';
+
+    let prof = await prisma.profesor.findFirst({
+        where: { ime: ime, prezime: prezime }
+    });
+
+    if (prof) {
+        // Ako asistent postane redovni profesor, ažuriramo mu status
+        if (prof.is_saradnik && !isSaradnik) {
+            prof = await prisma.profesor.update({
+                where: { id: prof.id },
+                data: { is_saradnik: false }
+            });
+        }
+        return prof.id;
+    }
+
+    // Kreiramo novog
+    const noviProf = await prisma.profesor.create({
+        data: {
+            ime: ime,
+            prezime: prezime,
+            is_saradnik: isSaradnik,
+            email: ''
+        }
+    });
+
+    return noviProf.id;
 }
 
 const importPredmetiExcel = async (req, res) => {
-  const client = await pool.connect();
-
-  try {
-    if (!req.file) {
-      return res.status(400).json({ message: 'Molimo vas pošaljite Excel fajl.' });
-    }
-
-    const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
-    const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Uzima prvi radni list
-    const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-    await client.query('BEGIN');
-
-    let currentGodina = 1; 
-    let currentSemestar = 'Zimski';
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      if (!row || row.length === 0) continue;
-
-      // Spajamo tekst celog reda radi lakše detekcije godine i semestra
-      const rowText = row.map(cell => String(cell || '').trim()).join(' ');
-
-      // 1. DETEKCIJA GODINE
-      if (rowText.toLowerCase().includes('година') || rowText.toLowerCase().includes('godina')) {
-        const detektovanaGodina = parseGodina(rowText);
-        if (detektovanaGodina) {
-          currentGodina = detektovanaGodina;
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'Molimo vas pošaljite Excel fajl.' });
         }
-      }
 
-      // 2. DETEKCIJA SEMESTRA
-      if (rowText.toLowerCase().includes('зимски') || rowText.toLowerCase().includes('zimski')) {
-        currentSemestar = 'Zimski';
-        continue;
-      }
-      if (rowText.toLowerCase().includes('летњи') || rowText.toLowerCase().includes('letnji')) {
-        currentSemestar = 'Letnji';
-        continue;
-      }
+        const workbook = XLSX.read(req.file.buffer, { type: 'buffer' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Čitamo prvi sheet
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-      // 3. ČITANJE VREDNOSTI IZ REDA
-      const sifra = row[1] ? String(row[1]).trim() : null;
-      const naziv = row[2] ? String(row[2]).trim() : null;
+        let currentGodina = 1;
+        let currentSemestar = 'Zimski';
+        let currentSifra = null;
 
-      // STATUS (Gleda se kolona D tj. row[3], fallback je ćirilično 'И')
-      const vrednostIzD = row[3] ? String(row[3]).trim() : '';
-      const status = (!jeZaglavljeIliPrazno(vrednostIzD)) ? vrednostIzD : 'И';
+        // Map struktura skuplja sve podatke o predmetu pre nego što ga upiše u bazu
+        const predmetiMap = new Map();
 
-      const nastavnikImePrezime = row[5] ? String(row[5]).trim() : null;
-      const saradnikImePrezime = row[7] ? String(row[7]).trim() : null;
+        for (let i = 0; i < rows.length; i++) {
+            const row = rows[i];
+            if (!row || row.length === 0) continue;
 
-      // 4. UNOS SARADNIKA (Samo ako nije tekst iz zaglavlja!)
-      if (saradnikImePrezime && !jeZaglavljeIliPrazno(saradnikImePrezime)) {
-        await findOrCreateProfesor(client, saradnikImePrezime, true);
-      }
+            const rowText = row.map(cell => String(cell || '').trim()).join(' ').toLowerCase();
 
-      // 5. UNOS PREDMETA I NASTAVNIKA (Samo kada su prisutni validni podaci)
-      if (
-        sifra && !jeZaglavljeIliPrazno(sifra) &&
-        naziv && !jeZaglavljeIliPrazno(naziv) &&
-        nastavnikImePrezime && !jeZaglavljeIliPrazno(nastavnikImePrezime)
-      ) {
-        // Očisti nevidljive tabulatore (\t)
-        const cistaSifra = sifra.replace(/\t/g, ''); 
+            // 1. Ažuriranje sekcije (Godina i Semestar)
+            if (rowText.includes('година') || rowText.includes('godina')) {
+                const detektovanaGodina = parseGodina(rowText);
+                if (detektovanaGodina) currentGodina = detektovanaGodina;
+            }
 
-        // Glavni Profesor -> isSaradnik = false
-        const profesorId = await findOrCreateProfesor(client, nastavnikImePrezime, false);
+            if (rowText.includes('зимски') || rowText.includes('zimski')) {
+                currentSemestar = 'Zimski';
+                continue;
+            }
+            if (rowText.includes('летњи') || rowText.includes('letnji')) {
+                currentSemestar = 'Letnji';
+                continue;
+            }
 
-        // Unos ili azuriranje predmeta
-        await client.query(
-          `INSERT INTO Predmet (sifra, naziv, godina, semestar, status, profesor_id)
-           VALUES ($1, $2, $3, $4, $5, $6)
-           ON CONFLICT (sifra) 
-           DO UPDATE SET 
-             naziv = EXCLUDED.naziv,
-             godina = EXCLUDED.godina,
-             semestar = EXCLUDED.semestar,
-             status = EXCLUDED.status,
-             profesor_id = EXCLUDED.profesor_id;`,
-          [cistaSifra, naziv, currentGodina, currentSemestar, status, profesorId]
-        );
-      }
+            // 2. Parsiranje kolona
+            const sifra = row[1];
+            const naziv = row[2];
+            const status = row[3]; 
+            const nastavnik = row[7]; // Kolona H u vašem fajlu
+            const saradnik = row[9];  // Kolona J u vašem fajlu
+
+            // Ako imamo šifru i naziv u istom redu - TO JE NOVI PREDMET
+            if (!jeZaglavljeIliPrazno(sifra) && !jeZaglavljeIliPrazno(naziv)) {
+                currentSifra = String(sifra).replace(/\t/g, '').trim();
+                const cistNaziv = String(naziv).replace(/\t/g, '').trim();
+                const cistStatus = status && !jeZaglavljeIliPrazno(status) ? String(status).trim() : 'О';
+
+                if (!predmetiMap.has(currentSifra)) {
+                    predmetiMap.set(currentSifra, {
+                        sifra: currentSifra,
+                        naziv: cistNaziv,
+                        godina: currentGodina,
+                        semestar: currentSemestar,
+                        status: cistStatus,
+                        nastavnikIme: nastavnik,
+                        saradniciImena: new Set()
+                    });
+                }
+
+                if (!jeZaglavljeIliPrazno(saradnik)) {
+                    predmetiMap.get(currentSifra).saradniciImena.add(saradnik);
+                }
+
+            } 
+            // Ako je šifra prazna, a imali smo prethodni predmet - TO JE DODATNI ASISTENT
+            else if (jeZaglavljeIliPrazno(sifra) && currentSifra) {
+                if (!jeZaglavljeIliPrazno(saradnik)) {
+                    predmetiMap.get(currentSifra).saradniciImena.add(saradnik);
+                }
+            }
+        }
+
+        // 3. UPIS U BAZU PODATAKA
+        for (const [sifra, p] of predmetiMap.entries()) {
+            
+            // Rešavanje glavnog profesora
+            let profesorId = null;
+            if (p.nastavnikIme && !jeZaglavljeIliPrazno(p.nastavnikIme)) {
+                profesorId = await findOrCreateProfesor(p.nastavnikIme, false);
+            }
+
+            // Rešavanje višestrukih asistenata
+            const saradniciIds = [];
+            for (const saradnikIme of p.saradniciImena) {
+                const sId = await findOrCreateProfesor(saradnikIme, true);
+                if (sId) saradniciIds.push({ id: sId });
+            }
+
+            // Upsert (Dodaj ako ne postoji, ažuriraj ako postoji)
+            await prisma.predmet.upsert({
+                where: { sifra: p.sifra },
+                update: {
+                    naziv: p.naziv,
+                    godina: p.godina,
+                    semestar: p.semestar,
+                    status: p.status,
+                    profesor_id: profesorId,
+                    saradnici: {
+                        set: [], // Briše stare veze pre upisa novih
+                        connect: saradniciIds 
+                    }
+                },
+                create: {
+                    sifra: p.sifra,
+                    naziv: p.naziv,
+                    godina: p.godina,
+                    semestar: p.semestar,
+                    status: p.status,
+                    profesor_id: profesorId,
+                    saradnici: {
+                        connect: saradniciIds
+                    }
+                }
+            });
+        }
+
+        return res.status(200).json({ message: 'Uspešno uvezeni predmeti, profesori i saradnici iz Excela!' });
+
+    } catch (error) {
+        console.error('Greška pri obradi Excel fajla:', error);
+        return res.status(500).json({ message: 'Greška pri obradi Excel fajla.', error: error.message });
     }
-
-    await client.query('COMMIT');
-    return res.status(200).json({ message: 'Uspešno uvezeni predmeti, profesori i saradnici za sve godine!' });
-
-  } catch (error) {
-    await client.query('ROLLBACK');
-    console.error('Greška pri uvozu:', error);
-    return res.status(500).json({ message: 'Greška pri obradi Excel fajla.', error: error.message });
-  } finally {
-    client.release();
-  }
 };
 
-function parseGodina(text) {
-  if (!text) return null;
-  const t = text.toUpperCase();
-  if (t.includes('IV ГОДИНА') || t.includes('IV GODINA')) return 4;
-  if (t.includes('III ГОДИНА') || t.includes('III GODINA')) return 3;
-  if (t.includes('II ГОДИНА') || t.includes('II GODINA')) return 2;
-  if (t.includes('I ГОДИНА') || t.includes('I GODINA')) return 1;
-  return null;
-}
-
-async function findOrCreateProfesor(client, punNaziv, isSaradnik) {
-  const cistoIme = punNaziv.replace(/\s+/g, ' ').trim();
-  const delovi = cistoIme.split(' ');
-  const ime = delovi[0];
-  const prezime = delovi.slice(1).join(' ') || 'Nepoznato';
-
-  // Provera da li profesor već postoji
-  const existing = await client.query(
-    `SELECT id, is_saradnik FROM Profesor WHERE ime = $1 AND prezime = $2`,
-    [ime, prezime]
-  );
-
-  if (existing.rows.length > 0) {
-    const prof = existing.rows[0];
-
-    // Ako je bio označen kao saradnik, a sada se pojavio kao profesor, ažuriraj ga
-    if (prof.is_saradnik && !isSaradnik) {
-      await client.query(
-        `UPDATE Profesor SET is_saradnik = false WHERE id = $1`,
-        [prof.id]
-      );
-    }
-
-    return prof.id;
-  }
-
-  // Ako ne postoji, ubacuje se nov
-  const inserted = await client.query(
-    `INSERT INTO Profesor (ime, prezime, is_saradnik, email) 
-     VALUES ($1, $2, $3, null) RETURNING id`,
-    [ime, prezime, isSaradnik]
-  );
-
-  return inserted.rows[0].id;
-}
-
 module.exports = {
-  importPredmetiExcel
+    importPredmetiExcel
 };
