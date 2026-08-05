@@ -73,12 +73,29 @@ export class Main implements OnInit, AfterViewInit {
   filterSala: string = 'sve';
   allLoadedEvents: any[] = [];
   dostupneSale: string[] = [];
-
+isDashboardOpen: boolean = false;
  sviSaradnici: any[] = [];
   sveObaveze: any[] = [];
   filterSaradnici: number[] = [];
   searchPredmet: string = ''; // <--- DODATO
 prikazaniBrojPredmeta: number = 5; // <--- DODATO
+
+stats = {
+    totalIspiti: 0,
+    totalSaradnici: 0,
+    topDezurni: 'Učitavanje...',
+    konflikti: 0
+  };
+  fetchStats(): void {
+    this.http.get<any>(`${this.API_URL}/ispit/stats`).subscribe({
+      next: (data) => {
+        this.stats.totalIspiti = data.totalIspiti;
+        this.stats.totalSaradnici = data.totalSaradnici;
+        this.stats.topDezurni = data.topDezurni;
+      },
+      error: (err) => console.error('Greška pri dohvatanju statistike:', err)
+    });
+  }
   // <--- DODATO: Automatski filtrira listu predmeta levo
   get filtriraniPredmeti() {
     // 1. Ako ima pretrage
@@ -402,44 +419,45 @@ prikazaniBrojPredmeta: number = 5; // <--- DODATO
     },
 
     eventDrop: (info) => {
-      this.hasUnsavedChanges = true;
-      const newDate = info.event.startStr.split('T')[0];
+    this.hasUnsavedChanges = true;
+    const newDate = info.event.startStr.split('T')[0];
+    
+    // Izvlačimo ID-jeve dežurnih asistenata da ne bi bili prazni
+    const dezurniLica = info.event.extendedProps['dezurni'] || [];
+    const dezurniIds = dezurniLica.map((d: any) => d.id || d);
 
-      if (info.event.id && !info.event.id.startsWith('temp_')) {
-        // Ako je iz baze
-        const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
-        const payload = {
-          id: info.event.id,
-          datum: newDate,
-          vreme: info.event.extendedProps['vreme'],
-          vreme_kraja: info.event.extendedProps['vremeKraja'],
-          sala: info.event.extendedProps['sala'],
-          predmet_id: info.event.extendedProps['predmetId'],
-          is_ispit: true
-        };
-        if (existingIndex > -1) {
-          this.modifiedEvents[existingIndex] = payload;
-        } else {
-          this.modifiedEvents.push(payload);
-        }
+    if (info.event.id && !info.event.id.startsWith('temp_')) {
+      const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
+      const payload = {
+        id: info.event.id,
+        datum: newDate,
+        vreme: info.event.extendedProps['vreme'],
+        vreme_kraja: info.event.extendedProps['vremeKraja'],
+        sala: info.event.extendedProps['sala'],
+        predmet_id: info.event.extendedProps['predmetId'],
+        is_ispit: true,
+        dezurni_ids: dezurniIds // <--- DODATO DA PUT ZAHTEV IMA DEŽURNE
+      };
+      if (existingIndex > -1) {
+        this.modifiedEvents[existingIndex] = payload;
       } else {
-          // Ako je tek dodati nesSaved event (tražimo po tempId)
-          const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
-          if (unsavedEvent) unsavedEvent.datum = newDate;
-        }
+        this.modifiedEvents.push(payload);
+      }
+    } else {
+      const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
+      if (unsavedEvent) unsavedEvent.datum = newDate;
+    }
 
-        // DODATO: Ažuriraj datum u glavnom nizu za filtere
-        const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
-        if (evtIndex > -1) {
-          this.allLoadedEvents[evtIndex].start = `${newDate}T${info.event.extendedProps['vreme']}:00`;
-          if (info.event.extendedProps['vremeKraja']) {
-              this.allLoadedEvents[evtIndex].end = `${newDate}T${info.event.extendedProps['vremeKraja']}:00`;
-          }
-        }
-        
-        this.applyFilters();
-        setTimeout(() => this.detectConflicts(), 300);
-      }, // Kraj eventDrop funkcije
+    const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
+    if (evtIndex > -1) {
+      this.allLoadedEvents[evtIndex].start = `${newDate}T${info.event.extendedProps['vreme']}:00`;
+      if (info.event.extendedProps['vremeKraja']) {
+        this.allLoadedEvents[evtIndex].end = `${newDate}T${info.event.extendedProps['vremeKraja']}:00`;
+      }
+    }
+    this.applyFilters();
+    setTimeout(() => this.detectConflicts(), 300);
+  }, // Kraj eventDrop funkcije
     titleFormat: (arg) => {
       const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
       return `${meseci[arg.date.month]} ${arg.date.year}.`;
@@ -515,6 +533,7 @@ prikazaniBrojPredmeta: number = 5; // <--- DODATO
     this.fetchPredmeti();
     this.fetchIspiti();
     this.fetchSviSaradniciIObaveze();
+    this.fetchStats();
   }
 
   ngAfterViewInit(): void {
@@ -782,6 +801,11 @@ prikazaniBrojPredmeta: number = 5; // <--- DODATO
               tooltip.style.setProperty('display', 'block', 'important');
             }
           });
+          let ukupanBrojKonflikata = 0;
+          for (const razlozi of conflictsByDate.values()) {
+              ukupanBrojKonflikata += razlozi.length;
+          }
+          this.stats.konflikti = ukupanBrojKonflikata;
           
           frame.appendChild(warning);
         }

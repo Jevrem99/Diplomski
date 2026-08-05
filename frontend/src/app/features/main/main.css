@@ -568,3 +568,15 @@
 :host ::ng-deep .fc, :host ::ng-deep .fc-view-harness, :host ::ng-deep .fc-view-harness-active, :host ::ng-deep .fc-scroller, :host ::ng-deep .fc-daygrid-body, :host ::ng-deep .fc-scrollgrid-section, :host ::ng-deep .fc-scrollgrid-section > * {
   overflow: visible !important;
 }
+.header-filters select, 
+.fc-toolbar select,
+select[name="godinaFilter"],
+select[name="salaFilter"],
+select[name="saradnikFilter"] {
+  max-width: 140px !important;
+  min-width: 110px !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  padding-right: 20px !important;
+}

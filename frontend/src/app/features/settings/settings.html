@@ -1,10 +1,91 @@
-<div class="settings-container">
-  <h2>Settings</h2>
-  <button class="theme-toggle-btn" (click)="toggleTheme()">
-    @if (themeService.isDarkMode()) {
-        ☀️ Svetla tema
-    } @else {
-        🌙 Tamna tema
-    }
-    </button>
+<div class="p-8 bg-[#f4f7fb] min-h-[94vh] font-montserrat">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-3xl font-bold text-gray-800 mb-8">Podešavanja profila</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      
+      <!-- LEVA KOLONA: Informacije i Tema -->
+      <div class="flex flex-col gap-8">
+        
+        <!-- Osnovne informacije -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center text-[#34b9f7]">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-800">Moji podaci</h2>
+              <p class="text-sm text-gray-500">Pregled informacija sa naloga</p>
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-4">
+            <div>
+              <span class="text-xs font-bold text-gray-400 uppercase">Korisničko ime</span>
+              <p class="text-base font-semibold text-gray-800 mt-1">{{ userInfo.username }}</p>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-gray-400 uppercase">Email adresa</span>
+              <p class="text-base font-semibold text-gray-800 mt-1">{{ userInfo.email }}</p>
+            </div>
+            <div>
+              <span class="text-xs font-bold text-gray-400 uppercase">Nivo pristupa (Uloga)</span>
+              <p class="text-sm font-bold text-[#34b9f7] mt-1 bg-blue-50 w-max px-3 py-1 rounded-md">{{ userInfo.uloga }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Podešavanje Teme -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-gray-800">Izgled aplikacije</h2>
+            <p class="text-xs text-gray-500 mt-1">Prebacivanje između tamnog i svetlog režima</p>
+          </div>
+          <button class="px-5 py-2.5 text-sm font-bold rounded-xl transition-all shadow-md"
+                  [ngClass]="themeService.isDarkMode() ? 'bg-gray-800 text-white hover:bg-gray-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'"
+                  (click)="toggleTheme()">
+            @if (themeService.isDarkMode()) {
+              Svetla tema
+            } @else {
+              Tamna tema
+            }
+          </button>
+        </div>
+
+      </div>
+
+      <!-- DESNA KOLONA: Promena lozinke -->
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 h-fit">
+        <h2 class="text-xl font-bold text-[#34b9f7] mb-2">Promena lozinke</h2>
+        <p class="text-sm text-gray-500 mb-6">Preporučujemo da koristite jaku lozinku koja sadrži slova i brojeve.</p>
+
+        <form (ngSubmit)="promeniLozinku()" class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold text-gray-600">Trenutna lozinka</label>
+            <input type="password" [(ngModel)]="passwordData.oldPassword" name="oldPass" required
+                   class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#34b9f7]/50 outline-none text-gray-700">
+          </div>
+
+          <div class="flex flex-col gap-1.5 mt-2">
+            <label class="text-sm font-semibold text-gray-600">Nova lozinka</label>
+            <input type="password" [(ngModel)]="passwordData.newPassword" name="newPass" required
+                   class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#34b9f7]/50 outline-none text-gray-700">
+          </div>
+
+          <div class="flex flex-col gap-1.5">
+            <label class="text-sm font-semibold text-gray-600">Potvrdite novu lozinku</label>
+            <input type="password" [(ngModel)]="passwordData.confirmPassword" name="confirmPass" required
+                   class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#34b9f7]/50 outline-none text-gray-700">
+          </div>
+
+          <button type="submit" class="mt-4 w-full bg-[#34b9f7] text-white font-bold py-3 rounded-xl hover:bg-[#20a6e4] transition-all shadow-md">
+            Ažuriraj lozinku
+          </button>
+        </form>
+      </div>
+
+    </div>
+  </div>
 </div>

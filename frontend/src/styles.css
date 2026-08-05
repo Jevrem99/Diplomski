@@ -47,3 +47,215 @@ app-event-modal {
 :root {
   --primary-blue: #34b9f7;
 }
+/* ========================================================= */
+/* DARK THEME GLOBALNI OVERRIDES                             */
+/* ========================================================= */
+
+html, body {
+  min-height: 100%;
+}
+
+body.dark-theme {
+  background-color: #0f172a !important; /* slate-900 */
+  color: #f8fafc !important;
+}
+
+/* 1. Zamena Tailwind background klasa (ESKAPOVANE ZAGRADE) */
+body.dark-theme .bg-white { background-color: #1e293b !important; } /* slate-800 za kartice */
+
+body.dark-theme .bg-\[\#f4f7fb\], 
+body.dark-theme .bg-gray-50, 
+body.dark-theme .bg-gray-100, 
+body.dark-theme .bg-slate-50 { 
+  background-color: #0f172a !important; 
+}
+
+/* 2. Zamena tekstualnih boja */
+body.dark-theme .text-gray-800, 
+body.dark-theme .text-gray-700, 
+body.dark-theme .text-slate-800,
+body.dark-theme h1, body.dark-theme h2, body.dark-theme h3 { 
+  color: #f1f5f9 !important; 
+}
+
+body.dark-theme .text-gray-600, 
+body.dark-theme .text-gray-500, 
+body.dark-theme .text-gray-400, 
+body.dark-theme .text-slate-500,
+body.dark-theme .text-slate-400 { 
+  color: #94a3b8 !important; 
+}
+
+/* 3. Zamena ivica (borders) */
+body.dark-theme .border-gray-100, 
+body.dark-theme .border-gray-200, 
+body.dark-theme .border-slate-100, 
+body.dark-theme .border-slate-200 { 
+  border-color: #334155 !important; 
+}
+
+/* 4. Input polja i modali (Angular Material) */
+body.dark-theme input, 
+body.dark-theme select, 
+body.dark-theme .mat-mdc-select-value-text {
+  background-color: #0f172a !important;
+  color: #f8fafc !important;
+  border-color: #334155 !important;
+}
+
+body.dark-theme .mdc-dialog__surface {
+  background-color: #1e293b !important; /* Tamni modali */
+}
+
+/* ========================================================= */
+/* FULLCALENDAR DARK MODE PRILAGOĐAVANJE                     */
+/* ========================================================= */
+
+body.dark-theme .fc-theme-standard td, 
+body.dark-theme .fc-theme-standard th, 
+body.dark-theme .fc-theme-standard .fc-scrollgrid {
+  border-color: #334155 !important;
+}
+
+body.dark-theme .fc-col-header-cell {
+  background-color: #0f172a !important;
+}
+
+body.dark-theme .fc .fc-daygrid-day-number,
+body.dark-theme .fc .fc-col-header-cell-cushion {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme .fc .fc-button-primary {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+body.dark-theme .fc .fc-button-primary:hover {
+  background-color: #334155 !important;
+}
+
+body.dark-theme .fc-day-today {
+  background-color: rgba(52, 185, 247, 0.1) !important;
+}
+
+body.dark-theme .fc-event {
+  border: none !important;
+}
+/* ========================================================= */
+/* 1. POPRAVKA ZA DATABASE MANAGEMENT (Nevidljiva slova)     */
+/* ========================================================= */
+body.dark-theme .db-container { background-color: #0f172a !important; }
+body.dark-theme .table-wrapper { background-color: #1e293b !important; border-color: #334155 !important; }
+body.dark-theme .styled-table th { background-color: #0f172a !important; border-bottom-color: #334155 !important; color: #94a3b8 !important; }
+body.dark-theme .styled-table td { border-bottom-color: #334155 !important; color: #f1f5f9 !important; }
+body.dark-theme .styled-table tr:hover td { background-color: #334155 !important; }
+body.dark-theme .nav-btn { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
+body.dark-theme .nav-btn:hover { background-color: #334155 !important; }
+body.dark-theme .nav-btn.active { background-color: #34b9f7 !important; color: white !important; border-color: #34b9f7 !important; }
+
+/* ========================================================= */
+/* 2. POPRAVKA PADAJUĆIH MENIJA I MODALA (Bela pozadina)     */
+/* ========================================================= */
+/* Obični HTML select meniji */
+body.dark-theme select option { background-color: #1e293b !important; color: #f1f5f9 !important; }
+
+/* Angular Material padajući meniji (Overlay) */
+body.dark-theme .mat-mdc-select-panel { background-color: #1e293b !important; }
+body.dark-theme .mat-mdc-option { color: #f1f5f9 !important; }
+body.dark-theme .mat-mdc-option:hover, 
+body.dark-theme .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) { background-color: #334155 !important; }
+body.dark-theme .mat-mdc-option.mdc-list-item--disabled { color: #64748b !important; }
+
+/* ========================================================= */
+/* 3. POPRAVKA "SLOBODNI SARADNICI" PILULE (Oblik i boja)    */
+/* ========================================================= */
+body.dark-theme .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+  background-color: #0f172a !important;
+}
+body.dark-theme .mdc-notched-outline__leading,
+body.dark-theme .mdc-notched-outline__trailing,
+body.dark-theme .mdc-notched-outline__notch {
+  border-color: #334155 !important;
+}
+/* ========================================================= */
+/* 4. POPRAVKA ZA SIDEBAR MENI (Sidenav i Header)            */
+/* ========================================================= */
+body.dark-theme mat-sidenav { background-color: #1e293b !important; border-right-color: #334155 !important; }
+body.dark-theme #menu_title_div { border-bottom-color: #334155 !important; }
+body.dark-theme #menu_title { color: #f8fafc !important; }
+body.dark-theme #menu_title_div span { color: #94a3b8 !important; }
+body.dark-theme .drawer_button { color: #cbd5e1 !important; }
+body.dark-theme .drawer_button:hover { background-color: #334155 !important; color: #34b9f7 !important; }
+body.dark-theme .header_div { background-color: #1e293b !important; border-bottom: 1px solid #334155 !important; box-shadow: none !important; }
+
+/* ========================================================= */
+/* 5. POPRAVKA SIVIH SLOVA U MODALIMA I KARTICAMA            */
+/* ========================================================= */
+body.dark-theme .text-slate-700,
+body.dark-theme .text-slate-600 {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .mat-mdc-select-value-text,
+body.dark-theme .mat-mdc-select-placeholder,
+body.dark-theme .mat-mdc-input-element {
+  color: #f1f5f9 !important;
+}
+body.dark-theme .mdc-floating-label {
+  color: #94a3b8 !important;
+}
+
+/* ========================================================= */
+/* 6. UJEDNAČAVANJE FILTERA U HEADERU                        */
+/* ========================================================= */
+/* Obični select filteri (Sve godine, Sve sale) */
+body.dark-theme select.bg-gray-50 {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Angular Material multi-select (Slobodni saradnici) */
+body.dark-theme .custom-multi-select .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+  background-color: #1e293b !important;
+}
+body.dark-theme .custom-multi-select .mdc-notched-outline__leading,
+body.dark-theme .custom-multi-select .mdc-notched-outline__trailing,
+body.dark-theme .custom-multi-select .mdc-notched-outline__notch {
+  border-color: #334155 !important;
+}
+body.dark-theme .custom-multi-select .mat-mdc-select-arrow {
+  color: #94a3b8 !important;
+}
+/* ========================================================= */
+/* 7. DASHBOARD KARTICE (Brza statistika u Dark Mode-u)      */
+/* ========================================================= */
+/* Prefarbavanje svetlih pozadina u blago prozirne tamne boje */
+body.dark-theme .bg-blue-50\/50 { background-color: rgba(52, 185, 247, 0.1) !important; border-color: rgba(52, 185, 247, 0.2) !important; }
+body.dark-theme .bg-green-50\/50 { background-color: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.2) !important; }
+body.dark-theme .bg-purple-50\/50 { background-color: rgba(168, 85, 247, 0.1) !important; border-color: rgba(168, 85, 247, 0.2) !important; }
+body.dark-theme .bg-orange-50\/50 { background-color: rgba(249, 115, 22, 0.1) !important; border-color: rgba(249, 115, 22, 0.2) !important; }
+
+/* ========================================================= */
+/* 8. UJEDNAČAVANJE VISINE I BOJE "SLOBODNI SARADNICI"       */
+/* ========================================================= */
+/* Forsiranje visine da bude tačno 38px (kao i ostali filteri) */
+.custom-multi-select .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
+  height: 38px !important;
+}
+
+.custom-multi-select .mat-mdc-form-field-infix {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  height: 38px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Rešavanje sivog teksta unutar Material dropdown-a za Dark Mode */
+body.dark-theme .custom-multi-select .mat-mdc-select-value-text,
+body.dark-theme .custom-multi-select .mat-mdc-select-placeholder,
+body.dark-theme .custom-multi-select .mat-mdc-select-min-line {
+  color: #f8fafc !important;
+}

@@ -67,7 +67,7 @@ model Ispit {
   sala_id    Int?
   
   is_ispit   Boolean     @default(true)
-  
+  is_izmenjen  Boolean     @default(false)
   predmet    Predmet?    @relation(fields: [predmet_id], references: [id])
   is_published Boolean    @default(false)
   sala       Sala?       @relation(fields: [sala_id], references: [id])
