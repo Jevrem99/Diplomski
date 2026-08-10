@@ -462,9 +462,31 @@ stats = {
       const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
       return `${meseci[arg.date.month]} ${arg.date.year}.`;
     },
+    // MESEČNI PRIKAZ: Prikazuje samo dane (Pon, Uto, Sre...)
     dayHeaderContent: (arg) => {
       const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
       return daniSkraceno[arg.date.getDay()];
+    },
+
+    // SPECIFIČNE PODEŠAVANJA PO PRIKAZIMA
+    views: {
+      timeGridWeek: {
+        dayHeaderContent: (arg) => {
+          const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+          const d = arg.date;
+          // Format za nedeljni prikaz: "Pon 15.8."
+          return `${daniSkraceno[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
+        }
+      },
+      timeGridDay: {
+        dayHeaderContent: (arg) => {
+          const daniPuni = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
+          const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+          const d = arg.date;
+          // Format za dnevni prikaz: "Subota, 8. Avgust"
+          return `${daniPuni[d.getDay()]}, ${d.getDate()}. ${meseci[d.getMonth()]}`;
+        }
+      }
     },
     headerToolbar: {
       left: 'prev,next today',

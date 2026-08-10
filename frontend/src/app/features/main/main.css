@@ -580,3 +580,50 @@ select[name="saradnikFilter"] {
   overflow: hidden;
   padding-right: 20px !important;
 }
+
+/* Automatsko prilagođavanje boji teksta roditelja */
+:host ::ng-deep .fc .fc-timegrid-slot-label-cushion,
+:host ::ng-deep .fc .fc-timegrid-axis-cushion,
+:host ::ng-deep .fc .fc-col-header-cell-cushion {
+  color: inherit !important; /* Uzima boju teksta iz trenutne teme */
+  opacity: 0.9;
+  font-weight: 600;
+}
+
+/* Blage linije mreže prilagođene za obe teme */
+:host ::ng-deep .fc-theme-standard td, 
+:host ::ng-deep .fc-theme-standard th {
+  border-color: rgba(150, 150, 150, 0.2) !important;
+}
+
+/* ==========================================
+   1. SVETLA TEMA (Podrazumevano kad nema klase)
+   ========================================== */
+:host ::ng-deep .fc .fc-timegrid-slot-label-cushion,
+:host ::ng-deep .fc .fc-timegrid-axis-cushion {
+  color: #1e293b !important; /* Tamno siva slova za sate na beloj pozadini */
+  font-weight: 600;
+}
+
+:host ::ng-deep .fc .fc-col-header-cell-cushion {
+  color: #0f172a !important; /* Tamna slova za dane (Pon, Uto...) */
+}
+
+
+/* ==========================================
+   2. TAMNA TEMA (Aktivira se preko .dark-theme iz ThemeService-a)
+   ========================================== */
+body.dark-theme :host ::ng-deep .fc .fc-timegrid-slot-label-cushion,
+body.dark-theme :host ::ng-deep .fc .fc-timegrid-axis-cushion {
+  color: #e2e8f0 !important; /* Svetla slova za sate i all-day */
+  font-weight: 600;
+}
+
+body.dark-theme :host ::ng-deep .fc .fc-col-header-cell-cushion {
+  color: #ffffff !important; /* Bela slova za zaglavlje dana */
+}
+
+body.dark-theme :host ::ng-deep .fc-theme-standard td, 
+body.dark-theme :host ::ng-deep .fc-theme-standard th {
+  border-color: rgba(255, 255, 255, 0.15) !important; /* Blage bele linije mreže */
+}

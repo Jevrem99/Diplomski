@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { Component, Inject, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -23,6 +23,7 @@ import { forkJoin } from 'rxjs';
 })
 export class EventModal implements OnInit {
   private http = inject(HttpClient);
+  private cdr = inject(ChangeDetectorRef);
   
   formData = {
     startTime: '',
@@ -36,6 +37,7 @@ export class EventModal implements OnInit {
   timeSlots: string[] = [];
   slobodniSaradnici: any[] = [];
   izabraniSaradnici: any[] = [];
+  sveUcionice: any[] = [];
   odsutniSaradniciMap = new Map<number, string>();
 
   constructor(
@@ -54,6 +56,7 @@ export class EventModal implements OnInit {
   ngOnInit(): void {
     this.generateTimeSlots();
     this.fetchDostupneSaradnikeIOdsustva();
+    this.fetchUcionice();
   }
 
   generateTimeSlots(): void {
@@ -64,6 +67,17 @@ export class EventModal implements OnInit {
     }
     slots.push('22:00');
     this.timeSlots = slots;
+  }
+
+  fetchUcionice(): void {
+    this.http.get<any[]>('http://localhost:5000/ucionice').subscribe({
+      next: (res) => {
+        console.log('Učionice stigle sa beka:', res);
+        this.sveUcionice = res;
+        this.cdr.detectChanges(); // <--- OBAVEZNO: primorava Angular da osveži padajući meni
+      },
+      error: (err) => console.error('Greška pri dohvatanju učionica:', err)
+    });
   }
 
   fetchDostupneSaradnikeIOdsustva(): void {

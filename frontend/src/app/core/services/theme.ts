@@ -1,4 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
+import { Router, NavigationEnd } from '@angular/router';
+import { filter } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -6,9 +8,11 @@ import { Injectable, signal } from '@angular/core';
 export class ThemeService {
   // Koristimo Angular Signal za jednostavno praćenje stanja
   isDarkMode = signal<boolean>(false);
+  private router = inject(Router);
 
   constructor() {
     this.initTheme();
+    this.listenToRouteChanges();
   }
 
   private initTheme(): void {
@@ -24,6 +28,18 @@ export class ThemeService {
     }
 
     this.applyTheme();
+  }
+
+  private listenToRouteChanges(): void {
+    this.router.events.pipe(
+      filter(event => event instanceof NavigationEnd)
+    ).subscribe((event: any) => {
+      if (event.urlAfterRedirects.includes('/login')) {
+        document.body.classList.remove('dark-theme');  //Login nema svetlu temu
+      } else {
+        this.applyTheme();
+      }
+    });
   }
 
   toggleTheme(): void {
