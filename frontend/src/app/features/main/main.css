@@ -607,7 +607,7 @@ select[name="saradnikFilter"] {
 
 :host ::ng-deep .fc .fc-col-header-cell-cushion {
   color: #0f172a !important; /* Tamna slova za dane (Pon, Uto...) */
-}
+} 
 
 
 /* ==========================================

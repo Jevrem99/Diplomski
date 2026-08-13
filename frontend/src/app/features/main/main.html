@@ -1,22 +1,49 @@
 <!-- Glavni omotač -->
 <div class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full bg-[#f4f7fb] p-3 sm:p-4 md:p-6 gap-4 md:gap-6">
-  
-  <!-- LEVI PANEL (Banka Predmeta) -> Izmenjena visina na kraju klase -->
+
   <!-- LEVI PANEL (Banka Predmeta) -->
-  <aside class="w-full lg:w-80 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 max-h-[300px] lg:max-h-none lg:h-[calc(100vh-3rem)]">
-<div class="p-4 sm:p-5 border-b border-gray-100">
+  <aside class="w-full lg:w-80 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 max-h-[400px] lg:max-h-none lg:h-[calc(100vh-3rem)]">
+    <div class="p-4 sm:p-5 border-b border-gray-100">
       <h2 class="text-base sm:text-lg font-bold text-gray-800">Banka predmeta</h2>
       <p class="text-xs text-gray-500 mt-0.5">Prevuci predmet na željeni datum</p>
+      
+      <!-- Pretraga -->
       <div class="relative mt-3">
-        <!-- DODAT ngModel -->
         <input type="text" [(ngModel)]="searchPredmet" placeholder="Pretraži predmete..." class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50 focus:border-transparent transition-all">
         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
       </div>
+
+      <!-- DODATO: Filteri po godinama (Pills) -->
+      <!-- Filteri po godinama sa animiranim širenjem -->
+      <!-- Kontejner ima klasu 'group' kako bi pratio hover nad bilo kojim dugmetom -->
+      <div class="flex items-center gap-1.5 mt-3 w-full group">
+        <!-- SVE -->
+        <button 
+          (click)="odaberiGodinuFilter('sve')"
+          [class]="izabranaGodinaBanka === 'sve' 
+            ? 'flex-grow-[2] group-hover:flex-1 hover:!flex-grow-[3] py-1.5 px-2 text-xs font-bold rounded-lg bg-[#34b9f7] text-white transition-all duration-300 ease-in-out text-center shadow-xs' 
+            : 'flex-1 hover:flex-grow-[3] py-1.5 px-2 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 ease-in-out text-center'">
+          <span class="inline sm:hidden">Sve</span>
+          <span class="hidden sm:inline">Sve</span>
+        </button>
+        
+        <!-- GODINE (1-4) -->
+        @for (god of [1, 2, 3, 4]; track god) {
+          <button 
+            (click)="odaberiGodinuFilter(god)"
+            [class]="izabranaGodinaBanka === god 
+              ? 'flex-grow-[2] group-hover:flex-1 hover:!flex-grow-[3] py-1.5 px-2 text-xs font-bold rounded-lg bg-[#34b9f7] text-white transition-all duration-300 ease-in-out text-center shadow-xs' 
+              : 'flex-1 hover:flex-grow-[3] py-1.5 px-2 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 ease-in-out text-center'">
+            <span class="inline sm:hidden">{{ god }}.</span>
+            <span class="hidden sm:inline">{{ god }}. God</span>
+          </button>
+        }
+      </div>
     </div>
 
-    <!-- Lista predmeta iz baze (DODATA filtriraniPredmeti) -->
+    <!-- Lista predmeta iz baze -->
     <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 sm:space-y-3" #draggableContainer>
       @for (predmet of filtriraniPredmeti; track predmet.id) {
         <div class="fc-event group cursor-grab active:cursor-grabbing p-3 sm:p-4 bg-white border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-150 flex flex-col gap-1 relative overflow-hidden select-none" [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
@@ -35,11 +62,11 @@
           </div>
         </div>
       } @empty {
-        <p class="text-xs text-gray-400 text-center py-4">Nema dostupnih predmeta u bazi.</p>
+        <p class="text-xs text-gray-400 text-center py-4">Nema predmeta za izabrane kriterijume.</p>
       }
 
-      <!-- DODATO DUGME "VIDI VIŠE" -->
-      @if (!searchPredmet && predmeti.length > prikazaniBrojPredmeta) {
+      <!-- DUGME "VIDI VIŠE" -->
+      @if (!searchPredmet && izabranaGodinaBanka === 'sve' && predmeti.length > prikazaniBrojPredmeta) {
         <button (click)="vidiVisePredmeta()" class="w-full py-2.5 mt-1 bg-blue-50 text-[#34b9f7] text-xs font-bold rounded-xl hover:bg-blue-100 transition-colors shadow-sm">
           Vidi više predmeta
         </button>
@@ -75,8 +102,8 @@
     
     <select [(ngModel)]="filterSala" (change)="applyFilters()" class="w-full sm:w-36 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
       <option value="sve">Sve sale</option>
-      @for (sala of dostupneSale; track sala) {
-        <option [value]="sala">{{ sala }}</option>
+      @for (sala of dostupneSale; track sala.id || sala) {
+        <option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</option>
       }
     </select>
 

@@ -14,6 +14,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import { EventModal } from '../../shared/components/event-modal/event-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { FormsModule } from '@angular/forms'; // <--- OBAVEZNO DODATI U IMPORTS
+import { HostListener } from '@angular/core';
+
 interface Profesor {
   id?: number;
   ime: string;
@@ -72,13 +74,23 @@ export class Main implements OnInit, AfterViewInit {
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
   allLoadedEvents: any[] = [];
-  dostupneSale: string[] = [];
-isDashboardOpen: boolean = false;
- sviSaradnici: any[] = [];
+  dostupneSale: any[] = [];
+  isDashboardOpen: boolean = false;
+  sviSaradnici: any[] = [];
   sveObaveze: any[] = [];
   filterSaradnici: number[] = [];
-  searchPredmet: string = ''; // <--- DODATO
-prikazaniBrojPredmeta: number = 5; // <--- DODATO
+  searchPredmet: string = ''; // <--- Search term za pretragu predmeta u banci predmeta
+  prikazaniBrojPredmeta: number = 1000; // Koliko predmeta da se prikaže po defaultu u banci predmeta
+  izabranaGodinaBanka: 'sve' | number = 'sve';
+
+  defaultGodinaColors: Record<number, string> = {
+    1: '#34b9f7',
+    2: '#ef4444',
+    3: '#eab308',
+    4: '#10b981'
+  };
+
+  godinaColors: Record<number, string> = { ...this.defaultGodinaColors };
 
 stats = {
     totalIspiti: 0,
@@ -96,25 +108,62 @@ stats = {
       error: (err) => console.error('Greška pri dohvatanju statistike:', err)
     });
   }
+
+  @HostListener('window:storage', ['$event'])
+  onStorageChange(event: StorageEvent): void {
+    if (event.key === 'app_godina_colors') {
+      this.loadSavedColors();
+      this.cdr.detectChanges(); // primorava Angular da preboji UI
+    }
+  }
+
   // <--- DODATO: Automatski filtrira listu predmeta levo
   get filtriraniPredmeti() {
-    // 1. Ako ima pretrage
-    if (this.searchPredmet) {
+    if (!this.predmeti) return [];
+
+    // 1. Prvo filtriramo po godini (ako nije izabrano 'sve')
+    let rez = [...this.predmeti];
+    if (this.izabranaGodinaBanka !== 'sve') {
+      rez = rez.filter(p => Number(p.godina) === Number(this.izabranaGodinaBanka));
+    }
+
+    // 2. Ako ima pretrage (koristimo tvoju presloviULatinicu logiku)
+    if (this.searchPredmet && this.searchPredmet.trim() !== '') {
       const q = presloviULatinicu(this.searchPredmet);
-      
-      return this.predmeti.filter(p => {
-        const nazivLat = presloviULatinicu(p.naziv);
+
+      return rez.filter(p => {
+        const nazivLat = presloviULatinicu(p.naziv || '');
         const profLat = presloviULatinicu(p.profesorImePrezime || '');
         const sifraLat = presloviULatinicu(p.sifra || '');
 
         return nazivLat.includes(q) || profLat.includes(q) || sifraLat.includes(q);
       });
     }
-    
-    // 2. Ako nema pretrage, prikazujemo samo prvih N predmeta
-    return this.predmeti.slice(0, this.prikazaniBrojPredmeta);
+
+    // 3. Ako nema pretrage i izabrano je 'sve', sečemo na prikazaniBrojPredmeta
+    // (Ako je izabrana konkretna godina, prikazujemo sve predmete te godine)
+    if (this.izabranaGodinaBanka === 'sve') {
+      return rez.slice(0, this.prikazaniBrojPredmeta);
+    }
+
+    return rez;
   }
 
+  odaberiGodinuFilter(godina: 'sve' | number): void {
+    this.izabranaGodinaBanka = godina;
+  }
+
+  fetchUcionice(): void {
+    this.http.get<any[]>('http://localhost:5000/ucionice').subscribe({
+      next: (res) => {
+        console.log('Učionice stigle sa beka:', res);
+        this.dostupneSale = res;
+        this.cdr.detectChanges(); // <--- OBAVEZNO: primorava Angular da osveži padajući meni
+      },
+      error: (err) => console.error('Greška pri dohvatanju učionica:', err)
+    });
+  }
+  
   // <--- DODATA FUNKCIJA ZA DUGME --->
   vidiVisePredmeta() {
     this.prikazaniBrojPredmeta += 10;
@@ -122,14 +171,40 @@ stats = {
   
   applyFilters(): void {
     let filtered = [...this.allLoadedEvents];
-    
-    // Klasicni filteri
+
     if (this.filterGodina !== 'sve') {
       const godNum = Number(this.filterGodina);
-      filtered = filtered.filter(e => e.extendedProps?.godina === godNum);
+      filtered = filtered.filter(e => Number(e.extendedProps?.godina) === godNum);
     }
+
+
     if (this.filterSala !== 'sve') {
-      filtered = filtered.filter(e => e.extendedProps?.sala === this.filterSala);
+      filtered = filtered.filter(e => {
+        const eventSala = e.extendedProps?.sala;
+        const salaVal = typeof eventSala === 'object' ? eventSala?.naziv : eventSala;
+        
+
+        const selectedSalaVal = typeof this.filterSala === 'object' 
+          ? (this.filterSala as any)?.naziv 
+          : this.filterSala;
+
+        return salaVal === selectedSalaVal;
+      });
+    }
+
+    
+    if (this.filterSaradnici && this.filterSaradnici.length > 0) {
+      const selectedIds = this.filterSaradnici.map(id => String(id));
+
+      filtered = filtered.filter(ispit => {
+        
+        const dezurni = ispit.extendedProps?.dezurni || ispit.extendedProps?.saradnici || [];
+        
+        return dezurni.some((d: any) => {
+          const dId = String(typeof d === 'object' ? d.id : d);
+          return selectedIds.includes(dId);
+        });
+      });
     }
 
     // --- DODAVANJE POZADINSKIH DOGAĐAJA ZA SARADNIKE ---
@@ -137,52 +212,48 @@ stats = {
 
     if (this.filterSaradnici && this.filterSaradnici.length > 0) {
       this.filterSaradnici.forEach(saradnikId => {
-        
-        // Pronalazimo ime saradnika da bismo ga ispisali u tooltip-u
         const saradnik = this.sviSaradnici.find(s => s.id === saradnikId);
         const imePrezime = saradnik ? `${saradnik.ime} ${saradnik.prezime}` : 'Saradnik';
 
         // 1. Zauzetost zbog odsustva (Crvenkasta boja)
         this.sveObaveze.forEach(obs => {
           if (obs.saradnik_id === saradnikId) {
-             const odStr = obs.datum ? obs.datum.split('T')[0] : '';
-             const doStr = obs.datum_do ? obs.datum_do.split('T')[0] : odStr;
-             
-             const dStart = new Date(odStr);
-             const dEnd = new Date(doStr);
-             for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
-               const y = d.getFullYear();
-               const m = String(d.getMonth()+1).padStart(2,'0');
-               const day = String(d.getDate()).padStart(2,'0');
-               const currentDStr = `${y}-${m}-${day}`;
+            const odStr = obs.datum ? obs.datum.split('T')[0] : '';
+            const doStr = obs.datum_do ? obs.datum_do.split('T')[0] : odStr;
+            
+            const dStart = new Date(odStr);
+            const dEnd = new Date(doStr);
+            for (let d = new Date(dStart); d <= dEnd; d.setDate(d.getDate() + 1)) {
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              const currentDStr = `${y}-${m}-${day}`;
 
-               const start = obs.vreme_pocetka ? `${currentDStr}T${obs.vreme_pocetka.substring(11,16)}:00` : `${currentDStr}`;
-               const end = obs.vreme_kraja ? `${currentDStr}T${obs.vreme_kraja.substring(11,16)}:00` : undefined;
+              const start = obs.vreme_pocetka ? `${currentDStr}T${obs.vreme_pocetka.substring(11, 16)}:00` : `${currentDStr}`;
+              const end = obs.vreme_kraja ? `${currentDStr}T${obs.vreme_kraja.substring(11, 16)}:00` : undefined;
 
-               backgroundEvents.push({
-                 start: start,
-                 end: end,
-                 display: 'background',
-                 backgroundColor: 'rgba(239, 68, 68, 0.25)', 
-                 // DODATO: Tekst za oblačić (Odsustvo)
-                 title: `${imePrezime} - Odsustvo: ${obs.tip_obaveze || 'Nedostupan/na'}` 
-               });
-             }
+              backgroundEvents.push({
+                start: start,
+                end: end,
+                display: 'background',
+                backgroundColor: 'rgba(239, 68, 68, 0.25)', 
+                title: `${imePrezime} - Odsustvo: ${obs.tip_obaveze || 'Nedostupan/na'}` 
+              });
+            }
           }
         });
 
-        // 2. Zauzetost zbog već dodeljenih dežurstava (Sivkasta boja)
+  
         this.allLoadedEvents.forEach(ispit => {
-          const dezurni = ispit.extendedProps['dezurni'] || [];
-          if (dezurni.some((d: any) => d.id === saradnikId)) {
-             backgroundEvents.push({
-               start: ispit.start,
-               end: ispit.end,
-               display: 'background',
-               backgroundColor: 'rgba(100, 116, 139, 0.25)',
-               // DODATO: Tekst za oblačić (Dežurstvo)
-               title: `${imePrezime} - Dežura na: ${ispit.title.split(' (')[0]}` 
-             });
+          const dezurni = ispit.extendedProps?.['dezurni'] || [];
+          if (dezurni.some((d: any) => String(d.id || d) === String(saradnikId))) {
+            backgroundEvents.push({
+              start: ispit.start,
+              end: ispit.end,
+              display: 'background',
+              backgroundColor: 'rgba(100, 116, 139, 0.25)',
+              title: `${imePrezime} - Dežura na: ${ispit.title ? ispit.title.split(' (')[0] : ''}` 
+            });
           }
         });
       });
@@ -191,6 +262,7 @@ stats = {
     this.calendarOptions.events = [...filtered, ...backgroundEvents];
     this.cdr.detectChanges();
   }
+
   calendarOptions: CalendarOptions = {
     plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
     initialView: 'dayGridMonth',
@@ -501,6 +573,8 @@ stats = {
     }
   };
 
+  
+
   saveDraftSchedule() {
     if (!this.hasUnsavedChanges) return;
 
@@ -556,20 +630,18 @@ stats = {
     this.fetchIspiti();
     this.fetchSviSaradniciIObaveze();
     this.fetchStats();
+    this.fetchUcionice();
+    this.loadSavedColors();
   }
 
   ngAfterViewInit(): void {
     this.initDraggable();
   }
 
-  getGodinaColor(godina?: number): string {
-    switch (godina) {
-      case 1: return '#34b9f7';
-      case 2: return '#ef4444';
-      case 3: return '#eab308';
-      case 4: return '#10b981';
-      default: return '#34b9f7';
-    }
+  getGodinaColor(godina?: number | string): string {
+    if (!godina) return '#34b9f7';
+    const godNum = Number(godina);
+    return this.godinaColors[godNum] || '#34b9f7';
   }
 
   fetchPredmeti(): void {
@@ -586,6 +658,17 @@ stats = {
       },
       error: (err) => console.error('Greška pri dohvatanju predmeta:', err)
     });
+  }
+
+  loadSavedColors(): void {
+    const saved = localStorage.getItem('app_godina_colors');
+    if (saved) {
+      try {
+        this.godinaColors = { ...this.defaultGodinaColors, ...JSON.parse(saved) };
+      } catch (e) {
+        this.godinaColors = { ...this.defaultGodinaColors };
+      }
+    }
   }
 
   fetchIspiti(): void {
@@ -876,6 +959,7 @@ stats = {
       <!DOCTYPE html>
       <html>
       <head>
+        <link rel="icon" type="image/png" href="assets/logopmf.png">
         <title>Raspored kolokvijuma - PMF Kragujevac</title>
         <style>
           body { font-family: 'Arial', sans-serif; padding: 20px; color: #1e293b; }
