@@ -64,7 +64,8 @@ export class Main implements OnInit, AfterViewInit {
   private API_URL = 'http://localhost:5000';
   private cdr = inject(ChangeDetectorRef);
   private toastService = inject(ToastService);
-  
+  prikaziIspite: boolean = true;
+  prikaziKolokvijume: boolean = true;
   username = localStorage.getItem('username');
   predmeti: Predmet[] = [];
   draggableInstance: Draggable | null = null;
@@ -76,9 +77,20 @@ export class Main implements OnInit, AfterViewInit {
   filterSala: string = 'sve';
   filterLevoGodina: string = 'sve'; // <--- Filter levo
   filterLevoProfesor: string = 'svi'; // <--- Filter levo
+  izabranaGodinaBanka: string | number = 'sve';
   
+  defaultGodinaColors: any = { 
+    1: '#34b9f7', 
+    2: '#ef4444', 
+    3: '#eab308', 
+    4: '#10b981' 
+  };
+  godinaColors: any = { ...this.defaultGodinaColors };
+
+  // PROMENI dostupneSale iz string[] u any[] da ne prijavljuje grešku za sala.naziv u HTML-u
+  dostupneSale: any[] = [];
   allLoadedEvents: any[] = [];
-  dostupneSale: string[] = [];
+  
   isDashboardOpen: boolean = false;
   sviSaradnici: any[] = [];
   sveObaveze: any[] = [];
@@ -114,7 +126,15 @@ export class Main implements OnInit, AfterViewInit {
     });
     return Array.from(map.values());
   }
+odaberiGodinuFilter(god: string | number) {
+    this.izabranaGodinaBanka = god;
+    this.filterLevoGodina = god.toString(); // Povezujemo tvoj HTML klik sa našim filterom
+  }
 
+  fetchUcionice() {
+    // Prazna funkcija da spreči pucanje, ili ubaci svoj stari kod za dobavljanje učionica
+    console.log('fetchUcionice pozvan');
+  }
   // <--- DODATO: Nova logika filtriranja u levom meniju
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
@@ -146,7 +166,13 @@ export class Main implements OnInit, AfterViewInit {
   
   applyFilters(): void {
     let filtered = [...this.allLoadedEvents];
-    
+    filtered = filtered.filter(e => {
+      if (e.extendedProps?.isNastava) return true; // Redovna nastava se uvek vidi
+      const isIspit = e.extendedProps?.is_ispit ?? true;
+      if (isIspit && !this.prikaziIspite) return false;
+      if (!isIspit && !this.prikaziKolokvijume) return false;
+      return true;
+    });
     if (this.filterGodina !== 'sve') {
       const godNum = Number(this.filterGodina);
       filtered = filtered.filter(e => Number(e.extendedProps?.godina) === godNum);
@@ -896,12 +922,7 @@ export class Main implements OnInit, AfterViewInit {
               razlozi.push(`Sala "${s1}" je zauzeta u periodu od ${e1.extendedProps['vreme']}h do ${e1.extendedProps['vremeKraja'] || '(?)'}`);
             }
             
-            const p1 = String(e1.extendedProps['profesorId'] || '');
-            const p2 = String(e2.extendedProps['profesorId'] || '');
-            if (p1 && p2 && p1 === p2 && p1 !== 'undefined') {
-              const profIme = e1.extendedProps['profesorIme'] || 'Profesor';
-              razlozi.push(`${profIme} ima ispit/kolokvijum u preklapajućem terminu.`);
-            }
+            
             
             const dezurni1: any[] = e1.extendedProps['dezurni'] || [];
             const dezurni2: any[] = e2.extendedProps['dezurni'] || [];

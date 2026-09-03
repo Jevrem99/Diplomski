@@ -49,10 +49,14 @@
      <mat-form-field appearance="outline" class="custom-field w-full">
         <mat-label>Izaberi salu*</mat-label>
         <mat-select [(ngModel)]="formData.room">
-          @for (sala of sveUcionice; track sala.id || sala) {
-            <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</mat-option>
-          } @empty {
-            <mat-option disabled>Nema učionica za prikaz</mat-option>
+          @for (sala of ['Sala A1', 'Sala A2', 'Sala A3', 'Svečana sala', 'Amfiteatar']; track sala) {
+            <!-- OBRISAN JE [disabled] ATRIBUT! KORISNIK SADA MOŽE DA KLIKNE -->
+            <mat-option [value]="sala" [ngClass]="isSalaZauzeta(sala) ? 'bg-red-50 !text-red-600 font-bold' : ''">
+              {{ sala }}
+              @if (isSalaZauzeta(sala)) {
+                <span class="text-[10px] text-red-600 font-extrabold ml-2">(Zauzeta u ovom terminu)</span>
+              }
+            </mat-option>
           }
         </mat-select>
       </mat-form-field>

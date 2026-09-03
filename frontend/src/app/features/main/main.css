@@ -702,39 +702,36 @@ select[name="saradnikFilter"] {
   to { opacity: 1; transform: translateY(0); }
 }
 /* ========================================================= */
-/* 1. ZAKUCAVANJE VISINE REDOVA I UNUTRAŠNJI SKROL (FLEXBOX) */
+/* 1. ZAKUCAVANJE VISINE I UNUTRAŠNJI SKROL (MAX-HEIGHT FIX) */
 /* ========================================================= */
 
-/* Okvir dana postaje čista Flex kolona fiksne visine (100% ćelije) */
+/* Okvir dana (vraćamo normalan flex da broj dana ostane gore desno) */
 :host ::ng-deep .fc .fc-daygrid-day-frame {
   display: flex !important;
   flex-direction: column !important;
+  justify-content: flex-start !important;
   height: 100% !important;
   overflow: hidden !important;
 }
 
-/* 1A. GORNJI DEO SA BROJEM DANA - Zakucan u gornji desni ugao */
+/* Fiksira broj dana strogo u gornji desni ugao */
 :host ::ng-deep .fc .fc-daygrid-day-top {
   display: flex !important;
-  justify-content: flex-end !important; /* Gura broj skroz desno */
-  align-items: flex-start !important;   /* Gura broj skroz gore */
-  padding: 4px !important;
-  flex-shrink: 0 !important; /* Ne dozvoljava ispisima da sabiju ovaj deo */
-  z-index: 2 !important;
+  justify-content: flex-end !important;
+  padding: 4px 6px !important;
 }
 
-/* 1B. KONTEJNER ZA ISPITE - Zauzima OSTATAK prostora ispod broja dana i dobija skrol */
+/* MAGIČNO PRAVILO: Hardkodovan limit koji Tabela NE MOŽE da ignoriše! */
 :host ::ng-deep .fc .fc-daygrid-day-events {
-  flex: 1 1 auto !important; /* Zauzmi sve preostalo mesto u koloni */
-  min-height: 0 !important;  /* MAGIČNO PRAVILO: Omogućava flex-child elementu da skroluje */
-  overflow-y: auto !important;
+  display: block !important;
+  max-height: 86px !important; /* Dovoljno prostora za tačno 3 ispita */
+  overflow-y: auto !important; /* Skrol se pali ako dodamo 4. ispit */
   overflow-x: hidden !important;
-  padding: 0 4px 4px 4px !important;
+  padding: 0 4px 2px 4px !important;
   margin: 0 !important;
-  position: relative !important;
 }
 
-/* 1C. Tanak, diskretan skrolbar */
+/* Tanak, diskretan skrolbar */
 :host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar {
   width: 4px;
 }
@@ -743,7 +740,7 @@ select[name="saradnikFilter"] {
   border-radius: 4px;
 }
 
-/* 1D. Uklanjamo FullCalendar sistemske strelice/dugmad za dno */
+/* Uklanjamo FullCalendar sistemske strelice/dugmad za dno */
 :host ::ng-deep .fc .fc-daygrid-day-bottom,
 :host ::ng-deep .fc .fc-daygrid-more-link {
   display: none !important;
