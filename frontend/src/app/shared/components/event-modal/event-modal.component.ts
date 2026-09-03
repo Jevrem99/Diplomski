@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, OnInit, inject } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
@@ -8,6 +8,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { HttpClient } from '@angular/common/http';
 import { MatIcon } from "@angular/material/icon";
+
 import { forkJoin } from 'rxjs';
 
 @Component({
@@ -23,16 +24,17 @@ import { forkJoin } from 'rxjs';
 })
 export class EventModal implements OnInit {
   private http = inject(HttpClient);
-  
+  private cdr = inject(ChangeDetectorRef);
   formData = {
     startTime: '',
     endTime: '',
     room: '',
+    is_ispit: true,
     dezurni_ids: [] as number[]
   };
   
   showError = false;
-  odsustvoErrorPoruka = ''; // Poruka ako korisnik pokuša da sačuva odsutnog
+  odsustvoErrorPoruka = ''; 
   timeSlots: string[] = [];
   slobodniSaradnici: any[] = [];
   izabraniSaradnici: any[] = [];
@@ -40,11 +42,13 @@ export class EventModal implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[] ,zauzeteSaleNaDan?: any[]} 
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
     if (this.data.room) this.formData.room = this.data.room;
+    if (this.data.is_ispit !== undefined) this.formData.is_ispit = this.data.is_ispit;
+    
     if (this.data.dezurni) {
       this.izabraniSaradnici = [...this.data.dezurni];
       this.formData.dezurni_ids = this.izabraniSaradnici.map(s => s.id);
@@ -67,64 +71,33 @@ export class EventModal implements OnInit {
   }
 
   fetchDostupneSaradnikeIOdsustva(): void {
-    console.log('--- DEBUG START ---');
-    console.log('Datum modala (data.date):', this.data.date);
-
     forkJoin({
       saradnici: this.http.get<any[]>('http://localhost:5000/profesors'),
       obaveze: this.http.get<any[]>('http://localhost:5000/obaveze')
     }).subscribe({
       next: ({ saradnici, obaveze }) => {
-        console.log('Svi dohvaćeni saradnici:', saradnici);
-        console.log('Sve dohvaćene obaveze iz baze:', obaveze);
-
         const datumModala = new Date(this.data.date).setHours(0, 0, 0, 0);
         this.odsutniSaradniciMap.clear();
 
         if (Array.isArray(obaveze)) {
-          obaveze.forEach((o, index) => {
-            // Normalizacija datuma od-do
+          obaveze.forEach((o) => {
             const odStr = o.datum ? o.datum.split('T')[0] : '';
             const doStr = o.datum_do ? o.datum_do.split('T')[0] : odStr;
-
             const odDate = new Date(odStr).setHours(0, 0, 0, 0);
             const doDate = new Date(doStr).setHours(0, 0, 0, 0);
 
-            console.log(`Obaveza #${index + 1}:`, {
-              saradnik_id: o.saradnik_id,
-              odDatum: odStr,
-              doDatum: doStr,
-              pogodak: datumModala >= odDate && datumModala <= doDate
-            });
-
-            // Ako se datum poklapa
             if (datumModala >= odDate && datumModala <= doDate) {
               const razlog = o.tip_obaveze ? `: ${o.tip_obaveze}` : '';
-              // Preveravamo i brojčani i tekstualni ID za svaki slučaj
               this.odsutniSaradniciMap.set(Number(o.saradnik_id), `Nedostupan/na u ovom terminu${razlog}`);
             }
           });
         }
 
-        console.log('Mapa odsutnih saradnika (ID -> Poruka):', Array.from(this.odsutniSaradniciMap.entries()));
-
-        // Provera i izbacivanje iz već izabranih dežurnih
-        const ocisceniIzabrani = this.izabraniSaradnici.filter(s => {
-          const sId = Number(s.id);
-          const jeOdsutan = this.odsutniSaradniciMap.has(sId);
-          if (jeOdsutan) {
-            console.warn(`[BLOKADA] Saradnik ${s.ime} (ID: ${sId}) je uklonjen iz izabranih jer ima odsustvo!`);
-          }
-          return !jeOdsutan;
-        });
-
+        const ocisceniIzabrani = this.izabraniSaradnici.filter(s => !this.odsutniSaradniciMap.has(Number(s.id)));
         this.izabraniSaradnici = ocisceniIzabrani;
         this.formData.dezurni_ids = this.izabraniSaradnici.map(s => Number(s.id));
-
-        // Filtriranje slobodnih saradnika u desnoj koloni
         this.slobodniSaradnici = saradnici.filter(s => !this.formData.dezurni_ids.includes(Number(s.id)));
-        console.log('Konačna lista slobodnih saradnika u desnoj koloni:', this.slobodniSaradnici);
-        console.log('--- DEBUG END ---');
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error('Greška pri dohvatanju obaveza ili saradnika:', err);
@@ -134,7 +107,6 @@ export class EventModal implements OnInit {
 
   dodajDezurnog(saradnik: any): void {
     if (this.odsutniSaradniciMap.has(saradnik.id)) return;
-
     this.izabraniSaradnici.push(saradnik);
     this.formData.dezurni_ids.push(saradnik.id);
     this.slobodniSaradnici = this.slobodniSaradnici.filter(s => s.id !== saradnik.id);
@@ -151,37 +123,32 @@ export class EventModal implements OnInit {
       this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
     }
   }
-private timeToMins(timeStr: string): number {
+
+  private timeToMins(timeStr: string): number {
     if (!timeStr || !timeStr.includes(':')) return 0;
     const [h, m] = timeStr.split(':').map(Number);
     return (h * 60) + m;
   }
 
-  // Funkcija koja proverava da li se izabrano vreme preklapa sa postojećim za datu salu
   isSalaZauzeta(salaNaziv: string): boolean {
     if (!this.formData.startTime || !this.data.zauzeteSaleNaDan) return false;
-    
     const start1 = this.timeToMins(this.formData.startTime);
-    // Ako nema kraja, pretpostavljamo trajanje od 2 sata (120 min)
     const end1 = this.formData.endTime ? this.timeToMins(this.formData.endTime) : (start1 + 120);
 
     return this.data.zauzeteSaleNaDan.some((z: any) => {
       if (z.sala !== salaNaziv || z.sala === 'Bez sale') return false;
       const start2 = this.timeToMins(z.vreme);
       const end2 = z.vremeKraja ? this.timeToMins(z.vremeKraja) : (start2 + 120);
-      
-      // Formula za preklapanje vremenskih raspona
       return start1 < end2 && start2 < end1; 
     });
   }
+
   onCancel(): void {
     this.dialogRef.close();
   }
   
   onSave(): void {
-    // Provera da li slučajno u izabranim postoji odsutan saradnik
     const imaOdsutnih = this.izabraniSaradnici.some(s => this.odsutniSaradniciMap.has(s.id));
-    
     if (imaOdsutnih) {
       this.odsustvoErrorPoruka = 'Jedan ili više izabranih saradnika su odsutni u ovom terminu!';
       return;

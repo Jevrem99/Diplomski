@@ -427,11 +427,25 @@
   box-shadow: 0 4px 10px rgba(52, 185, 247, 0.3) !important;
 }
 
-/* EVENT CARDS UNUTAR ĆELIJE */
+/* EVENT CARDS UNUTAR ĆELIJE - POPRAVLJENA VISINA */
 :host ::ng-deep .fc-daygrid-day-events {
   overflow-y: auto !important;
-  max-height: 55px !important;
-  flex: 1 !important;
+  max-height: 100% !important;
+  flex: 1 1 auto !important;
+  padding: 2px !important;
+}
+
+/* Tanak i uredan skrolbar samo ako se polje prepuni */
+:host ::ng-deep .fc-daygrid-day-events::-webkit-scrollbar {
+  width: 4px;
+}
+:host ::ng-deep .fc-daygrid-day-events::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin-bottom: 2px !important;
 }
 
 :host ::ng-deep .fc-event {
@@ -579,4 +593,217 @@ select[name="saradnikFilter"] {
   white-space: nowrap;
   overflow: hidden;
   padding-right: 20px !important;
+}
+/* Uklanjanje neželjenog skrola u pojedinačnim danima */
+.fc-daygrid-day-events {
+  overflow: visible !important;
+}
+.fc-daygrid-day-bottom {
+  padding: 2px 4px !important;
+}
+
+/* Izgled kartice u kalendaru */
+.fc-event {
+  border-radius: 6px !important;
+  margin-bottom: 3px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+  border-width: 1.5px !important;
+}
+
+.custom-cal-event {
+  display: flex;
+  align-items: center;
+  padding: 3px 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 11.5px;
+  font-weight: 700;
+  width: 100%;
+}
+
+/* Stil za Kolokvijum: bela pozadina sa istaknutim okvirom */
+.custom-cal-event.is-kolokvijum {
+  background-color: #ffffff !important;
+}
+
+/* Auto-skrol (Marquee) na hover kada je tekst predugačak */
+.custom-cal-event .event-text {
+  display: inline-block;
+  white-space: nowrap;
+  transition: transform 3s ease-in-out;
+}
+
+.fc-event:hover .custom-cal-event .event-text {
+  transform: translateX(-35%);
+}
+
+/* Brief Info Popup prozorčić */
+.custom-brief-tooltip {
+  position: absolute;
+  z-index: 10000;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  pointer-events: none;
+  font-family: inherit;
+  min-width: 160px;
+  max-width: 240px;
+  animation: fadeInBrief 0.15s ease-out forwards;
+}
+
+.brief-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.brief-header .badge {
+  font-size: 9px;
+  text-transform: uppercase;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.badge-ispit {
+  background: #e0f2fe;
+  color: #0284c7;
+}
+
+.badge-kol {
+  background: #dcfce7;
+  color: #16a34a;
+}
+
+.brief-room {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.brief-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #1e293b;
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.brief-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+}
+
+@keyframes fadeInBrief {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* ========================================================= */
+/* 1. ZAKUCAVANJE VISINE REDOVA I UNUTRAŠNJI SKROL (FLEXBOX) */
+/* ========================================================= */
+
+/* Okvir dana postaje čista Flex kolona fiksne visine (100% ćelije) */
+:host ::ng-deep .fc .fc-daygrid-day-frame {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  overflow: hidden !important;
+}
+
+/* 1A. GORNJI DEO SA BROJEM DANA - Zakucan u gornji desni ugao */
+:host ::ng-deep .fc .fc-daygrid-day-top {
+  display: flex !important;
+  justify-content: flex-end !important; /* Gura broj skroz desno */
+  align-items: flex-start !important;   /* Gura broj skroz gore */
+  padding: 4px !important;
+  flex-shrink: 0 !important; /* Ne dozvoljava ispisima da sabiju ovaj deo */
+  z-index: 2 !important;
+}
+
+/* 1B. KONTEJNER ZA ISPITE - Zauzima OSTATAK prostora ispod broja dana i dobija skrol */
+:host ::ng-deep .fc .fc-daygrid-day-events {
+  flex: 1 1 auto !important; /* Zauzmi sve preostalo mesto u koloni */
+  min-height: 0 !important;  /* MAGIČNO PRAVILO: Omogućava flex-child elementu da skroluje */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 0 4px 4px 4px !important;
+  margin: 0 !important;
+  position: relative !important;
+}
+
+/* 1C. Tanak, diskretan skrolbar */
+:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar {
+  width: 4px;
+}
+:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* 1D. Uklanjamo FullCalendar sistemske strelice/dugmad za dno */
+:host ::ng-deep .fc .fc-daygrid-day-bottom,
+:host ::ng-deep .fc .fc-daygrid-more-link {
+  display: none !important;
+}
+
+/* Odvajanje pojedinačnih kartica */
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin-bottom: 2px !important;
+}
+
+/* ========================================================= */
+/* 2. ANIMACIJA TEKSTA: KAJRON SA "TELEPORTOM"               */
+/* ========================================================= */
+/* Početno stanje - tekst stoji fiksno i isečen je ako je dug */
+:host ::ng-deep .cal-title-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Animacija se pali SAMO kad staviš miš na karticu */
+:host ::ng-deep .clean-cal-card:hover .cal-title-text {
+  animation: kliziITeleportuj 4s linear infinite !important;
+}
+
+/* Tekst stoji 1 sekundu, klizi ulevo 3 sekunde, i momentalno se teleportuje na početak */
+@keyframes kliziITeleportuj {
+  0%, 15% {
+    transform: translateX(0);
+  }
+  95% {
+    transform: translateX(-65%);
+  }
+  96%, 100% {
+    transform: translateX(0);
+  }
+}
+
+/* ========================================================= */
+/* 2. ANIMACIJA TEKSTA: KAJRON SA "TELEPORTOM"               */
+/* ========================================================= */
+/* Početno stanje - tekst stoji fiksno i isečen je ako je dug */
+:host ::ng-deep .cal-title-container {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* Animacija se pali SAMO kad staviš miš na karticu */
+:host ::ng-deep .clean-cal-card:hover .cal-title-text {
+  animation: kliziITeleportuj 4s linear infinite !important;
+}
+
+/* Tekst stoji 1 sekundu, klizi ulevo 3 sekunde, i momentalno se teleportuje na početak */
+@keyframes kliziITeleportuj {
+  0%, 15% {
+    transform: translateX(0);
+  }
+  95% {
+    transform: translateX(-65%); /* Klizi dok se ne pročita (prilagodi procenat ako treba) */
+  }
+  96%, 100% {
+    transform: translateX(0); /* Nema vraćanja unazad - teleport na početak */
+  }
 }
