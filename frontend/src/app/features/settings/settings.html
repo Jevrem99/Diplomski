@@ -37,7 +37,7 @@
           </div>
         </div>
 
-        <!-- Podešavanje Teme -->
+        <!-- Podešavanje Teme (POTPUNO NETAKNUTO) -->
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between">
           <div>
             <h2 class="text-base font-bold text-gray-800">Izgled aplikacije</h2>
@@ -84,6 +84,42 @@
             Ažuriraj lozinku
           </button>
         </form>
+      </div>
+
+      <!-- HORIZONTALNA KARTICA NA DNU: Boje predmeta po godinama -->
+      <div class="col-span-1 md:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div class="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 class="text-lg font-bold text-gray-800">🎨 Boje predmeta po godinama</h2>
+            <p class="text-xs text-gray-500 mt-0.5">Izaberite željene boje za kartice i oznake godina.</p>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <button (click)="resetColorsToDefault()" class="text-xs font-semibold text-gray-400 hover:text-red-500 transition-colors">
+              Resetuj boje
+            </button>
+            <button (click)="saveColors()" class="px-4 py-2 bg-[#34b9f7] text-white text-xs font-bold rounded-xl hover:bg-[#20a6e4] transition-all shadow-sm">
+              Sačuvaj boje
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          @for (god of [1, 2, 3, 4]; track god) {
+            <div class="p-3 rounded-xl border border-gray-100 bg-gray-50 flex items-center justify-between">
+              <span class="px-2.5 py-1 rounded-md text-xs font-bold" 
+                    [style.color]="godinaColors[god]" 
+                    [style.backgroundColor]="godinaColors[god] + '1A'">
+                {{ god }}. Godina
+              </span>
+
+              <input type="color" 
+                     [(ngModel)]="godinaColors[god]" 
+                     (change)="saveColors()" 
+                     class="w-7 h-7 rounded-lg border-0 cursor-pointer p-0 bg-transparent">
+            </div>
+          }
+        </div>
       </div>
 
     </div>

@@ -149,10 +149,37 @@ export class Main implements OnInit, AfterViewInit {
     
     if (this.filterGodina !== 'sve') {
       const godNum = Number(this.filterGodina);
-      filtered = filtered.filter(e => e.extendedProps?.godina === godNum);
+      filtered = filtered.filter(e => Number(e.extendedProps?.godina) === godNum);
     }
+
+
     if (this.filterSala !== 'sve') {
-      filtered = filtered.filter(e => e.extendedProps?.sala === this.filterSala);
+      filtered = filtered.filter(e => {
+        const eventSala = e.extendedProps?.sala;
+        const salaVal = typeof eventSala === 'object' ? eventSala?.naziv : eventSala;
+        
+
+        const selectedSalaVal = typeof this.filterSala === 'object' 
+          ? (this.filterSala as any)?.naziv 
+          : this.filterSala;
+
+        return salaVal === selectedSalaVal;
+      });
+    }
+
+    
+    if (this.filterSaradnici && this.filterSaradnici.length > 0) {
+      const selectedIds = this.filterSaradnici.map(id => String(id));
+
+      filtered = filtered.filter(ispit => {
+        
+        const dezurni = ispit.extendedProps?.dezurni || ispit.extendedProps?.saradnici || [];
+        
+        return dezurni.some((d: any) => {
+          const dId = String(typeof d === 'object' ? d.id : d);
+          return selectedIds.includes(dId);
+        });
+      });
     }
 
     const backgroundEvents: any[] = [];
@@ -598,9 +625,31 @@ export class Main implements OnInit, AfterViewInit {
       const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
       return `${meseci[arg.date.month]} ${arg.date.year}.`;
     },
+    // MESEČNI PRIKAZ: Prikazuje samo dane (Pon, Uto, Sre...)
     dayHeaderContent: (arg) => {
       const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
       return daniSkraceno[arg.date.getDay()];
+    },
+
+    // SPECIFIČNE PODEŠAVANJA PO PRIKAZIMA
+    views: {
+      timeGridWeek: {
+        dayHeaderContent: (arg) => {
+          const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+          const d = arg.date;
+          // Format za nedeljni prikaz: "Pon 15.8."
+          return `${daniSkraceno[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
+        }
+      },
+      timeGridDay: {
+        dayHeaderContent: (arg) => {
+          const daniPuni = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
+          const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+          const d = arg.date;
+          // Format za dnevni prikaz: "Subota, 8. Avgust"
+          return `${daniPuni[d.getDay()]}, ${d.getDate()}. ${meseci[d.getMonth()]}`;
+        }
+      }
     },
     headerToolbar: {
       left: 'prev,next today',
@@ -614,6 +663,8 @@ export class Main implements OnInit, AfterViewInit {
       day: 'Dan'
     }
   };
+
+  
 
   saveDraftSchedule() {
     if (!this.hasUnsavedChanges) return;
@@ -662,20 +713,18 @@ export class Main implements OnInit, AfterViewInit {
     this.fetchIspiti();
     this.fetchSviSaradniciIObaveze();
     this.fetchStats();
+    this.fetchUcionice();
+    this.loadSavedColors();
   }
 
   ngAfterViewInit(): void {
     this.initDraggable();
   }
 
-  getGodinaColor(godina?: number): string {
-    switch (godina) {
-      case 1: return '#34b9f7';
-      case 2: return '#ef4444';
-      case 3: return '#eab308';
-      case 4: return '#10b981';
-      default: return '#34b9f7';
-    }
+  getGodinaColor(godina?: number | string): string {
+    if (!godina) return '#34b9f7';
+    const godNum = Number(godina);
+    return this.godinaColors[godNum] || '#34b9f7';
   }
 
   fetchPredmeti(): void {
@@ -692,6 +741,17 @@ export class Main implements OnInit, AfterViewInit {
       },
       error: (err) => console.error('Greška pri dohvatanju predmeta:', err)
     });
+  }
+
+  loadSavedColors(): void {
+    const saved = localStorage.getItem('app_godina_colors');
+    if (saved) {
+      try {
+        this.godinaColors = { ...this.defaultGodinaColors, ...JSON.parse(saved) };
+      } catch (e) {
+        this.godinaColors = { ...this.defaultGodinaColors };
+      }
+    }
   }
 
   fetchIspiti(): void {
@@ -956,6 +1016,7 @@ export class Main implements OnInit, AfterViewInit {
       <!DOCTYPE html>
       <html>
       <head>
+        <link rel="icon" type="image/png" href="assets/logopmf.png">
         <title>Raspored kolokvijuma - PMF Kragujevac</title>
         <style>
           body { font-family: 'Arial', sans-serif; padding: 20px; color: #1e293b; }

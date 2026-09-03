@@ -4,6 +4,8 @@
 <div class="p-4 sm:p-5 border-b border-gray-100">
       <h2 class="text-base sm:text-lg font-bold text-gray-800">Banka predmeta</h2>
       <p class="text-xs text-gray-500 mt-0.5">Prevuci predmet na željeni datum</p>
+      
+      <!-- Pretraga -->
       <div class="relative mt-3">
         <input type="text" [(ngModel)]="searchPredmet" placeholder="Pretraži predmete..." class="w-full pl-9 pr-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50 focus:border-transparent transition-all mb-2">
         <svg class="w-4 h-4 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -28,6 +30,33 @@
         </div>
 
       </div>
+
+      <!-- DODATO: Filteri po godinama (Pills) -->
+      <!-- Filteri po godinama sa animiranim širenjem -->
+      <!-- Kontejner ima klasu 'group' kako bi pratio hover nad bilo kojim dugmetom -->
+      <div class="flex items-center gap-1.5 mt-3 w-full group">
+        <!-- SVE -->
+        <button 
+          (click)="odaberiGodinuFilter('sve')"
+          [class]="izabranaGodinaBanka === 'sve' 
+            ? 'flex-grow-[2] group-hover:flex-1 hover:!flex-grow-[3] py-1.5 px-2 text-xs font-bold rounded-lg bg-[#34b9f7] text-white transition-all duration-300 ease-in-out text-center shadow-xs' 
+            : 'flex-1 hover:flex-grow-[3] py-1.5 px-2 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 ease-in-out text-center'">
+          <span class="inline sm:hidden">Sve</span>
+          <span class="hidden sm:inline">Sve</span>
+        </button>
+        
+        <!-- GODINE (1-4) -->
+        @for (god of [1, 2, 3, 4]; track god) {
+          <button 
+            (click)="odaberiGodinuFilter(god)"
+            [class]="izabranaGodinaBanka === god 
+              ? 'flex-grow-[2] group-hover:flex-1 hover:!flex-grow-[3] py-1.5 px-2 text-xs font-bold rounded-lg bg-[#34b9f7] text-white transition-all duration-300 ease-in-out text-center shadow-xs' 
+              : 'flex-1 hover:flex-grow-[3] py-1.5 px-2 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all duration-300 ease-in-out text-center'">
+            <span class="inline sm:hidden">{{ god }}.</span>
+            <span class="hidden sm:inline">{{ god }}. God</span>
+          </button>
+        }
+      </div>
     </div>
 
     <div class="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2.5 sm:space-y-3" #draggableContainer>
@@ -47,7 +76,7 @@
           </div>
         </div>
       } @empty {
-        <p class="text-xs text-gray-400 text-center py-4">Nema dostupnih predmeta u bazi.</p>
+        <p class="text-xs text-gray-400 text-center py-4">Nema predmeta za izabrane kriterijume.</p>
       }
 
       @if (predmeti.length > prikazaniBrojPredmeta) {
@@ -82,8 +111,8 @@
     
     <select [(ngModel)]="filterSala" (change)="applyFilters()" class="w-full sm:w-36 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
       <option value="sve">Sve sale</option>
-      @for (sala of dostupneSale; track sala) {
-        <option [value]="sala">{{ sala }}</option>
+      @for (sala of dostupneSale; track sala.id || sala) {
+        <option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</option>
       }
     </select>
 

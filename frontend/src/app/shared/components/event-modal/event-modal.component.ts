@@ -38,6 +38,7 @@ export class EventModal implements OnInit {
   timeSlots: string[] = [];
   slobodniSaradnici: any[] = [];
   izabraniSaradnici: any[] = [];
+  sveUcionice: any[] = [];
   odsutniSaradniciMap = new Map<number, string>();
 
   constructor(
@@ -58,6 +59,7 @@ export class EventModal implements OnInit {
   ngOnInit(): void {
     this.generateTimeSlots();
     this.fetchDostupneSaradnikeIOdsustva();
+    this.fetchUcionice();
   }
 
   generateTimeSlots(): void {
@@ -68,6 +70,17 @@ export class EventModal implements OnInit {
     }
     slots.push('22:00');
     this.timeSlots = slots;
+  }
+
+  fetchUcionice(): void {
+    this.http.get<any[]>('http://localhost:5000/ucionice').subscribe({
+      next: (res) => {
+        console.log('Učionice stigle sa beka:', res);
+        this.sveUcionice = res;
+        this.cdr.detectChanges(); // <--- OBAVEZNO: primorava Angular da osveži padajući meni
+      },
+      error: (err) => console.error('Greška pri dohvatanju učionica:', err)
+    });
   }
 
   fetchDostupneSaradnikeIOdsustva(): void {

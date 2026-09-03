@@ -33,7 +33,19 @@ export class Settings implements OnInit {
     confirmPassword: ''
   };
 
+  // --- LOGIKA ZA BOJE GODINA ---
+  defaultGodinaColors: Record<number, string> = {
+    1: '#34b9f7',
+    2: '#ef4444',
+    3: '#eab308',
+    4: '#10b981'
+  };
+
+  godinaColors: Record<number, string> = { ...this.defaultGodinaColors };
+
   ngOnInit(): void {
+    this.loadSavedColors();
+
     // Čupamo podatke iz localStorage-a da ih prikažemo korisniku
     this.userInfo.username = localStorage.getItem('username') || 'Nepoznato';
     this.userInfo.email = localStorage.getItem('email') || 'Nije uneto';
@@ -41,6 +53,27 @@ export class Settings implements OnInit {
     const sirovaUloga = localStorage.getItem('uloga') || 'Korisnik';
     // Malo ulepšavamo ispis uloge
     this.userInfo.uloga = sirovaUloga.charAt(0).toUpperCase() + sirovaUloga.slice(1);
+  }
+
+  loadSavedColors(): void {
+    const saved = localStorage.getItem('app_godina_colors');
+    if (saved) {
+      try {
+        this.godinaColors = { ...this.defaultGodinaColors, ...JSON.parse(saved) };
+      } catch (e) {
+        this.godinaColors = { ...this.defaultGodinaColors };
+      }
+    }
+  }
+
+  saveColors(): void {
+    localStorage.setItem('app_godina_colors', JSON.stringify(this.godinaColors));
+    this.toast.show('Boje godina su uspešno sačuvane!', 'success');
+  }
+
+  resetColorsToDefault(): void {
+    this.godinaColors = { ...this.defaultGodinaColors };
+    this.saveColors();
   }
 
   toggleTheme() {
