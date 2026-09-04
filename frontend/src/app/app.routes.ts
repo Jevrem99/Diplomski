@@ -8,7 +8,7 @@ import { Settings } from './features/settings/settings';
 import { SidebarMenu } from './features/sidebar-menu/sidebar-menu';
 import { MojeObaveze } from './features/moje-obaveze/moje-obaveze.component';
 import { MojaDezurstva } from './features/moja-dezurstva/moja-dezurstva.component';
-
+import { ZaduzenjaComponent } from './features/zaduzenja/zaduzenja.component';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
@@ -28,6 +28,7 @@ export const routes: Routes = [
         canActivate: [roleGuard(['admin'])] 
       },
       { path: 'settings', component: Settings },
+      { path: 'zaduzenja', component: ZaduzenjaComponent },
       { path: 'moje-obaveze', component: MojeObaveze },
       { path: 'moja-dezurstva', component: MojaDezurstva }
     ]

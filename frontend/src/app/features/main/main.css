@@ -819,3 +819,20 @@ select[name="saradnikFilter"] {
     transform: translateX(0); /* Nema vraćanja unazad - teleport na početak */
   }
 }
+/* ========================================================= */
+/* ANIMACIJE ZA FILTER PANELE                                */
+/* ========================================================= */
+@keyframes fadeInPanel {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeInPanel 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
