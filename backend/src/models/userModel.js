@@ -21,11 +21,10 @@ const getAllUsers = async () => {
 
 const getUserById = async (id) => {
     const numericId = parseInt(id, 10);
-    if (isNaN(numericId)) return null; // Sprečava Prisma grešku ako id nije broj
-
+    if (isNaN(numericId)) return null;
     return await prisma.user.findUnique({
         where: { id: numericId },
-        select: { id: true, username: true, email: true, uloga: true, password: true }
+        select: { id: true, username: true, email: true, uloga: true } 
     });
 };
 
@@ -40,7 +39,18 @@ const getUserByUsername = async (identifier) => {
     });
 };
 
+// Dodaj ove dve funkcije u models/userModel.js i izvezi ih u module.exports
 
+
+
+const resetPasswordWithEmail = async (email, newPassword) => {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    return await prisma.user.update({
+        where: { email: email },
+        data: { password: hashedPassword }
+    });
+};
 
 const registerUser = async (username, email, password, uloga = 'asistent') => {
     const saltRounds = 10;
@@ -127,7 +137,43 @@ const generateJwtToken = (user) => {
         exp: parseInt(expire.getTime() / 1000),
     }, config.secret)
 }
+// Dodaj na dno fajla pre module.exports:
 
+const setResetToken = async (email, token, expiryDate) => {
+    return await prisma.user.updateMany({
+        where: { email: email.trim().toLowerCase() },
+        data: {
+            reset_token: token,
+            reset_token_exp: expiryDate
+        }
+    });
+};
+
+const getUserByResetToken = async (token) => {
+    return await prisma.user.findFirst({
+        where: {
+            reset_token: token,
+            reset_token_exp: {
+                gt: new Date() // Token mora biti veći od trenutnog vremena
+            }
+        }
+    });
+};
+
+const updatePasswordByReset = async (id, newPassword) => {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    return await prisma.user.update({
+        where: { id: parseInt(id, 10) },
+        data: {
+            password: hashedPassword,
+            reset_token: null,     // Poništavamo iskorišćeni token
+            reset_token_exp: null
+        }
+    });
+};
+
+// Obavezno dodaj ove tri funkcije u module.exports:
 module.exports = {
     getAllUsers,
     getUserById,
@@ -136,5 +182,8 @@ module.exports = {
     updateUser,
     deleteUser,
     validatePassword,
-    generateJwtToken
+    generateJwtToken,
+    setResetToken,
+    getUserByResetToken,
+    updatePasswordByReset
 };

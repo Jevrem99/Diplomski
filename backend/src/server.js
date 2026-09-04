@@ -13,7 +13,12 @@ const obavezaRoutes = require('./routes/obavezaRoutes');
 const ucionicaRoutes = require('./routes/ucioniceRoutes');
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: ['http://localhost:4200', 'http://127.0.0.1:4200'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
 app.use(express.json());
 
 app.use('/users', userRoutes);

@@ -9,11 +9,13 @@ datasource db {
 // Mapiranje tabela iz starog SQL-a u Prisma modele (klase)
 
 model User {
-id       Int    @id @default(autoincrement())
-username String @unique
-email    String @unique
-password String
-uloga    String @default("asistent")
+  id              Int       @id @default(autoincrement())
+  username        String
+  email           String
+  password        String
+  uloga           String    @default("asistent")
+  reset_token     String?
+  reset_token_exp DateTime?
 }
 
 model Profesor {
@@ -95,6 +97,14 @@ model Obaveza {
   tip_obaveze   String?
 
   saradnik      Profesor  @relation(fields: [saradnik_id], references: [id], onDelete: Cascade)
+}
+model AuditLog {
+  id         Int      @id @default(autoincrement())
+  korisnik   String
+  akcija     String
+  entitet    String
+  detalji    String?
+  created_at DateTime @default(now())
 }
 model Dezurstva {
 id          Int       @id @default(autoincrement())
