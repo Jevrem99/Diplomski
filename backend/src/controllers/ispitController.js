@@ -23,18 +23,91 @@ const getIspitById = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+const proveriKonflikteAsistenata = async (datum, vreme, vreme_kraja, dezurni_ids) => {
+    if (!dezurni_ids || dezurni_ids.length === 0) return [];
 
+    const konflikti = [];
+    const ispitDatum = new Date(datum);
+    const pocetak = new Date(`${datum}T${vreme}Z`);
+    const kraj = vreme_kraja ? new Date(`${datum}T${vreme_kraja}Z`) : new Date(pocetak.getTime() + 2 * 60 * 60 * 1000); // Default 2h ako nema kraja
+
+    // 1. Provera odsustava / obaveza
+    const obaveze = await prisma.obaveza.findMany({
+        where: {
+            saradnik_id: { in: dezurni_ids.map(Number) },
+            datum: ispitDatum,
+            // Logika za preklapanje vremena (pocetak1 < kraj2 && kraj1 > pocetak2)
+            vreme_pocetka: { lt: kraj },
+            vreme_kraja: { gt: pocetak }
+        },
+        include: { saradnik: true }
+    });
+
+    obaveze.forEach(ob => {
+        konflikti.push(`Asistent ${ob.saradnik.ime} ${ob.saradnik.prezime} ima obavezu/odsustvo u tom terminu (${ob.tip_obaveze}).`);
+    });
+
+    // 2. Provera drugih dezurstava (ispita) u istom terminu
+    const drugaDezurstva = await prisma.dezurstva.findMany({
+        where: {
+            saradnik_id: { in: dezurni_ids.map(Number) },
+            ispit: {
+                datum: ispitDatum,
+                vreme: { lt: kraj },
+                vreme_kraja: { gt: pocetak }
+            }
+        },
+        include: { saradnik: true, ispit: { include: { predmet: true } } }
+    });
+
+    drugaDezurstva.forEach(dez => {
+        konflikti.push(`Asistent ${dez.saradnik.ime} ${dez.saradnik.prezime} vec dezura na predmetu ${dez.ispit.predmet.naziv} u tom terminu.`);
+    });
+
+    return konflikti;
+};
 const createIspit = async (req, res) => {
-    // Front šalje: { predmet_id (ili title ako tražimo ID), date, startTime, room }
-    const { predmet_id, datum, vreme, is_ispit, sala, date, startTime, room } = req.body;
-
-    // Fallback ako sa fronta stigne nova struktura iz modala
+    const { predmet_id, datum, vreme, is_ispit, sala, date, startTime, room, vreme_kraja, endTime, dezurni_ids } = req.body;
+    
     const finalDatum = datum || date;
     const finalVreme = vreme || startTime;
     const finalSala = sala || room;
     const finalVremeKraja = vreme_kraja || endTime;
+
     try {
-        const newIspit = await ispitModel.createIspit(predmet_id, finalDatum, finalVreme, finalVremeKraja, is_ispit ?? true, finalSala);
+        let finalDezurni = dezurni_ids || [];
+
+        // AUTOMATSKA DODELA: Ako nisu prosleđeni dežurni, vučemo ih sa predmeta
+        if (!dezurni_ids) {
+            const predmet = await prisma.predmet.findUnique({
+                where: { id: Number(predmet_id) },
+                include: { saradnici: true }
+            });
+            if (predmet && predmet.saradnici) {
+                finalDezurni = predmet.saradnici.map(s => s.id);
+            }
+        }
+
+        // PROVERA KONFLIKATA
+        const konflikti = await proveriKonflikteAsistenata(finalDatum, finalVreme, finalVremeKraja, finalDezurni);
+        if (konflikti.length > 0) {
+            return res.status(409).json({ 
+                error: 'Konflikt u rasporedu', 
+                poruke: konflikti 
+            });
+        }
+
+        // Kreiranje ispita i dežurstava preko modela
+        const newIspit = await ispitModel.createIspit(
+            predmet_id, 
+            finalDatum, 
+            finalVreme, 
+            finalVremeKraja, 
+            is_ispit ?? true, 
+            finalSala,
+            finalDezurni // Prosleđujemo konačan niz
+        );
+
         res.status(201).json(newIspit);
     } catch (err) {
         console.error('Error creating ispit:', err);

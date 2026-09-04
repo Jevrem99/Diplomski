@@ -259,3 +259,73 @@ body.dark-theme .custom-multi-select .mat-mdc-select-placeholder,
 body.dark-theme .custom-multi-select .mat-mdc-select-min-line {
   color: #f8fafc !important;
 }
+/* Forsira širenje ćelija dana na 100% i skida nepotrebne interne scrollbare */
+.fc .fc-daygrid-day-frame {
+  height: 100% !important;
+  min-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.fc .fc-daygrid-day-events {
+  flex: 1 1 auto !important;
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* Uklanja FullCalendar strelice za skrol unutar ćelije */
+.fc .fc-daygrid-day-bottom,
+.fc .fc-daygrid-more-link {
+  display: none !important;
+}
+
+/* Omogućava da kartica lepo legne u punoj širini kolone */
+.fc .fc-daygrid-event-harness {
+  margin-bottom: 2px !important;
+  width: 100% !important;
+}
+/* Fiksna visina ćelije dana i prirodan skrol tek kad se prepuni */
+.fc .fc-daygrid-day-frame {
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.fc .fc-daygrid-day-events {
+  flex: 1 1 auto !important;
+  overflow-y: auto !important; /* SKROL SAMO KAD PREMAŠI PROSTOR */
+  overflow-x: hidden !important;
+  padding: 2px 3px !important;
+  margin: 0 !important;
+}
+
+/* Potpuno uklanjamo FullCalendar strelice / trougliće */
+.fc .fc-daygrid-day-bottom,
+.fc .fc-daygrid-more-link {
+  display: none !important;
+}
+
+/* Lep, tanak sivi skrolbar unutar ćelije umesto glomaznog sistemskog */
+.fc .fc-daygrid-day-events::-webkit-scrollbar {
+  width: 4px;
+}
+.fc .fc-daygrid-day-events::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 4px;
+}
+
+/* Razmak između kartica */
+.fc-daygrid-event-harness {
+  margin-bottom: 3px !important;
+}
+
+/* Horizontalni auto-skrol dugog naziva predmeta na hover */
+.custom-cal-box:hover .marquee-text {
+  animation: scrollTekst 3s ease-in-out infinite alternate;
+}
+
+@keyframes scrollTekst {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-35%); }
+}

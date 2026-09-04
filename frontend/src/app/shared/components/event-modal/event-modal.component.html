@@ -1,9 +1,7 @@
 <div class="p-5 sm:p-7 bg-white rounded-2xl font-montserrat flex flex-col justify-between w-full max-h-[88vh] overflow-y-auto box-border">
   
-  <!-- GORNJI DEO: Kolone -->
   <div class="flex flex-col lg:flex-row justify-between gap-6 w-full">
     
-    <!-- LEVA STRANA: Detalji termina -->
     <div class="w-full lg:w-6/12 flex flex-col gap-4">
       <div>
         <h2 class="text-lg sm:text-xl font-extrabold text-slate-800 m-0">Detalji termina</h2>
@@ -13,8 +11,22 @@
         </p>
       </div>
 
-      <!-- Vreme početka i kraja -->
-      <div class="flex flex-col sm:flex-row gap-3 sm:gap-4">
+      <!-- Tip provere (Ispit ili Kolokvijum) -->
+      <div class="flex flex-col gap-2 mt-1">
+        <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Tip provere znanja</span>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+            <input type="radio" name="tipProvere" [(ngModel)]="formData.is_ispit" [value]="true" class="w-4 h-4 text-[#34b9f7] focus:ring-[#34b9f7]">
+            Ispit
+          </label>
+          <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer">
+            <input type="radio" name="tipProvere" [(ngModel)]="formData.is_ispit" [value]="false" class="w-4 h-4 text-green-500 focus:ring-green-500">
+            Kolokvijum
+          </label>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-2">
         <mat-form-field appearance="outline" class="custom-field w-full sm:w-1/2">
           <mat-label>Vreme početka*</mat-label>
           <mat-select [(ngModel)]="formData.startTime">
@@ -34,19 +46,21 @@
         </mat-form-field>
       </div>
 
-      <!-- Izaberi salu -->
      <mat-form-field appearance="outline" class="custom-field w-full">
         <mat-label>Izaberi salu*</mat-label>
         <mat-select [(ngModel)]="formData.room">
-          @for (sala of sveUcionice; track sala.id || sala) {
-            <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</mat-option>
-          } @empty {
-            <mat-option disabled>Nema učionica za prikaz</mat-option>
+          @for (sala of ['Sala A1', 'Sala A2', 'Sala A3', 'Svečana sala', 'Amfiteatar']; track sala) {
+            <!-- OBRISAN JE [disabled] ATRIBUT! KORISNIK SADA MOŽE DA KLIKNE -->
+            <mat-option [value]="sala" [ngClass]="isSalaZauzeta(sala) ? 'bg-red-50 !text-red-600 font-bold' : ''">
+              {{ sala }}
+              @if (isSalaZauzeta(sala)) {
+                <span class="text-[10px] text-red-600 font-extrabold ml-2">(Zauzeta u ovom terminu)</span>
+              }
+            </mat-option>
           }
         </mat-select>
       </mat-form-field>
 
-      <!-- Dežurni na ispitu -->
       <div class="bg-slate-50 border border-slate-100 rounded-xl p-3 sm:p-4 flex flex-col gap-2">
         <span class="text-xs font-extrabold text-slate-400 tracking-wider uppercase">Dežurni na ispitu</span>
         <div class="flex flex-wrap gap-1.5 sm:gap-2">
@@ -62,7 +76,6 @@
       </div>
     </div>
 
-    <!-- DESNA STRANA: Dostupni saradnici -->
     <div class="w-full lg:w-5/12 flex flex-col border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
       <h3 class="text-base sm:text-lg font-extrabold text-slate-800 mb-3 sm:mb-4">Dostupni saradnici</h3>
       
@@ -74,7 +87,6 @@
             <div class="flex flex-col">
               <span class="text-xs sm:text-sm font-bold text-slate-700">{{ saradnik.ime }} {{ saradnik.prezime }}</span>
               
-              <!-- Poruka upozorenja za odsutnog saradnika -->
               @if (odsutniSaradniciMap.has(saradnik.id)) {
                 <span class="text-[11px] font-bold text-red-600 flex items-center gap-1 mt-0.5">
                   <svg class="w-3.5 h-3.5 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
@@ -85,7 +97,6 @@
               }
             </div>
 
-            <!-- Dugme sa blokadom ako je odsutan -->
             <button class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full transition-all border-none bg-transparent"
                     [ngClass]="odsutniSaradniciMap.has(saradnik.id) ? 'text-gray-300 cursor-not-allowed opacity-50' : 'text-[#34b9f7] hover:bg-sky-50 cursor-pointer'"
                     [disabled]="odsutniSaradniciMap.has(saradnik.id)"
@@ -102,9 +113,7 @@
     </div>
   </div>
 
-  <!-- DONJI DEO: Dugmad -->
   <div class="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-5 border-t border-slate-100 mt-5 w-full">
-    <!-- Dugme za brisanje -->
     @if (data.predmetId && formData.startTime) {
       <button mat-flat-button color="warn" class="!font-bold !bg-red-500 !text-white !px-6 !rounded-xl !h-10 sm:!h-11 w-full sm:w-auto" (click)="onDelete()">
         Obriši termin
@@ -113,11 +122,9 @@
       <div></div>
     }
 
-    <!-- Dugmad Otkaži / Sačuvaj -->
     <div class="flex flex-row items-center justify-end gap-2 sm:gap-3 w-full sm:w-auto">
       <button mat-button class="flex-1 sm:flex-initial !font-bold !text-slate-500 !px-4 sm:!px-6 !h-10 sm:!h-11 hover:!bg-slate-100 !rounded-xl" (click)="onCancel()">Otkaži</button>
       <button mat-flat-button class="flex-1 sm:flex-initial !bg-[#34b9f7] !text-white !font-bold !px-6 sm:!px-8 !h-10 sm:!h-11 !rounded-xl shadow-md hover:!bg-[#20a6e4]" (click)="onSave()">Sačuvaj</button>
     </div>
   </div>
-
 </div>
