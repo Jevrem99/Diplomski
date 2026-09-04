@@ -66,7 +66,9 @@ export class Main implements OnInit, AfterViewInit {
   private cdr = inject(ChangeDetectorRef);
   private toastService = inject(ToastService);
   private ngZone = inject(NgZone);
-  
+  // --- KONTROLA PRIKAZA FILTER PANELA ---
+  prikaziLevoFiltere: boolean = false;
+  prikaziDesnoFiltere: boolean = false;
   username = localStorage.getItem('username');
   predmeti: Predmet[] = [];
   draggableInstance: Draggable | null = null;
