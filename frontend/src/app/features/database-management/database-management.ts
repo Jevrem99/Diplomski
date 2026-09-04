@@ -5,7 +5,7 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
-export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'korisnici';
+export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'korisnici' | 'dnevnik';
 
 interface ColumnDef {
   key: string;      // ključ u JSON objektu sa bekena
@@ -36,8 +36,16 @@ export class DatabaseManagement implements OnInit {
   allProfesori: any[] = []; // DODATO
   allPredmeti: any[] = [];
   allRoles: any[] = [];
-  // Konfiguracija kolona za svaku tabelu
+
   private columnConfigurations: Record<EntityType, ColumnDef[]> = {
+    dnevnik: [
+      { key: 'id', label: 'ID' },
+      { key: 'created_at', label: 'Vreme' },
+      { key: 'korisnik', label: 'Korisnik' },
+      { key: 'akcija', label: 'Akcija' },
+      { key: 'entitet', label: 'Entitet' },
+      { key: 'detalji', label: 'Detalji' }
+    ],
     korisnici: [
       { key: 'id', label: 'ID' },
       { key: 'username', label: 'Korisničko ime' },
@@ -113,7 +121,8 @@ export class DatabaseManagement implements OnInit {
       saradnici: '/profesors/saradnici',
       predmeti: '/predmet',
       ispiti: '/ispit',
-      korisnici: '/users'
+      korisnici: '/users',
+      dnevnik: '/admin/logs'
     };
     return `${this.API_URL}${endpointMap[entity]}`;
   }
@@ -266,22 +275,29 @@ export class DatabaseManagement implements OnInit {
       });
     }
   }
-  formatCellValue(row: any, colKey: string): string {
-    if (colKey === 'password') return '••••••••';
+ formatCellValue(row: any, colKey: string): string {
+    if (colKey === 'password') return '********';
+
     const val = row[colKey];
     if (val === null || val === undefined || val === '') return '-';
 
-    // 1. Ako je u pitanju polje za vreme (vreme ili vreme_kraja)
+    // 1. Formatiranje za vreme kreiranja loga (Dnevnik rada)
+    if (colKey === 'created_at') {
+      const d = new Date(val);
+      return `${d.toLocaleDateString('sr-RS')} ${d.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })}`;
+    }
+
+    // 2. Ako je u pitanju polje za vreme (vreme ili vreme_kraja)
     if (colKey.includes('vreme') && typeof val === 'string' && val.includes('T')) {
       return val.substring(11, 16); // Vraća samo "08:00"
-    } 
-    
-    // 2. Ako je u pitanju datum polaganja
+    }
+
+    // 3. Ako je u pitanju datum polaganja
     if (colKey.includes('datum') && typeof val === 'string' && val.includes('T')) {
       return val.split('T')[0]; // Vraća "2026-08-01"
     }
 
-    // 3. Ako je relacija (npr. objekat predmeta ili sale)
+    // 4. Ako je relacija (npr. objekat predmeta ili sale)
     if (typeof val === 'object') {
       return val.naziv || `${val.ime || ''} ${val.prezime || ''}`.trim() || '-';
     }

@@ -1,7 +1,7 @@
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService'); // <--- DODAJ OVDE
-
+const { logAction } = require('../services/auditService');
 const getAllIspiti = async (req, res) => {
     try {
         const ispiti = await ispitModel.getAllIspiti();
@@ -107,7 +107,12 @@ const createIspit = async (req, res) => {
             finalSala,
             finalDezurni // Prosleđujemo konačan niz
         );
-
+        await logAction(
+            req.user?.username || 'Korisnik',
+            'CREATE',
+            'Ispit',
+            `Zakazan termin za datum ${finalDatum} u ${finalVreme}h`
+        );
         res.status(201).json(newIspit);
     } catch (err) {
         console.error('Error creating ispit:', err);
@@ -149,7 +154,12 @@ const updateIspit = async (req, res) => {
             salaId,
             dezurni_ids || []
         );
-
+        await logAction(
+            req.user?.username || 'Korisnik',
+            'UPDATE',
+            'Ispit',
+            `Izmenjen termin ID ${id} (${datum} u ${vreme}h, sala: ${salaNaziv || 'Bez sale'})`
+        );
         res.status(200).json(updatedIspit);
     } catch (err) {
         console.error(`Error updating ispit ${id}:`, err);
@@ -163,6 +173,12 @@ const deleteIspit = async (req, res) => {
         if (!deletedIspit) {
             return res.status(404).json({ error: 'Ispit not found' });
         }
+        await logAction(
+            req.user?.username || 'Korisnik',
+            'DELETE',
+            'Ispit',
+            `Obrisan ispit/kolokvijum sa ID-jem ${id}`
+        );
         res.status(200).json(deletedIspit);
     } catch (err) {
         console.error(`Error deleting ispit with id ${id}:`, err);
@@ -206,6 +222,12 @@ const saveBulkIspiti = async (req, res) => {
 
             sacuvaniIspiti.push(newIspit);
         }
+        await logAction(
+            req.user?.username || 'Korisnik',
+            'CREATE',
+            'Raspored',
+            `Sačuvano ${sacuvaniIspiti.length} novih termina na rasporedu`
+        );
         res.status(201).json(sacuvaniIspiti);
     } catch (err) {
         console.error('Error in bulk save:', err);
@@ -275,7 +297,12 @@ const publishAll = async (req, res) => {
         for (const [sId, data] of saradniciMap.entries()) {
             sendGrupniDezurstvoEmail(data.email, data.imePrezime, data.dezurstva);
         }
-
+        await logAction(
+            req.user?.username || 'Korisnik',
+            'PUBLISH',
+            'Raspored',
+            `Objavljen raspored sa ${result.count} ispita i poslata obaveštenja saradnicima`
+        );
         res.status(200).json({ message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!` });
     } catch (err) {
         console.error('Greška pri objavljivanju:', err);
