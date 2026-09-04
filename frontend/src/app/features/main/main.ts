@@ -14,7 +14,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import { EventModal } from '../../shared/components/event-modal/event-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { FormsModule } from '@angular/forms';
-
+import * as XLSX from 'xlsx-js-style';
 interface Profesor {
   id?: number;
   ime: string;
@@ -102,7 +102,14 @@ export class Main implements OnInit, AfterViewInit {
   
   defaultGodinaColors: any = { 1: '#34b9f7', 2: '#ef4444', 3: '#eab308', 4: '#10b981' };
   godinaColors: any = { ...this.defaultGodinaColors };
-  
+  // --- IZVOZ EXCEL VARIJABLE ---
+  prikaziIzvozModal: boolean = false;
+  izvozPodaci = {
+    tip: 'ispiti',
+    datumOd: '',
+    datumDo: '',
+    nazivRoka: 'Испитни рок'
+  };
   dostupneSale: any[] = [];
   allLoadedEvents: any[] = [];
   sviSaradnici: any[] = [];
@@ -116,7 +123,165 @@ export class Main implements OnInit, AfterViewInit {
   // ============================================
   // FUNKCIJE ZA MODAL DANA (BRZO UREĐIVANJE I KOPIRANJE)
   // ============================================
+ otvoriIzvozModal() {
+    this.prikaziIzvozModal = true;
+    
+    // Postavi default datume (od danas do mesec dana)
+    const danas = new Date();
+    this.izvozPodaci.datumOd = danas.toISOString().split('T')[0];
+    
+    const sledeciMesec = new Date();
+    sledeciMesec.setMonth(sledeciMesec.getMonth() + 1);
+    this.izvozPodaci.datumDo = sledeciMesec.toISOString().split('T')[0];
+  }
 
+  generisiExcel() {
+    const { tip, datumOd, datumDo, nazivRoka } = this.izvozPodaci;
+
+    if (!datumOd || !datumDo) {
+      this.toastService.show('Izaberite oba datuma!', 'error');
+      return;
+    }
+
+    // Filtriramo ispite u tom periodu
+    const dOd = new Date(datumOd).getTime();
+    const dDo = new Date(datumDo).getTime();
+
+    const ispitiUPeriodu = this.allLoadedEvents.filter(e => {
+      const isIspitEvent = e.extendedProps?.is_ispit ?? true;
+      if (tip === 'ispiti' && !isIspitEvent) return false;
+      if (tip === 'kolokvijumi' && isIspitEvent) return false;
+      if (e.extendedProps?.isNastava) return false;
+
+      const evtStartStr = e.start.split('T')[0];
+      const evtDatumMs = new Date(evtStartStr).getTime();
+      return evtDatumMs >= dOd && evtDatumMs <= dDo;
+    });
+
+    if (ispitiUPeriodu.length === 0) {
+      this.toastService.show('Nema zakazanih termina u izabranom periodu.', 'error');
+      return;
+    }
+
+    // Sortiranje: Godina studija -> Datum ispita -> Naziv predmeta
+    ispitiUPeriodu.sort((a, b) => {
+      const godA = a.extendedProps.godina || 99;
+      const godB = b.extendedProps.godina || 99;
+      if (godA !== godB) return godA - godB;
+      
+      const datumA = new Date(a.start.split('T')[0]).getTime();
+      const datumB = new Date(b.start.split('T')[0]).getTime();
+      if (datumA !== datumB) return datumA - datumB;
+
+      return a.title.localeCompare(b.title);
+    });
+
+    // Pravimo matricu za Excel i pratimo stilove
+    const wsData: any[][] = [];
+    const cellStyles: any = {};
+    let rowIndex = 1; // Excel redovi kreću od 1
+
+    // Red 1: A="ОАС и МАС", B="Информатике"
+    wsData.push(['ОАС и МАС', 'Информатике', null, null]);
+    cellStyles[`A${rowIndex}`] = { font: { sz: 12, name: 'Calibri' } };
+    cellStyles[`B${rowIndex}`] = { font: { sz: 12, name: 'Calibri' } };
+    rowIndex++;
+
+    // Originalne HEX boje izložene direktno iz tvog fajla "Ispiti_Informatika_2025-26.xlsx"
+    const bojaPoGodini: any = {
+      1: 'FF8EA9DB', // 1. godina (Plavkasta)
+      2: 'FFF4B083', // 2. godina (Narandžasta)
+      3: 'FFFFD965', // 3. godina (Žuta)
+      4: 'FFA8D08D', // 4. godina (Zelena)
+      5: 'FF00B0F0'  // Master (Svetlo plava)
+    };
+
+    const tankiOkvir = {
+      top: { style: 'thin', color: { rgb: 'FF000000' } },
+      bottom: { style: 'thin', color: { rgb: 'FF000000' } },
+      left: { style: 'thin', color: { rgb: 'FF000000' } },
+      right: { style: 'thin', color: { rgb: 'FF000000' } }
+    };
+
+    let trenutnaGodina = -1;
+    let redniBroj = 1;
+
+    ispitiUPeriodu.forEach(ispit => {
+      const ispitGodina = ispit.extendedProps.godina || 1;
+
+      // Prelazak u novu godinu (dodaje se naslov i zaglavlje)
+      if (ispitGodina !== trenutnaGodina) {
+        trenutnaGodina = ispitGodina;
+        redniBroj = 1;
+        
+        const rimska = ['I', 'II', 'III', 'IV', 'Мастер'][trenutnaGodina - 1] || trenutnaGodina;
+        
+        // Red "I година"
+        wsData.push([`${rimska} година`, null, null, null]);
+        cellStyles[`A${rowIndex}`] = { font: { bold: true, sz: 12, name: 'Calibri' } };
+        rowIndex++;
+        
+        // Red sa zaglavljem kolona
+        wsData.push([null, 'Предмет', nazivRoka, null]);
+        cellStyles[`B${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
+        cellStyles[`C${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
+        rowIndex++;
+      }
+
+      const nazivPredmeta = ispit.title.split(' (')[0];
+      
+      // Datum formatiramo u "dd.mm." tačno kao sa slike
+      const datumSirovo = ispit.start.split('T')[0].split('-');
+      const datumPrikaz = `${datumSirovo[2]}.${datumSirovo[1]}.`;
+      
+      // Vreme formatiramo dodavanjem "h" na kraj
+      const vremePrikaz = ispit.extendedProps.vreme + 'h';
+
+      wsData.push([redniBroj, nazivPredmeta, datumPrikaz, vremePrikaz]);
+      
+      const bgColor = bojaPoGodini[trenutnaGodina] || 'FFFFFFFF';
+      
+      // STILIZACIJA PODATAKA REDA:
+      // A) Redni broj
+      cellStyles[`A${rowIndex}`] = { border: tankiOkvir, alignment: { horizontal: 'right' }, font: { name: 'Calibri', sz: 11 } };
+      // B) Predmet (OBOJEN)
+      cellStyles[`B${rowIndex}`] = { 
+        fill: { fgColor: { rgb: bgColor } }, 
+        border: tankiOkvir, 
+        font: { name: 'Calibri', sz: 11 }
+      };
+      // C) Datum
+      cellStyles[`C${rowIndex}`] = { border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
+      // D) Vreme
+      cellStyles[`D${rowIndex}`] = { border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
+
+      rowIndex++;
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+    // Primeni sačuvane stilove na ćelije u Sheet-u
+    for (const key in cellStyles) {
+      if (ws[key]) {
+        ws[key].s = cellStyles[key];
+      }
+    }
+
+    // Podešavanje širine kolona da izgleda isto kao u primeru
+    ws['!cols'] = [
+      { wch: 15 }, // Kolona A (Brojevi i tekst "ОАС и МАС")
+      { wch: 45 }, // Kolona B (Naziv predmeta)
+      { wch: 15 }, // Kolona C (Datum)
+      { wch: 10 }  // Kolona D (Vreme)
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Raspored');
+    XLSX.writeFile(wb, `Raspored_${tip}_${datumOd}.xlsx`);
+
+    this.prikaziIzvozModal = false;
+    this.toastService.show('Excel fajl je uspešno generisan!', 'success');
+  }
   otvoriKopiranjeDanaIzModala() {
     this.rezimKopiranjaDana = true;
     this.danZaKopiranje = this.selektovanDan;
