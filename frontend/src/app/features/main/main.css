@@ -702,36 +702,51 @@ select[name="saradnikFilter"] {
   to { opacity: 1; transform: translateY(0); }
 }
 /* ========================================================= */
-/* 1. ZAKUCAVANJE VISINE I UNUTRAŠNJI SKROL (MAX-HEIGHT FIX) */
+/* 1. DINAMIČKI SKROL BEZ ŠIRENJA REDOVA (APSOLUTNI OKVIR)   */
 /* ========================================================= */
 
-/* Okvir dana (vraćamo normalan flex da broj dana ostane gore desno) */
+/* Sama ćelija mora biti relativna da bi zadržala elemente unutar sebe */
+:host ::ng-deep .fc .fc-daygrid-day {
+  position: relative !important;
+}
+
+/* Okvir (frame) se širi apsolutno na sve 4 strane ćelije. 
+   Ovo 100% SPREČAVA širenje tabele, a visina se prilagođava svakom monitoru! */
 :host ::ng-deep .fc .fc-daygrid-day-frame {
+  position: absolute !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
   display: flex !important;
   flex-direction: column !important;
-  justify-content: flex-start !important;
-  height: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
   overflow: hidden !important;
 }
 
-/* Fiksira broj dana strogo u gornji desni ugao */
+/* Broj dana - Forsiramo "row" kako bi flex-end STVARNO bio u gornjem desnom uglu */
 :host ::ng-deep .fc .fc-daygrid-day-top {
   display: flex !important;
+  flex-direction: row !important; 
   justify-content: flex-end !important;
   padding: 4px 6px !important;
+  flex-shrink: 0 !important;
+  z-index: 2 !important;
 }
 
-/* MAGIČNO PRAVILO: Hardkodovan limit koji Tabela NE MOŽE da ignoriše! */
+/* Događaji uzimaju sav PREOSTALI prostor i dodaju skrol ako ih ima previše */
 :host ::ng-deep .fc .fc-daygrid-day-events {
-  display: block !important;
-  max-height: 86px !important; /* Dovoljno prostora za tačno 3 ispita */
-  overflow-y: auto !important; /* Skrol se pali ako dodamo 4. ispit */
+  position: relative !important;
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
   overflow-x: hidden !important;
   padding: 0 4px 2px 4px !important;
   margin: 0 !important;
 }
 
-/* Tanak, diskretan skrolbar */
+/* Tanak, elegantan skrolbar */
 :host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar {
   width: 4px;
 }
