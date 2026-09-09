@@ -44,7 +44,10 @@ export class SidebarMenu {
     this.drawer.close();
     this.router.navigate(['/moje-obaveze']);
   }
-
+  navigateToZaduzenja() {
+    this.drawer.close();
+    this.router.navigate(['/zaduzenja']);
+  }
   logout() {
     localStorage.clear(); // Briše sve ključeve odjednom
     this.router.navigate(['/login']);

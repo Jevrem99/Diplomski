@@ -11,6 +11,7 @@
 
     <!-- Dugme za dodavanje novog reda, odgurnuto skroz desno -->
     <button class="nav-btn font-bold text-amber-600" [class.active]="activeEntity === 'korisnici'" (click)="selectEntity('korisnici')">Nalozi</button>
+    <button class="nav-btn font-bold text-indigo-600" [class.active]="activeEntity === 'dnevnik'" (click)="selectEntity('dnevnik')">Dnevnik rada</button>
 
   <!-- AZURIRANO PLAVO DUGME -->
   <button class="nav-btn !bg-[#34b9f7] !text-white !font-bold" style="margin-left: auto;" (click)="openCrudModal()">
@@ -32,6 +33,9 @@
     @if (tableData.length > 0) {
     <table class="styled-table">
       <thead>
+        @if (activeEntity !== 'dnevnik') {
+      <th class="w-24 text-center">Akcije</th>
+    }
         <tr>
           @for (col of currentColumnsDef; track col.key) {
           <th>{{ col.label }}</th>
@@ -41,6 +45,11 @@
         </tr>
       </thead>
       <tbody>
+        @if (activeEntity !== 'dnevnik') {
+      <td class="flex justify-center gap-3">
+         <!-- postojeće ikonice za edit i delete -->
+      </td>
+    }
         @for (row of tableData; track $index) {
         <tr>
           @for (col of currentColumnsDef; track col.key) {
@@ -75,4 +84,9 @@
     }
   </div>
   }
+  @if (activeEntity !== 'dnevnik') {
+      <button class="nav-btn !bg-[#34b9f7] !text-white !font-bold" style="margin-left: auto;" (click)="openCrudModal()">
+        + Dodaj {{ activeEntity == 'profesori' ? 'profesora' : activeEntity == 'saradnici' ? 'saradnika' : activeEntity == 'predmeti' ? 'predmet' : activeEntity == 'ispiti' ? 'ispit' : activeEntity == 'korisnici' ? 'korisnika' : ''}}
+      </button>
+    }
 </div>
