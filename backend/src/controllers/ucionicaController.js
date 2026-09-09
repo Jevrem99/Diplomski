@@ -1,6 +1,9 @@
 const axios = require('axios');
 const https = require('https');
 
+let cachedUcionice = [];
+let isFetching = false;
+
 const axiosInstance = axios.create({
   httpsAgent: new https.Agent({ rejectUnauthorized: false }),
   headers: {
@@ -17,6 +20,7 @@ const JSON_DATASETS = [
   'IVgodInfLet15_pi.js', 'IVgodInfLet15_ri.js', 'IVgodInfLet15_si.js', 'MasInfLet15.js', 'MasInfLet15rn.js'
 ];
 
+// Helper za povlačenje iz JSON skupova
 async function fetchIzJsonDatasets() {
   const ucioniceSet = new Set();
   const baseUrl = 'https://imi.pmf.kg.ac.rs/json_datasets/';
@@ -41,6 +45,7 @@ async function fetchIzJsonDatasets() {
   return Array.from(ucioniceSet);
 }
 
+// Helper za dnevne rezervacije
 async function fetchUcioniceIzDnevnihRezervacija() {
   const ucioniceSet = new Set();
   try {
@@ -77,11 +82,13 @@ async function fetchUcioniceIzDnevnihRezervacija() {
   return Array.from(ucioniceSet);
 }
 
-// GET /ucionice - Sve učionice
-const getAllUcionice = async (req, res) => {
+// Glavna funkcija za sinhronizaciju keša
+async function syncUcioniceCache() {
+  if (isFetching) return;
+  isFetching = true;
+
   try {
     const ucioniceSet = new Set();
-
     const [redovne, dnevne] = await Promise.all([
       fetchIzJsonDatasets(),
       fetchUcioniceIzDnevnihRezervacija()
@@ -90,11 +97,33 @@ const getAllUcionice = async (req, res) => {
     redovne.forEach(u => ucioniceSet.add(u));
     dnevne.forEach(u => ucioniceSet.add(u));
 
-    const result = Array.from(ucioniceSet)
+    cachedUcionice = Array.from(ucioniceSet)
       .sort((a, b) => a.localeCompare(b, 'sr'))
       .map((u, i) => ({ id: i + 1, naziv: u }));
 
-    res.json(result);
+    console.log(`[Keš Osvežen] Dohvaćeno ${cachedUcionice.length} učionica sa PMF sajta.`);
+  } catch (error) {
+    console.error('Greška pri osvežavanju keša učionica:', error.message);
+  } finally {
+    isFetching = false;
+  }
+}
+
+// Inicijalni poziv pri učitavanju fajla
+syncUcioniceCache();
+
+// Pozadinsko osvežavanje na svakih 6 sati
+setInterval(syncUcioniceCache, 6 * 60 * 60 * 1000);
+
+// --- KONTROLERI ---
+
+// GET /ucionice - Sve učionice (instant iz keša)
+const getAllUcionice = async (req, res) => {
+  try {
+    if (cachedUcionice.length === 0) {
+      await syncUcioniceCache();
+    }
+    res.json(cachedUcionice);
   } catch (error) {
     console.error('Greška pri dohvatanju učionica:', error);
     res.status(500).json({ greska: 'Greška pri dohvatanju učionica.' });
@@ -103,38 +132,21 @@ const getAllUcionice = async (req, res) => {
 
 // GET /ucionice/dostupne?datum=2026-06-15&pocetak=09:00&kraj=11:00
 const getDostupneUcionice = async (req, res) => {
-  const { datum, pocetak, kraj } = req.query;
+  const { datum, pocetak } = req.query;
 
   if (!datum || !pocetak) {
     return res.status(400).json({ greska: 'Datum i vreme početka su obavezni.' });
   }
 
   try {
-    // 1. Dohvatimo sve učionice
-    const sveUcioniceSet = new Set([
-      ...(await fetchIzJsonDatasets()),
-      ...(await fetchUcioniceIzDnevnihRezervacija())
-    ]);
+    if (cachedUcionice.length === 0) {
+      await syncUcioniceCache();
+    }
 
-    // 2. Proverimo vaše ispite u bazi za taj datum (Prisma primer)
-    /*
-    const zauzetiIspiti = await prisma.ispit.findMany({
-      where: {
-        datum: datum,
-        // logika preklapanja satnice
-      },
-      select: { sala: true }
-    });
-    const zauzeteSale = new Set(zauzetiIspiti.map(i => i.sala));
-    */
-
-    // Prilagodite prema vašoj bazi/logici preklapanja:
+    // Za zauzete sale ovde filtrirate po vašim događajima/bazi
     const zauzeteSale = new Set(); 
 
-    const dostupne = Array.from(sveUcioniceSet)
-      .filter(sala => !zauzeteSale.has(sala))
-      .sort((a, b) => a.localeCompare(b, 'sr'))
-      .map((u, i) => ({ id: i + 1, naziv: u }));
+    const dostupne = cachedUcionice.filter(sala => !zauzeteSale.has(sala.naziv));
 
     res.json(dostupne);
   } catch (error) {
@@ -144,6 +156,6 @@ const getDostupneUcionice = async (req, res) => {
 };
 
 module.exports = {
-    getAllUcionice,
-    getDostupneUcionice
-}
+  getAllUcionice,
+  getDostupneUcionice
+};

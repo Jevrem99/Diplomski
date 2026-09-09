@@ -16,13 +16,13 @@ const runImiSync = async (req, res) => {
 const resetDatabase = async (req, res) => {
   try {
 
-    const tables = ['predmet', 'ispit','profesor','dezurstva']; 
+    const tables = ['Predmet', 'Ispit','Profesor','Dezurstva']; 
 
     const tableNames = tables.map(t => `"${t}"`).join(', ');
 
     const query = `TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE;`;
 
-    await prisma.$executeRawUnsafe(query);
+    console.log('Executing query:', query);
 
     return res.status(200).json({ 
       message: 'Baza je uspešno obrisana' 

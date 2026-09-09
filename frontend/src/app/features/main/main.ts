@@ -585,6 +585,25 @@ export class Main implements OnInit, AfterViewInit {
       const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
       return daniSkraceno[arg.date.getDay()];
     },
+    views: {
+      timeGridWeek: {
+        dayHeaderContent: (arg) => {
+          const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
+          const d = arg.date;
+          // Format za nedeljni prikaz: "Pon 15.8."
+          return `${daniSkraceno[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
+        }
+      },
+      timeGridDay: {
+        dayHeaderContent: (arg) => {
+          const daniPuni = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
+          const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
+          const d = arg.date;
+          // Format za dnevni prikaz: "Subota, 8. Avgust"
+          return `${daniPuni[d.getDay()]}, ${d.getDate()}. ${meseci[d.getMonth()]}`;
+        }
+      }
+    },
     headerToolbar: {
       left: 'prev,next today',
       center: 'title',
@@ -770,6 +789,7 @@ export class Main implements OnInit, AfterViewInit {
 
   ngOnInit(): void {
     this.fetchPredmeti(); this.fetchIspiti(); this.fetchSviSaradniciIObaveze();
+    this.loadAllUcioniceForFilter();
     this.fetchStats(); this.fetchUcionice(); this.loadSavedColors();
     
     // --- GLOBALNI OSLUŠKIVAČ (OČIŠĆEN OD DUPLIKATA ZA KRUŽIĆE) ---
@@ -849,12 +869,22 @@ export class Main implements OnInit, AfterViewInit {
 
         const sviDogadjaji = [...ispitEvents, ...nastavaEvents];
         this.allLoadedEvents = sviDogadjaji; this.calendarOptions.events = sviDogadjaji;
-        this.dostupneSale = [...new Set(ispitEvents.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
+        // this.dostupneSale = [...new Set(ispitEvents.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
         
         this.applyFilters();
         setTimeout(() => this.detectConflicts(), 200);
       },
       error: (err) => console.error('Greška pri dohvatanju ispita i nastave:', err)
+    });
+  }
+
+  loadAllUcioniceForFilter(): void {
+    this.http.get<any[]>(`${this.API_URL}/ucionice`).subscribe({
+      next: (res) => {
+        // Sada su sve sale dostupne uvek, bez obzira na stanje u bazi ili kalendaru
+        this.dostupneSale = res;
+      },
+      error: (err) => console.error('Greška pri dohvatanju svih učionica:', err)
     });
   }
 

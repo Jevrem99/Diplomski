@@ -119,6 +119,8 @@
           <option value="sve">Sve sale</option>
           @for (sala of dostupneSale; track sala.id || sala) {
             <option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</option>
+          } @empty {
+            <option disabled>Učitavanje sala...</option>
           }
         </select>
 
