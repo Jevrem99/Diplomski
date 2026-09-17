@@ -253,3 +253,114 @@
   background: transparent;
   padding: 0;
 }
+/* ========================================================= */
+/* KONTRAST ZA TAMNU TEMU (SETTINGS)                         */
+/* ========================================================= */
+
+:host-context(body.dark-theme) .settings-page-wrapper,
+body.dark-theme app-settings .settings-page-wrapper {
+  background-color: #0b1329 !important;
+}
+
+:host-context(body.dark-theme) .settings-card,
+body.dark-theme app-settings .settings-card {
+  background-color: #111c44 !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+}
+
+:host-context(body.dark-theme) .card-title,
+body.dark-theme app-settings .card-title {
+  color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .card-desc,
+body.dark-theme app-settings .card-desc {
+  color: #94a3b8 !important;
+}
+
+/* 1. Korisničko ime, email i ostali ključni podaci */
+:host-context(body.dark-theme) .info-val,
+body.dark-theme app-settings .info-val,
+:host-context(body.dark-theme) .info-group p,
+body.dark-theme app-settings .info-group p {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+/* 2. Labelice iznad polja i podataka */
+:host-context(body.dark-theme) .info-label,
+body.dark-theme app-settings .info-label,
+:host-context(body.dark-theme) .form-label,
+body.dark-theme app-settings .form-label {
+  color: #cbd5e1 !important;
+  font-weight: 700 !important;
+}
+
+/* 3. Input polja unutar forme za promenu lozinke */
+:host-context(body.dark-theme) .custom-input-field,
+body.dark-theme app-settings .custom-input-field {
+  background-color: #0d1533 !important;
+  border-color: #2a3b75 !important;
+  color: #ffffff !important;
+}
+
+:host-context(body.dark-theme) .custom-input-field::placeholder,
+body.dark-theme app-settings .custom-input-field::placeholder {
+  color: #64748b !important;
+}
+
+:host-context(body.dark-theme) .custom-input-field:focus,
+body.dark-theme app-settings .custom-input-field:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* 4. Značka uloge i ikonica profila */
+:host-context(body.dark-theme) .role-badge,
+body.dark-theme app-settings .role-badge {
+  background-color: #1a2656 !important;
+  border-color: #2a3b75 !important;
+  color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .icon-avatar,
+body.dark-theme app-settings .icon-avatar {
+  background-color: #1a2656 !important;
+  border-color: #2a3b75 !important;
+  color: #38bdf8 !important;
+}
+
+/* 5. Dugme za promenu teme */
+:host-context(body.dark-theme) .btn-theme-toggle,
+body.dark-theme app-settings .btn-theme-toggle {
+  background-color: #1a2656 !important;
+  border-color: #2a3b75 !important;
+  color: #f1f5f9 !important;
+}
+
+:host-context(body.dark-theme) .btn-theme-toggle:hover,
+body.dark-theme app-settings .btn-theme-toggle:hover {
+  background-color: #243475 !important;
+}
+
+/* 6. Kartice za boje predmeta na dnu */
+:host-context(body.dark-theme) .year-color-card,
+body.dark-theme app-settings .year-color-card {
+  background-color: #0d1533 !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .btn-reset-colors,
+body.dark-theme app-settings .btn-reset-colors {
+  background-color: #1a2656 !important;
+  border-color: #2a3b75 !important;
+  color: #e2e8f0 !important;
+}
+
+:host-context(body.dark-theme) .btn-reset-colors:hover,
+body.dark-theme app-settings .btn-reset-colors:hover {
+  background-color: #ef4444 !important;
+  border-color: #dc2626 !important;
+  color: #ffffff !important;
+}

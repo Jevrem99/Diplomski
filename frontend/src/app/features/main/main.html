@@ -41,21 +41,26 @@
           </select>
 
           <!-- Pills po godinama ubačeni unutra -->
-          <div class="flex items-center gap-1 w-full group">
-            <button (click)="odaberiGodinuFilter('sve')"
-              [class]="izabranaGodinaBanka === 'sve' 
-                ? 'flex-grow-[2] group-hover:flex-1 hover:!flex-grow-[3] py-1.5 px-1.5 text-xs font-bold rounded-lg bg-[#34b9f7] text-white transition-all text-center shadow-xs' 
-                : 'flex-1 hover:flex-grow-[3] py-1.5 px-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 transition-all text-center'">
-              Sve
-            </button>
-            @for (god of [1, 2, 3, 4]; track god) {
-            <button (click)="odaberiGodinuFilter(god)"
-              [class]="izabranaGodinaBanka === god 
-                  ? 'flex-grow-[2] group-hover:flex-1 hover:!flex-grow-[3] py-1.5 px-1.5 text-xs font-bold rounded-lg bg-[#34b9f7] text-white transition-all text-center shadow-xs' 
-                  : 'flex-1 hover:flex-grow-[3] py-1.5 px-1.5 text-xs font-semibold rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-100 transition-all text-center'">
-              {{ god }}. God
-            </button>
-            }
+<div class="flex flex-col gap-1.5 mt-1">
+            <div class="flex items-center justify-between px-0.5">
+              <span class="text-[10px] font-extrabold text-gray-500 uppercase tracking-wider">Godine</span>
+              <button type="button" (click)="toggleSveGodine()" class="text-[11px] font-bold text-[#1F63A0] hover:underline bg-transparent border-none cursor-pointer p-0">
+                {{ izabraneGodine.length === 4 ? 'Isključi sve' : 'Izaberi sve' }}
+              </button>
+            </div>
+            <div class="grid grid-cols-4 gap-1 bg-white p-1 rounded-xl border border-gray-200">
+              @for (god of godineOpcije; track god.id) {
+                <button type="button"
+                        (click)="toggleGodina(god.id)"
+                        [class.bg-[#1F63A0]]="izabraneGodine.includes(god.id)"
+                        [class.text-white]="izabraneGodine.includes(god.id)"
+                        [class.font-extrabold]="izabraneGodine.includes(god.id)"
+                        [class.text-gray-600]="!izabraneGodine.includes(god.id)"
+                        class="py-1.5 text-xs font-semibold rounded-lg text-center cursor-pointer border-none bg-transparent transition-none">
+                  {{ god.id }}. God
+                </button>
+              }
+            </div>
           </div>
         </div>
       </div>
@@ -131,25 +136,31 @@
             </svg>
           </button>
 
-          @if (isDashboardOpen) {
+        @if (isDashboardOpen) {
           <div
             class="absolute top-full mt-2 right-0 w-80 bg-white border border-gray-100 rounded-2xl shadow-xl z-[100] p-3.5 grid grid-cols-2 gap-2.5 animate-fadeIn">
             <div class="p-2.5 rounded-xl border border-blue-100 bg-blue-50/50 flex flex-col justify-between">
-              <span class="text-[10px] font-bold text-blue-500 uppercase tracking-wide">Zakazano ispita</span>
+              <span class="text-[10px] font-bold text-[#1F63A0] uppercase tracking-wide">Zakazano ispita</span>
               <span class="text-xl font-black text-gray-800 mt-0.5">{{ stats.totalIspiti }}</span>
             </div>
             <div class="p-2.5 rounded-xl border border-green-100 bg-green-50/50 flex flex-col justify-between">
-              <span class="text-[10px] font-bold text-green-500 uppercase tracking-wide">Aktivni Saradnici</span>
+              <span class="text-[10px] font-bold text-green-600 uppercase tracking-wide">Aktivni Saradnici</span>
               <span class="text-xl font-black text-gray-800 mt-0.5">{{ stats.totalSaradnici }}</span>
             </div>
-            <div class="p-2.5 rounded-xl border border-purple-100 bg-purple-50/50 flex flex-col justify-between">
-              <span class="text-[10px] font-bold text-purple-500 uppercase tracking-wide">Najviše dežurstava</span>
+            <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col justify-between">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Najviše dežurstava</span>
               <span class="text-xs font-black text-gray-800 mt-0.5 leading-tight">{{ stats.topDezurni }}</span>
             </div>
-            <div class="p-2.5 rounded-xl border border-orange-100 bg-orange-50/50 flex flex-col justify-between">
-              <span class="text-[10px] font-bold text-orange-500 uppercase tracking-wide">Konflikti</span>
+            <!-- KLIKABILNA KARTICA KONFLIKATA -->
+            <div (click)="otvoriListuKonflikata()" 
+                 class="p-2.5 rounded-xl border border-amber-200 bg-amber-50/70 flex flex-col justify-between cursor-pointer hover:bg-amber-100 transition-colors shadow-xs"
+                 title="Klikni za pregled konflikata">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold text-amber-700 uppercase tracking-wide">Konflikti</span>
+                <span class="text-[10px] text-amber-600 font-bold">➔</span>
+              </div>
               <span class="text-xl font-black mt-0.5"
-                [ngClass]="stats.konflikti > 0 ? 'text-red-600' : 'text-green-500'">
+                [ngClass]="stats.konflikti > 0 ? 'text-amber-600' : 'text-slate-400'">
                 {{ stats.konflikti }}
               </span>
             </div>
@@ -461,4 +472,44 @@
     </div>
   </div>
 </div>
+}
+@if (prikaziKonfliktiModal) {
+  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh]">
+      
+      <div class="bg-[#1F63A0] px-6 py-4 flex items-center justify-between text-white border-b border-[#164f82]">
+        <div class="flex items-center gap-2.5">
+          <svg class="w-5 h-5 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+          </svg>
+          <h2 class="text-lg font-extrabold m-0">Detektovani rasporedni konflikti</h2>
+        </div>
+        <button (click)="prikaziKonfliktiModal = false" class="text-white/80 hover:text-white text-2xl font-bold bg-transparent border-none cursor-pointer">✕</button>
+      </div>
+
+      <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
+        @for (item of listaSvihKonflikata; track item.datum) {
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-2">
+            <span class="text-xs font-black text-[#1F63A0] uppercase tracking-wider border-b border-slate-200 pb-1.5">
+              Datum: {{ item.datum }}
+            </span>
+            <ul class="flex flex-col gap-1.5 mt-1 list-disc pl-4 text-xs font-semibold text-slate-700">
+              @for (razlog of item.razlozi; track razlog) {
+                <li class="leading-relaxed">{{ razlog }}</li>
+              }
+            </ul>
+          </div>
+        } @empty {
+          <div class="text-center py-8 text-slate-400 font-bold text-sm">Nema aktivnih konflikata u rasporedu.</div>
+        }
+      </div>
+
+      <div class="bg-slate-50 border-t border-slate-200 px-6 py-3 flex justify-end">
+        <button (click)="prikaziKonfliktiModal = false" class="h-10 px-6 font-bold text-sm bg-[#1F63A0] text-white rounded-xl hover:bg-[#164f82] transition-colors cursor-pointer">
+          Zatvori
+        </button>
+      </div>
+
+    </div>
+  </div>
 }

@@ -9,7 +9,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth';
 import { ToastService } from '../../core/services/toast.service';
-
+import { forkJoin, timer } from 'rxjs';
+import { SpinnerComponent } from '../../shared/components/spinner/spinner.component';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -32,7 +33,7 @@ export class Login implements OnInit {
   private authService = inject(AuthService);
   private toast = inject(ToastService);
   private API_URL = 'http://localhost:5000';
-
+  loading: boolean = false;
   loginData = { username: '', password: '' };
   hide = true;
 
@@ -53,8 +54,14 @@ export class Login implements OnInit {
   }
 
   onLogin() {
-    this.authService.login(this.loginData).subscribe({
-      next: (response) => {
+    this.loading = true;
+
+    forkJoin({
+      response: this.authService.login(this.loginData),
+      delay: timer(600)
+    }).subscribe({
+      next: ({ response }) => {
+        this.loading = false;
         const payload = JSON.parse(atob(response.token.split('.')[1]));
         const uloga = payload.uloga || 'asistent';
         localStorage.setItem('token', response.token);
@@ -70,6 +77,7 @@ export class Login implements OnInit {
         }
       },
       error: () => {
+        this.loading = false;
         this.toast.show('Pogrešno korisničko ime ili lozinka!', 'error');
       }
     });
@@ -80,18 +88,25 @@ export class Login implements OnInit {
       this.toast.show('Unesite vašu email adresu!', 'error');
       return;
     }
-    this.http.post<any>(`${this.API_URL}/auth/forgot-password`, { email: this.forgotEmail }).subscribe({
-      next: (res) => {
+
+    this.loading = true;
+
+    forkJoin({
+      res: this.http.post<any>(`${this.API_URL}/auth/forgot-password`, { email: this.forgotEmail }),
+      delay: timer(600)
+    }).subscribe({
+      next: ({ res }) => {
+        this.loading = false;
         this.toast.show(res.message || 'Zahtev je poslat.', 'success');
         this.prikazModala = 'login';
         this.forgotEmail = '';
       },
       error: (err) => {
+        this.loading = false;
         this.toast.show(err.error?.error || 'Došlo je do greške.', 'error');
       }
     });
   }
-
   promeniZaboravljenuLozinku() {
     if (!this.newPassword || !this.confirmNewPassword) {
       this.toast.show('Popunite sva polja!', 'error');

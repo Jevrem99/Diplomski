@@ -92,6 +92,31 @@ export class Main implements OnInit, AfterViewInit {
   ciljniDatum: string = '';
   ispitiZaPreuredjivanje: any[] = [];
   ispitiZaBrisanje: string[] = [];
+  izabraneGodine: number[] = [1, 2, 3, 4];
+  godineOpcije = [
+    { id: 1, label: '1. God' },
+    { id: 2, label: '2. God' },
+    { id: 3, label: '3. God' },
+    { id: 4, label: '4. God' }
+  ];
+
+  toggleSveGodine(): void {
+    if (this.izabraneGodine.length === 4) {
+      this.izabraneGodine = [];
+    } else {
+      this.izabraneGodine = [1, 2, 3, 4];
+    }
+  }
+
+  toggleGodina(godina: number): void {
+    const index = this.izabraneGodine.indexOf(godina);
+    if (index > -1) {
+      this.izabraneGodine.splice(index, 1);
+    } else {
+      this.izabraneGodine.push(godina);
+    }
+  }
+
 
   // --- FILTERI ---
   filterGodina: string = 'sve';
@@ -99,12 +124,13 @@ export class Main implements OnInit, AfterViewInit {
   filterLevoGodina: string = 'sve';
   filterLevoProfesor: string = 'svi';
   izabranaGodinaBanka: string | number = 'sve';
-
+  prikaziKonfliktiModal: boolean = false;
+  listaSvihKonflikata: { datum: string; razlozi: string[] }[] = [];
   defaultGodinaColors: any = {
     1: '#009bd9', // Azurno plava sa kocke "Matematika" sa sajta
     2: '#d81b43', // Rubin crvena sa kocke "Upis" sa sajta
     3: '#f39c12', // Zlatno-narandžasta sa kocke "Informatika" sa sajta
-    4: '#1a4975'  // Zvanična IMI tamno plava
+    4: '#27AE60'  // Zvanična IMI tamno plava
   };
   godinaColors: any = { ...this.defaultGodinaColors };
   // --- IZVOZ EXCEL VARIJABLE ---
@@ -122,7 +148,7 @@ export class Main implements OnInit, AfterViewInit {
   filterSaradnici: number[] = [];
   searchPredmet: string = '';
   prikazaniBrojPredmeta: number = 5;
-
+ conflictsByDateMap= new Map<string, string[]>();
   stats = { totalIspiti: 0, totalSaradnici: 0, topDezurni: 'Učitavanje...', konflikti: 0 };
 
   // ============================================
@@ -131,6 +157,18 @@ export class Main implements OnInit, AfterViewInit {
   trackById(index: number, item: any): any {
     return item?.id ?? index;
   }
+  otvoriListuKonflikata(): void {
+  if (this.stats.konflikti === 0) return;
+  
+  // Skupljamo sve detektovane konflikte iz mape koju puni detectConflicts()
+  this.listaSvihKonflikata = [];
+  if (this.conflictsByDateMap) {
+    this.conflictsByDateMap.forEach((razlozi: string[], datum: string) => {
+      this.listaSvihKonflikata.push({ datum, razlozi });
+    });
+  }
+  this.prikaziKonfliktiModal = true;
+}
   otvoriIzvozModal() {
     this.prikaziIzvozModal = true;
 
@@ -142,7 +180,7 @@ export class Main implements OnInit, AfterViewInit {
     sledeciMesec.setMonth(sledeciMesec.getMonth() + 1);
     this.izvozPodaci.datumDo = sledeciMesec.toISOString().split('T')[0];
   }
-
+  
   generisiExcel() {
     const { tip, datumOd, datumDo, nazivRoka } = this.izvozPodaci;
 
@@ -213,7 +251,7 @@ export class Main implements OnInit, AfterViewInit {
 
     let trenutnaGodina = -1;
     let redniBroj = 1;
-
+    
     ispitiUPeriodu.forEach(ispit => {
       const ispitGodina = ispit.extendedProps.godina || 1;
 
@@ -976,9 +1014,11 @@ eventMouseEnter: (info) => {
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
 
-    if (this.filterLevoGodina !== 'sve') {
-      filtrirano = filtrirano.filter(p => p.godina === Number(this.filterLevoGodina));
+    // Filter po izabranim godinama iz multiselekta
+    if (this.izabraneGodine && this.izabraneGodine.length < 4) {
+      filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }
+
     if (this.filterLevoProfesor !== 'svi') {
       filtrirano = filtrirano.filter(p => p.profesor_id === Number(this.filterLevoProfesor));
     }
@@ -993,7 +1033,6 @@ eventMouseEnter: (info) => {
     }
     return filtrirano.slice(0, this.prikazaniBrojPredmeta);
   }
-
   vidiVisePredmeta() {
     this.prikazaniBrojPredmeta += 10;
   }
@@ -1259,6 +1298,7 @@ eventMouseEnter: (info) => {
     let ukupanBrojKonflikata = 0;
     for (const razlozi of conflictsByDate.values()) ukupanBrojKonflikata += razlozi.length;
     this.stats.konflikti = ukupanBrojKonflikata;
+    this.conflictsByDateMap = conflictsByDate;
   }
 
   private timeToMins(timeStr: string): number {

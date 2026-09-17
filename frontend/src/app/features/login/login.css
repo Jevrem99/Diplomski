@@ -114,3 +114,95 @@
   background-color: #e67e22;
   box-shadow: 0 6px 16px rgba(243, 156, 18, 0.4);
 }
+/* ========================================================= */
+/* UVEĆANA I KOMFORNA LOGIN FORMA                            */
+/* ========================================================= */
+.login-card {
+  position: relative;
+  z-index: 10;
+  background: #ffffff;
+  width: 100%;
+  max-width: 520px !important; /* Povećano sa 440px */
+  padding: 3.25rem 3rem !important;
+  border-radius: 24px !important;
+  box-shadow: 0 30px 60px -12px rgba(15, 23, 42, 0.45) !important;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo-image {
+  width: 96px !important; /* Krupniji logo */
+  height: 96px !important;
+  object-fit: contain;
+  margin-bottom: 1.25rem !important;
+}
+
+.portal-title {
+  font-size: 1.65rem !important;
+  font-weight: 800;
+  color: #1F63A0;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.portal-subtitle {
+  font-size: 0.95rem !important;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 0.35rem !important;
+}
+
+.form-fields {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.35rem !important;
+  margin-top: 1rem;
+}
+
+/* Krupnija Material polja */
+:host ::ng-deep .custom-field .mat-mdc-text-field-wrapper {
+  height: 56px !important; /* Komforna visina */
+  border-radius: 12px !important;
+}
+
+:host ::ng-deep .custom-field .mdc-notched-outline__leading {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+:host ::ng-deep .custom-field .mdc-notched-outline__trailing {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+:host ::ng-deep .custom-field input {
+  font-size: 1rem !important;
+}
+
+:host ::ng-deep .custom-field .mat-mdc-floating-label {
+  font-size: 0.95rem !important;
+}
+
+/* Masivnije IMI Zlatno Dugme */
+.submit-button {
+  width: 100%;
+  height: 54px !important;
+  background-color: #F39C12;
+  color: #ffffff;
+  border: 1px solid #d68910;
+  border-radius: 12px !important;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.05rem !important;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 0.5rem;
+  box-shadow: 0 6px 18px rgba(243, 156, 18, 0.35) !important;
+  transition: all 0.15s ease;
+}
+
+.submit-button:hover {
+  background-color: #e67e22;
+  box-shadow: 0 8px 22px rgba(243, 156, 18, 0.45) !important;
+}
