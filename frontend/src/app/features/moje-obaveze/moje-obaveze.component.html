@@ -1,24 +1,37 @@
-<div class="p-8 bg-[#f4f7fb] min-h-[94vh] font-montserrat">
-  <div class="max-w-6xl mx-auto">
-    <h1 class="text-3xl font-bold text-gray-800 mb-8">Moje Obaveze i Zauzetosti</h1>
+<div class="p-4 sm:p-8 bg-[#e9f0f8] min-h-[94vh] font-montserrat flex flex-col gap-6">
+  <div class="max-w-6xl mx-auto w-full flex flex-col gap-6">
+    
+    <!-- IMI HEDER STRANICE -->
+    <header class="bg-[#1F63A0] border border-[#164f82] rounded-2xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Moje Obaveze i Zauzetosti</h1>
+        <p class="text-xs sm:text-sm text-blue-100/80 font-medium mt-1">Prijavite periode odsustva radi lakšeg raspoređivanja dežurstava na ispitima.</p>
+      </div>
+    </header>
 
-    <div class="flex flex-col md:flex-row gap-8">
+    <div class="flex flex-col lg:flex-row gap-6">
       
-      <!-- LEVA STRANA: Forma sa Custom Kalendarom -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex-1 h-fit">
-        <h2 class="text-xl font-bold text-[#34b9f7] mb-4">Prijavi odsustvo</h2>
+      <!-- LEVA STRANA: Forma sa prilagođenim kalendarom -->
+      <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-1 h-fit">
+        <h2 class="text-lg font-extrabold text-[#1F63A0] mb-4">Prijavi odsustvo</h2>
         
-        <!-- Prekidač Režima -->
-        <div class="flex bg-gray-100 p-1 rounded-xl mb-4">
+        <!-- Prekidač Režima (Jednodnevno / Višednevno) -->
+        <div class="flex bg-slate-100 p-1 rounded-xl mb-5 border border-slate-200">
           <button type="button" 
-                  [class.bg-white]="!isVisednevno" [class.shadow-sm]="!isVisednevno" [class.text-[#34b9f7]]="!isVisednevno"
-                  class="flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500"
+                  [class.bg-[#1F63A0]]="!isVisednevno" 
+                  [class.text-white]="!isVisednevno" 
+                  [class.shadow-sm]="!isVisednevno"
+                  [class.text-slate-600]="isVisednevno"
+                  class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
                   (click)="toggleRezim(false)">
             Jednodnevno
           </button>
           <button type="button" 
-                  [class.bg-white]="isVisednevno" [class.shadow-sm]="isVisednevno" [class.text-[#34b9f7]]="isVisednevno"
-                  class="flex-1 py-2 text-sm font-bold rounded-lg transition-all text-gray-500"
+                  [class.bg-[#1F63A0]]="isVisednevno" 
+                  [class.text-white]="isVisednevno" 
+                  [class.shadow-sm]="isVisednevno"
+                  [class.text-slate-600]="!isVisednevno"
+                  class="flex-1 py-2 text-xs sm:text-sm font-bold rounded-lg transition-all"
                   (click)="toggleRezim(true)">
             Višednevno
           </button>
@@ -26,46 +39,45 @@
 
         <form (ngSubmit)="onSubmit()" class="flex flex-col gap-4">
           
-          <!-- CUSTOM TAILWIND KALENDAR -->
-          <div class="border border-gray-100 bg-white rounded-2xl p-4 shadow-[0_2px_10px_rgb(0,0,0,0.02)] select-none">
+          <!-- KALENDAR ZA ODABIR DANA/RASPONA -->
+          <div class="border border-slate-200 bg-white rounded-xl p-3 sm:p-4 select-none">
             
-            <!-- Zaglavlje: Mesec i Strelice -->
-            <div class="flex justify-between items-center mb-4 px-2">
-              <button type="button" (click)="menjajMesec(-1)" class="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
+            <!-- Mesec i strelice -->
+            <div class="flex justify-between items-center mb-3 px-1">
+              <button type="button" (click)="menjajMesec(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors border border-slate-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path></svg>
               </button>
-              <span class="font-bold text-gray-700 tracking-wide">{{ nazivMeseca() }}</span>
-              <button type="button" (click)="menjajMesec(1)" class="p-1.5 rounded-lg hover:bg-gray-50 text-gray-400 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
+              <span class="font-bold text-slate-800 tracking-tight text-sm sm:text-base">{{ nazivMeseca() }}</span>
+              <button type="button" (click)="menjajMesec(1)" class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-600 transition-colors border border-slate-200">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path></svg>
               </button>
             </div>
 
-            <!-- Dani u nedelji -->
+            <!-- Nazivi dana -->
             <div class="grid grid-cols-7 mb-2">
               @for(dan of nedelje; track dan) {
-                <div class="text-center text-[11px] font-bold text-gray-400 uppercase">{{ dan }}</div>
+                <div class="text-center text-[10px] sm:text-[11px] font-extrabold text-slate-400 uppercase py-1">{{ dan }}</div>
               }
             </div>
 
             <!-- Brojevi dana -->
             <div class="grid grid-cols-7 gap-y-1">
               @for(dan of daysInMonth; track dan.date) {
-                <div class="relative flex items-center justify-center h-10">
+                <div class="relative flex items-center justify-center h-9 sm:h-10">
                   
-                  <!-- Plava pozadina za raspon (Višednevno) -->
+                  <!-- Plava traka raspona u IMI boji -->
                   @if (isInRange(dan.date)) {
-                    <div class="absolute inset-0 bg-[#34b9f7]/10 w-full h-full"></div>
+                    <div class="absolute inset-0 bg-[#1F63A0]/15 w-full h-full"></div>
                   }
                   
-                  <!-- Dugme za konkretan dan -->
                   <button type="button" 
                           (click)="onDateClick(dan)"
-                          class="z-10 w-8 h-8 flex items-center justify-center rounded-full text-sm transition-all focus:outline-none"
+                          class="z-10 w-8 h-8 flex items-center justify-center rounded-full text-xs sm:text-sm transition-all focus:outline-none"
                           [ngClass]="{
-                            'text-gray-300': !dan.inMonth,
-                            'text-gray-600 hover:bg-gray-100 font-medium': dan.inMonth && !isSelected(dan.date) && !isInRange(dan.date),
-                            'bg-[#34b9f7] text-white font-bold shadow-md': isSelected(dan.date),
-                            'text-[#34b9f7] font-semibold': isInRange(dan.date) && !isSelected(dan.date)
+                            'text-slate-300': !dan.inMonth,
+                            'text-slate-700 hover:bg-slate-100 font-semibold': dan.inMonth && !isSelected(dan.date) && !isInRange(dan.date),
+                            'bg-[#1F63A0] text-white font-extrabold shadow-sm': isSelected(dan.date),
+                            'text-[#1F63A0] font-bold': isInRange(dan.date) && !isSelected(dan.date)
                           }">
                     {{ dan.date.getDate() }}
                   </button>
@@ -74,47 +86,52 @@
             </div>
           </div>
 
-          <!-- Unos Vremena -->
+          <!-- Unos satnice ako je jednodnevno odsustvo -->
           @if (!isVisednevno) {
-            <div class="flex gap-4">
+            <div class="flex gap-3">
               <div class="flex flex-col gap-1 flex-1">
-                <label class="text-sm font-semibold text-gray-600">Vreme od</label>
+                <label class="text-xs font-bold text-slate-600">Vreme od</label>
                 <input type="time" [(ngModel)]="formData.vreme_pocetka" name="vreme_pocetka" required
-                       class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#34b9f7]/50 outline-none">
+                       class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
               </div>
               <div class="flex flex-col gap-1 flex-1">
-                <label class="text-sm font-semibold text-gray-600">Vreme do</label>
+                <label class="text-xs font-bold text-slate-600">Vreme do</label>
                 <input type="time" [(ngModel)]="formData.vreme_kraja" name="vreme_kraja" required
-                       class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#34b9f7]/50 outline-none">
+                       class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
               </div>
             </div>
           }
 
+          <!-- Razlog odsustva -->
           <div class="flex flex-col gap-1">
-            <label class="text-sm font-semibold text-gray-600">Razlog (Opciono)</label>
-            <input type="text" [(ngModel)]="formData.tip_obaveze" name="tip_obaveze" placeholder="Npr. Privatne obaveze..."
-                   class="px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-[#34b9f7]/50 outline-none">
+            <label class="text-xs font-bold text-slate-600">Razlog (Opciono)</label>
+            <input type="text" [(ngModel)]="formData.tip_obaveze" name="tip_obaveze" placeholder="Npr. Naučna konferencija, pregled..."
+                   class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
           </div>
 
-          <button type="submit" class="mt-2 w-full bg-[#34b9f7] text-white font-bold py-3 rounded-xl hover:bg-[#20a6e4] transition-all shadow-md">
+          <!-- Zlatno dugme za slanje -->
+          <button type="submit" class="mt-2 w-full h-[42px] bg-[#F39C12] border border-[#d68910] text-white font-extrabold text-sm rounded-lg hover:bg-[#e67e22] transition-all shadow-sm cursor-pointer">
             Sačuvaj zauzetost
           </button>
         </form>
       </div>
 
-      <!-- DESNA STRANA: Prikaz istorije -->
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex-[1.5]">
-        <h2 class="text-xl font-bold text-gray-800 mb-6">Prijavljena odsustva</h2>
+      <!-- DESNA STRANA: Prikaz prijavljenih odsustava -->
+      <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex-[1.4]">
+        <div class="flex items-center gap-2 mb-5">
+          <div class="w-2.5 h-6 bg-[#1F63A0] rounded-full"></div>
+          <h2 class="text-lg sm:text-xl font-bold text-slate-800">Prijavljena odsustva</h2>
+        </div>
         
         <div class="flex flex-col gap-3">
           @for (obaveza of obaveze; track obaveza.id) {
-            <div class="flex items-center justify-between p-4 bg-gray-50 border border-gray-100 rounded-xl hover:border-[#34b9f7]/30 transition-colors">
+            <div class="flex items-center justify-between p-3.5 sm:p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-[#1F63A0]/30 transition-colors">
               <div class="flex flex-col gap-1">
                 <div class="flex items-center gap-2">
-                  <svg class="w-5 h-5 text-[#34b9f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-4 h-4 text-[#1F63A0]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                   </svg>
-                  <span class="font-bold text-gray-800 text-base">
+                  <span class="font-bold text-slate-800 text-sm sm:text-base">
                     {{ obaveza.datum | date:'dd.MM.yyyy.' }}
                     @if (obaveza.datum_do) {
                       - {{ obaveza.datum_do | date:'dd.MM.yyyy.' }}
@@ -123,17 +140,17 @@
                 </div>
 
                 @if (obaveza.vreme_pocetka_str) {
-                  <div class="flex items-center gap-2 text-sm text-gray-500 font-medium ml-7">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 ml-6">
+                    <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     <span>{{ obaveza.vreme_pocetka_str }}h - {{ obaveza.vreme_kraja_str }}h</span>
                   </div>
                 }
-                <span class="text-xs font-semibold text-amber-600 ml-7">{{ obaveza.tip_obaveze || 'Nedostupan/na' }}</span>
+                <span class="text-xs font-extrabold text-amber-600 ml-6">{{ obaveza.tip_obaveze || 'Nedostupan/na' }}</span>
               </div>
               
-              <button (click)="obrisiObavezu(obaveza.id)" class="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="Obriši">
+              <button (click)="obrisiObavezu(obaveza.id)" class="p-2 text-rose-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all border border-transparent hover:border-rose-200 cursor-pointer" title="Obriši odsustvo">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                 </svg>
@@ -142,7 +159,7 @@
           }
 
           @if (obaveze.length === 0) {
-            <div class="text-center py-10 text-gray-400 font-medium">
+            <div class="text-center py-12 text-slate-400 font-semibold text-sm">
               Nemate prijavljenih zauzetosti.<br>Slobodni ste za dežurstva!
             </div>
           }

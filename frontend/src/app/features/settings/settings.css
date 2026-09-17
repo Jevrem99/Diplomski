@@ -1,0 +1,255 @@
+.settings-page-wrapper {
+  padding: 1.5rem;
+  background-color: #e9f0f8;
+  min-height: calc(100vh - 62px);
+  box-sizing: border-box;
+  font-family: "Open Sans", Roboto, sans-serif;
+}
+
+.settings-container {
+  max-width: 980px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ========================================================= */
+/* IMI TEGET HEDER STRANICE                                  */
+/* ========================================================= */
+.settings-header {
+  background-color: #1F63A0;
+  border: 1px solid #164f82;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 4px 14px rgba(31, 99, 160, 0.15);
+}
+
+.settings-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.settings-subtitle {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  margin-top: 3px;
+  display: block;
+}
+
+/* ========================================================= */
+/* KARTICE                                                   */
+/* ========================================================= */
+.settings-card {
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 4px 14px rgba(31, 99, 160, 0.06);
+}
+
+.card-header-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.icon-avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background-color: #f0f7fc;
+  border: 1px solid #cbd5e1;
+  color: #1F63A0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-title {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1F63A0;
+  margin: 0;
+}
+
+.card-desc {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.info-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.info-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.info-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-top: 2px;
+}
+
+.role-badge {
+  display: inline-flex;
+  padding: 3px 10px;
+  background-color: #f0f7fc;
+  border: 1px solid #cbd5e1;
+  color: #1F63A0;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  border-radius: 6px;
+  width: fit-content;
+  margin-top: 4px;
+}
+
+/* Dugme za temu */
+.btn-theme-toggle {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 7px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid #cbd5e1;
+  background-color: #f8fafc;
+  color: #334155;
+  transition: all 0.15s ease;
+}
+
+.btn-theme-toggle:hover {
+  background-color: #f1f5f9;
+}
+
+/* ========================================================= */
+/* FORMA ZA LOZINKU                                          */
+/* ========================================================= */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.custom-input-field {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background-color: #ffffff;
+  font-size: 0.88rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.15s ease;
+}
+
+.custom-input-field:focus {
+  border-color: #1F63A0;
+  box-shadow: 0 0 0 2px rgba(31, 99, 160, 0.15);
+}
+
+.btn-update-pass {
+  height: 40px;
+  border-radius: 7px;
+  border: 1px solid #d68910;
+  background-color: #F39C12;
+  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  margin-top: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.btn-update-pass:hover {
+  background-color: #e67e22;
+}
+
+/* ========================================================= */
+/* BOJE PO GODINAMA                                          */
+/* ========================================================= */
+.btn-reset-colors {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 6px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #64748b;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-reset-colors:hover {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+  color: #ef4444;
+}
+
+.btn-save-colors {
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 6px;
+  border: 1px solid #d68910;
+  background-color: #F39C12;
+  color: #ffffff;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.btn-save-colors:hover {
+  background-color: #e67e22;
+}
+
+.year-color-card {
+  padding: 10px 14px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.year-indicator {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.color-picker-input {
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background: transparent;
+  padding: 0;
+}

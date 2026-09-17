@@ -1,5 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
 
+html, body, :host {
+  font-family: "Open Sans", Roboto, sans-serif !important;
+  color: #556270;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -328,4 +332,102 @@ body.dark-theme .custom-multi-select .mat-mdc-select-min-line {
 @keyframes scrollTekst {
   0% { transform: translateX(0%); }
   100% { transform: translateX(-35%); }
+}
+/* ========================================================= */
+/* VRAĆANJE I POPRAVKA DARK THEME                            */
+/* ========================================================= */
+body.dark-theme {
+  background-color: #0b1329 !important;
+  color: #e2e8f0 !important;
+}
+
+/* Glavna pozadina aplikacije i stranice podešavanja */
+body.dark-theme .main-wrapper,
+body.dark-theme .db-container,
+body.dark-theme .settings-page-wrapper {
+  background-color: #0b1329 !important;
+}
+
+/* Kartice, paneli, kalendar i modali u tamnom režimu */
+body.dark-theme aside.w-full,
+body.dark-theme .left-panel,
+body.dark-theme .calendar-card,
+body.dark-theme .table-wrapper,
+body.dark-theme .settings-card,
+body.dark-theme .crud-modal-container,
+body.dark-theme .event-modal-container {
+  background-color: #111c44 !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Kalendarske ćelije i mrežica u tamnom režimu */
+body.dark-theme :host ::ng-deep .fc-theme-standard td,
+body.dark-theme :host ::ng-deep .fc-theme-standard th,
+body.dark-theme :host ::ng-deep .fc .fc-scrollgrid {
+  background-color: #111c44 !important;
+  border-color: #1e293b !important;
+}
+
+body.dark-theme :host ::ng-deep .fc-day-sat,
+body.dark-theme :host ::ng-deep .fc-day-sun {
+  background-color: #0d1636 !important;
+}
+
+body.dark-theme :host ::ng-deep .fc .fc-day-today {
+  background-color: #16255a !important;
+}
+
+/* Tekstovi i brojevi dana */
+body.dark-theme :host ::ng-deep .fc .fc-daygrid-day-number,
+body.dark-theme aside h3,
+body.dark-theme .card-title,
+body.dark-theme .styled-table tbody td {
+  color: #e2e8f0 !important;
+}
+
+/* Polja za unos i dropdown-i u tamnom režimu */
+body.dark-theme input,
+body.dark-theme select,
+body.dark-theme ::ng-deep .mat-mdc-text-field-wrapper {
+  background-color: #1a2656 !important;
+  border-color: #2a3b75 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme ::ng-deep .mat-mdc-select-value-text,
+body.dark-theme ::ng-deep .mat-mdc-floating-label {
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme ::ng-deep .mat-mdc-select-panel {
+  background-color: #111c44 !important;
+  border-color: #2a3b75 !important;
+}
+
+body.dark-theme ::ng-deep .mat-mdc-option {
+  color: #cbd5e1 !important;
+}
+
+body.dark-theme ::ng-deep .mat-mdc-option:hover:not(.mdc-list-item--disabled),
+body.dark-theme ::ng-deep .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
+  background-color: #1a2656 !important;
+  color: #38bdf8 !important;
+}
+
+/* Dugmad u kalendaru (<, >, Danas, Mesec, Nedelja, Dan) u tamnom režimu */
+body.dark-theme :host ::ng-deep .fc .fc-button-primary {
+  background-color: #1a2656 !important;
+  border-color: #2a3b75 !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme :host ::ng-deep .fc .fc-button-primary:hover {
+  background-color: #233373 !important;
+}
+
+body.dark-theme :host ::ng-deep .fc .fc-button-primary.fc-button-active {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  border-color: #1F63A0 !important;
 }

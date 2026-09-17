@@ -1,108 +1,272 @@
-/* Glavni kontejner i font */
 .main-container {
-    height: 100vh;
-    width: 100vw;
-    font-family: 'Montserrat', sans-serif !important;
+  height: 100vh;
+  width: 100vw;
+  font-family: "Open Sans", Roboto, sans-serif !important;
 }
 
-/* Podešavanje Angular Material Sidenav-a */
+/* ========================================================= */
+/* IMI TOP-BAR (Visina 62px, #1F63A0)                        */
+/* ========================================================= */
+.top-bar-imi {
+  background-color: #1F63A0 !important;
+  height: 62px !important;
+  min-height: 62px !important;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  z-index: 100;
+  flex-shrink: 0;
+  gap: 1.5rem;
+}
+
+.top-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.imi-logo-img {
+  height: 38px;
+  width: auto;
+  display: block;
+}
+
+.imi-titles {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  line-height: 1.25;
+}
+
+.imi-subtitle {
+  font-size: 0.75rem !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  font-weight: 600 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.imi-main-title {
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.01em;
+}
+
+/* Linkovi u traci */
+.top-bar-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  height: 100%;
+}
+
+.nav-item-link {
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  font-weight: 600 !important;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: all 0.15s ease-in-out;
+  opacity: 0.95;
+}
+
+.nav-item-link:hover {
+  background: rgba(255, 255, 255, 0.18);
+  opacity: 1;
+}
+
+/* Desna strana */
+.top-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex-shrink: 0;
+}
+
+.desktop-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.95rem !important;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.desktop-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.9);
+  border-color: #ef4444;
+}
+
+.toggle-topbar {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff !important;
+  font-family: inherit;
+  font-size: 1rem !important;
+  font-weight: 700;
+  padding: 0 1rem;
+  height: 42px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.toggle-topbar:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.menu-icon-svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Sidenav meni */
 mat-sidenav {
-    background-color: #ffffff;
-    width: 260px;
-    border-right: 1px solid #e2e8f0;
-    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.03);
+  background-color: #ffffff;
+  width: 300px;
+  border-left: 1px solid #e2e8f0;
+  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.08);
 }
 
 mat-sidenav-content {
-    background-color: #f4f7fb;
-    display: flex;
-    flex-direction: column;
+  background-color: #1F63A0 !important;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
 }
 
-/* Unutrašnji raspored menija */
 #drawer_content {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    padding: 20px 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 18px 0;
 }
 
-/* Zaglavlje menija (User info) */
 #menu_title_div {
-    padding: 0 20px 20px 20px;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #f1f5f9;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
+  padding: 0 20px 18px 20px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.drawer-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 #menu_title {
-    font-size: 1.1rem;
-    font-weight: 800;
-    color: #1e293b;
-    margin: 0;
-    letter-spacing: 0.5px;
+  font-size: 1.3rem !important;
+  font-weight: 800;
+  color: #1F63A0;
+  margin: 0;
 }
 
-#menu_title_div span {
-    font-size: 0.75rem;
-    color: #64748b;
-    font-weight: 600;
+.drawer-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
 }
 
-/* Standardna dugmad za navigaciju */
+.drawer-close-btn:hover {
+  background-color: #f1f5f9;
+  color: #ef4444;
+}
+
+.user-subtitle {
+  font-size: 0.9rem !important;
+  color: #64748b;
+}
+
+.user-subtitle strong {
+  color: #1F63A0;
+}
+
 .drawer_button {
-    width: 85%;
-    margin: 4px auto;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    padding: 0 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    color: #475569;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
+  width: 90%;
+  margin: 6px auto;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #334155;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  transition: all 0.2s ease;
 }
 
 .drawer_button:hover {
-    background-color: #f0f9ff; /* Blago plava pozadina */
-    color: #34b9f7; /* Tvoja glavna plava boja za tekst */
-    transform: translateX(5px); /* Suptilna animacija pomeranja */
+  background-color: #f0f6fa;
+  color: #1F63A0;
+  transform: translateX(-4px);
 }
 
-/* Ikonice */
 .drawer_icon {
-    width: 20px;
-    height: 20px;
-    margin-right: 15px;
-    opacity: 0.7;
-    transition: all 0.2s ease;
+  width: 22px;
+  height: 22px;
+  margin-right: 14px;
+  opacity: 0.8;
 }
 
 .drawer_button:hover .drawer_icon {
-    opacity: 1;
+  opacity: 1;
 }
 
-/* Dugme za odjavu (Odvojeno na dnu sa crvenom temom) */
 #logout_button {
-    width: 85%;
-    margin: auto auto 20px auto;
-    height: 45px;
-    display: flex;
-    align-items: center;
-    padding: 0 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    color: #ef4444;
-    font-weight: 600;
-    font-size: 0.95rem;
-    transition: all 0.2s ease;
+  width: 90%;
+  margin: auto auto 16px auto;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #ef4444;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  transition: all 0.2s ease;
 }
 
 #logout_button:hover {
-    background-color: #fef2f2;
-    transform: translateX(5px);
+  background-color: #fef2f2;
+  transform: translateX(-4px);
+}
+
+@media (max-width: 1100px) {
+  .top-bar-links,
+  .desktop-logout-btn {
+    display: none !important;
+  }
+  .toggle-topbar {
+    display: inline-flex !important;
+  }
 }

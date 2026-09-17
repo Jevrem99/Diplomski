@@ -1,18 +1,263 @@
-:host, :host *, ::ng-deep .mat-mdc-dialog-container, ::ng-deep .mat-mdc-form-field {
+:host {
+  display: block;
   font-family: 'Montserrat', sans-serif !important;
 }
 
-::ng-deep .mat-mdc-form-field {
-  --mdc-outlined-text-field-container-shape: 12px !important;
-  --mdc-outlined-text-field-focus-outline-width: 2px !important;
+.crud-modal-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 88vh;
 }
 
-::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading {
-  border-top-left-radius: 12px !important;
-  border-bottom-left-radius: 12px !important;
+/* ========================================================= */
+/* TEGET ZAGLAVLJE DIJALOGA                                  */
+/* ========================================================= */
+.modal-header {
+  background-color: #1F63A0;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #164f82;
 }
 
-::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__trailing {
-  border-top-right-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
+.modal-title-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modal-subtitle {
+  font-size: 0.78rem;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.modal-close-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ========================================================= */
+/* TELO DIJALOGA                                             */
+/* ========================================================= */
+.modal-body {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1.5rem;
+  overflow-y: auto;
+  max-height: 65vh;
+}
+
+.modal-form-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form-fields-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+/* Izbor saradnika lista levo */
+.selected-saradnici-box {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.box-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1F63A0;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.saradnik-chip {
+  background-color: #1F63A0;
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.saradnik-chip:hover {
+  background-color: #ef4444;
+}
+
+.chip-remove {
+  font-weight: 800;
+  font-size: 1rem;
+}
+
+.empty-hint {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.form-error-msg {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ef4444;
+  font-size: 0.82rem;
+  font-weight: 700;
+  background-color: #fef2f2;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+  border: 1px solid #fecaca;
+}
+
+/* DESNA KOLONA */
+.modal-saradnici-col {
+  width: 290px;
+  flex-shrink: 0;
+  border-left: 1px solid #e2e8f0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.col-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.saradnici-search-input {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 0 10px;
+  font-size: 0.85rem;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.saradnici-search-input:focus {
+  border-color: #1F63A0;
+}
+
+.saradnici-scroll-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 340px;
+  padding-right: 4px;
+}
+
+.saradnik-pick-card {
+  padding: 8px 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.saradnik-pick-card:hover {
+  background-color: #f0f7fc;
+  border-color: #1F63A0;
+  color: #1F63A0;
+}
+
+.add-plus {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1F63A0;
+}
+
+/* ========================================================= */
+/* PODNOŽJE (DUGMAD)                                         */
+/* ========================================================= */
+.modal-footer {
+  padding: 0.85rem 1.5rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.btn-cancel {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background-color: #f1f5f9;
+}
+
+.btn-save {
+  height: 38px;
+  padding: 0 24px;
+  border-radius: 7px;
+  border: 1px solid #d68910;
+  background-color: #F39C12;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.btn-save:hover {
+  background-color: #e67e22;
 }

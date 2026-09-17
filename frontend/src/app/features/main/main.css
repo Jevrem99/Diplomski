@@ -1,32 +1,22 @@
 /* ========================================================= */
-/* 1. TAILWIND RESET FIX: Linije i mrežica kalendara         */
+/* 1. GLOBALNI FONT & RESET                                  */
 /* ========================================================= */
-:host ::ng-deep .fc-theme-standard td,
-:host ::ng-deep .fc-theme-standard th,
-:host ::ng-deep .fc-theme-standard .fc-scrollgrid,
-:host ::ng-deep .fc-theme-standard .fc-scrollgrid-section td,
-:host ::ng-deep .fc-theme-standard .fc-scrollgrid-section th {
-  border: 1px solid #e2e8f0 !important;
-}
-
-:host ::ng-deep .fc .fc-scrollgrid-sync-table {
+:host {
+  display: block !important;
   width: 100% !important;
-  table-layout: fixed !important;
 }
 
-/* ========================================================= */
-/* 2. OMOTAČ STRANICE (RESPONSIVE MAIN WRAPPER)              */
-/* ========================================================= */
+/* Glavni omotač sa IMI akademskom podlogom */
 .main-wrapper {
   display: flex;
   flex-direction: row;
-  min-height: 100vh;
+  min-height: calc(100vh - 62px);
   width: 100%;
-  background-color: #f4f7fb;
-  padding: 1.25rem;
-  gap: 1.25rem;
-  font-family: 'Montserrat', sans-serif !important;
+  background-color: #e9f0f8 !important;
+  padding: 1rem !important;
+  gap: 1rem !important;
   box-sizing: border-box;
+  font-family: "Open Sans", Roboto, sans-serif !important;
 }
 
 @media (max-width: 1024px) {
@@ -36,851 +26,1455 @@
   }
 }
 
+/* Globalno ukidanje skupih filtera radi uklanjanja laga */
+*,
+*:before,
+*:after,
+:host ::ng-deep * {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 /* ========================================================= */
-/* 3. LEVI PANEL (BANKA PREDMETA)                            */
+/* 2. LEVI PANEL: BANKA PREDMETA                            */
 /* ========================================================= */
+aside.w-full,
 .left-panel {
-  width: 320px;
+  width: 340px !important;
+  min-width: 340px !important;
   display: flex;
   flex-direction: column;
   background-color: #ffffff;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 14px rgba(31, 99, 160, 0.08);
   overflow: hidden;
   flex-shrink: 0;
 }
 
 @media (max-width: 1024px) {
+  aside.w-full,
   .left-panel {
-    width: 100%;
-    max-height: 300px;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-height: 320px;
   }
 }
 
+/* Teget heder banke predmeta */
+aside .border-b,
 .panel-header {
-  padding: 1.25rem;
-  border-bottom: 1px solid #f1f5f9;
+  background-color: #1F63A0 !important;
+  padding: 1rem !important;
+  border-bottom: 1px solid #164f82;
 }
 
+aside .border-b h2,
 .panel-title {
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #1e293b;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
   margin: 0;
 }
 
+aside .border-b p,
 .panel-subtitle {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #64748b;
-  margin-top: 0.25rem;
+  font-size: 0.8rem !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  margin-top: 0.2rem;
 }
 
-.search-box {
-  position: relative;
-  margin-top: 1rem;
-}
-
+/* Input za pretragu */
+aside input[type="text"],
 .custom-input {
   width: 100%;
-  padding: 0.6rem 0.85rem 0.6rem 2.25rem;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  height: 40px !important;
+  padding: 0.5rem 0.85rem 0.5rem 2.4rem !important;
+  background-color: #ffffff;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.85rem;
+  font-family: "Open Sans", Roboto, sans-serif !important;
+  font-size: 0.88rem !important;
   font-weight: 600;
   color: #1e293b;
   outline: none;
-  transition: all 0.2s ease;
   box-sizing: border-box;
 }
 
+aside input[type="text"]:focus,
 .custom-input:focus {
-  border-color: #34b9f7;
-  background-color: #ffffff;
-  box-shadow: 0 0 0 3px rgba(52, 185, 247, 0.15);
+  border-color: #1F63A0;
+  box-shadow: 0 0 0 2px rgba(31, 99, 160, 0.15);
 }
 
-.search-icon {
-  width: 16px;
-  height: 16px;
-  color: #94a3b8;
-  position: absolute;
-  left: 0.75rem;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.subjects-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-/* ========================================================= */
-/* 4. KARTICA PREDMETA                                       */
-/* ========================================================= */
-.subject-card {
-  position: relative;
-  background-color: #ffffff;
-  border: 1px solid #e2e8f0;
+/* Taster za dodatne filtere levo */
+aside button[title="Dodatni filteri"] {
+  height: 40px !important;
+  width: 42px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1F63A0 !important;
   border-radius: 8px;
-  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: none !important;
+  transform: none !important;
+}
+
+/* Filter dropdown za profesore */
+aside select,
+.filter-profesor-select {
+  font-size: 0.9rem !important;
+  padding: 0.55rem 0.8rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  border-radius: 8px !important;
+}
+
+/* Kartice predmeta u listi za prevlačenje */
+aside .fc-event,
+.subject-card {
+  padding: 0.75rem 0.9rem !important;
+  border-radius: 10px !important;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   cursor: grab;
-  transition: all 0.2s ease;
   user-select: none;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 }
 
-.subject-card:hover {
-  border-color: #34b9f7;
-  box-shadow: 0 6px 16px rgba(52, 185, 247, 0.12);
-  transform: translateY(-2px);
+aside .fc-event h3,
+.subject-title {
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  color: #1e293b;
+  line-height: 1.3;
 }
 
-.year-strip {
+aside .fc-event p,
+.subject-prof {
+  font-size: 0.8rem !important;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 0.2rem;
+}
+
+aside button:has(span:contains("Vidi više")),
+aside button.bg-blue-50 {
+  background-color: #f0f6fa !important;
+  color: #1F63A0 !important;
+  border: 1px solid #d0e1ed !important;
+  font-weight: 700 !important;
+  border-radius: 8px;
+}
+
+/* ========================================================= */
+/* 3. GORNJI DESNI HEDER (KONTROLNA TRAKA)                   */
+/* ========================================================= */
+header,
+.top-bar {
+  background-color: #1F63A0 !important;
+  border: 1px solid #164f82 !important;
+  border-radius: 12px;
+  padding: 0.85rem 1.25rem !important;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem !important;
+  box-shadow: 0 4px 14px rgba(31, 99, 160, 0.15) !important;
+}
+
+header h1,
+.main-title {
+  font-size: 1.35rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  letter-spacing: -0.01em;
+}
+
+/* ZAJEDNIČKI STIL ZA DUGMAD U HEDERU */
+header .flex-row button {
+  height: 38px !important;
+  padding: 0 13px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  transition: none !important;
+  transform: none !important;
+}
+
+header .flex-row button:hover {
+  transform: none !important;
+}
+
+/* Statistika, Filteri, Izvezi (Bela solidna podloga) */
+header button.bg-gray-50,
+header button.bg-gray-100 {
+  background-color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  color: #1e293b !important;
+}
+
+header button.bg-gray-50 svg,
+header button.bg-gray-100 svg {
+  color: #1F63A0 !important;
+}
+
+/* Taster Sačuvaj (IMI zlatno-žuta) */
+header button.bg-\[\#34b9f7\],
+.btn-primary {
+  background-color: #f39c12 !important;
+  border: 1px solid #d68910 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+/* Taster Objavi (Zelena) */
+header button.bg-green-500 {
+  background-color: #16a34a !important;
+  border: 1px solid #15803d !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+header button.bg-green-500 svg {
+  color: #ffffff !important;
+}
+
+/* Taster IMI Sync (Plava azurna) */
+header button.bg-purple-600 {
+  background-color: #0284c7 !important;
+  border: 1px solid #0369a1 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+header button.bg-purple-600 svg {
+  color: #ffffff !important;
+}
+
+/* Nesačuvane izmene bedž */
+header span.bg-amber-50,
+.unsaved-badge {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  border: 1px solid rgba(245, 158, 11, 0.4) !important;
+  color: #fef08a !important;
+  font-size: 0.72rem !important;
+  font-weight: 800 !important;
+  border-radius: 16px;
+  padding: 0.3rem 0.7rem !important;
+}
+
+/* ========================================================= */
+/* 4. FULLCALENDAR KOMPONENTA                                */
+/* ========================================================= */
+.calendar-card,
+main.flex-1 {
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  background-color: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 14px rgba(31, 99, 160, 0.08);
+}
+
+:host ::ng-deep .fc {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+/* FIKS ZA STRELICE (< i >): Sprečava gaženje internog fonta ikonica */
+:host ::ng-deep .fc .fc-icon {
+  font-family: 'fcicons' !important;
+}
+
+/* Toolbar kalendara */
+:host ::ng-deep .fc .fc-toolbar {
+  margin-bottom: 1rem !important;
+  gap: 0.5rem !important;
+}
+
+:host ::ng-deep .fc-toolbar-title {
+  font-family: 'Montserrat', sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 1.45rem !important;
+  color: #1F63A0 !important;
+}
+
+/* Dugmad u kalendaru (Danas, <, >, Mesec, Nedelja, Dan) */
+:host ::ng-deep .fc .fc-button-primary {
+  font-family: 'Montserrat', sans-serif !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1F63A0 !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  border-radius: 8px !important;
+  padding: 0.45rem 0.95rem !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  transition: none !important;
+}
+
+:host ::ng-deep .fc .fc-button-primary:hover {
+  background-color: #f0f7fc !important;
+  border-color: #1F63A0 !important;
+}
+
+:host ::ng-deep .fc .fc-button-primary.fc-button-active,
+:host ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #1F63A0 !important;
+  border-color: #1F63A0 !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+}
+
+:host ::ng-deep .fc .fc-toolbar-chunk:last-child .fc-button-group {
+  display: inline-flex !important;
+  gap: 6px !important;
+}
+
+/* ZAGLAVLJE DANA U NEDELJI (PON, UTO, SRE...) */
+:host ::ng-deep .fc .fc-col-header-cell {
+  background-color: #1F63A0 !important;
+  border-color: #164f82 !important;
+  padding: 8px 0 !important;
+}
+
+:host ::ng-deep .fc .fc-col-header-cell-cushion {
+  font-family: 'Montserrat', sans-serif !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 0.82rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+}
+
+/* Ćelije dana u mreži */
+:host ::ng-deep .fc-theme-standard td,
+:host ::ng-deep .fc-theme-standard th,
+:host ::ng-deep .fc .fc-scrollgrid {
+  border-color: #e2e8f0 !important;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-number {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #334155 !important;
+  padding: 4px 7px !important;
+}
+
+/* Današnji dan (Danas) */
+:host ::ng-deep .fc .fc-day-today {
+  background-color: #f0f7fc !important;
+}
+
+:host ::ng-deep .fc .fc-day-today .fc-daygrid-day-number {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  border-radius: 50% !important;
+  width: 22px !important;
+  height: 22px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* ========================================================= */
+/* 5. KARTICE TERMINA UNUTAR KALENDARA                       */
+/* ========================================================= */
+:host ::ng-deep .fc-event {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+:host ::ng-deep .clean-cal-card {
+  height: 32px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+  transition: none !important;
+}
+
+:host ::ng-deep .clean-cal-card:hover {
+  transform: none !important;
+  filter: none !important;
+}
+
+/* Satnica sa leve strane kartice */
+:host ::ng-deep .clean-cal-card > div:first-child {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  padding: 0 7px !important;
+  background: rgba(15, 23, 42, 0.2) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  letter-spacing: -0.01em;
+}
+
+/* Naziv ispita sa desne strane kartice */
+:host ::ng-deep .clean-cal-card .cal-title-text {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  line-height: 32px !important;
+}
+/* ========================================================= */
+/* UMERENI IMI BEDŽ: NESAČUVANE IZMENE                       */
+/* ========================================================= */
+header span.bg-amber-50,
+.unsaved-badge {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 7px !important;
+  height: 34px !important;
+  padding: 0 14px !important;
+  background-color: rgba(0, 0, 0, 0.25) !important; /* Mirna tamna podloga prilagođena teget hederu */
+  border: 3px solid #F39C12 !important;           /* Zvanična žuta sa IMI sajta */
+  border-radius: 6px !important;
+  color: #ffffff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+  text-transform: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+
+/* Mala žuta tačkica sa leve strane teksta */
+header span.bg-amber-50 span.bg-amber-500,
+.unsaved-badge .pulse-dot {
+  width: 9px !important;
+  height: 9px !important;
+  background-color: #F39C12 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  animation: none !important;
+}
+/* ========================================================= */
+/* 1. UVEĆANI DUGMIĆI I NAVIGACIJA KALENDARA                 */
+/* ========================================================= */
+:host ::ng-deep .fc .fc-toolbar {
+  margin-bottom: 1.25rem !important;
+}
+
+:host ::ng-deep .fc-toolbar-title {
+  font-size: 1.6rem !important;
+  font-weight: 800 !important;
+}
+
+/* Navigacioni tasteri (<, >, Danas, Mesec, Nedelja, Dan) */
+:host ::ng-deep .fc .fc-button-primary {
+  height: 44px !important;
+  padding: 0 16px !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #1F63A0 !important;
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+:host ::ng-deep .fc .fc-button-primary:hover {
+  background-color: #f0f7fc !important;
+  border-color: #1F63A0 !important;
+  color: #1F63A0 !important;
+}
+
+/* Aktivno dugme (Mesec / Nedelja / Dan) */
+:host ::ng-deep .fc .fc-button-primary.fc-button-active,
+:host ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: #1F63A0 !important;
+  border-color: #1F63A0 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 6px rgba(31, 99, 160, 0.3) !important;
+}
+
+/* Uvećanje ikonica strelica unutar < i > */
+:host ::ng-deep .fc .fc-icon {
+  font-size: 1.25rem !important;
+}
+
+/* ========================================================= */
+/* 2. PLAVKASTA PODLOGA ZA POLJA U KALENDARU                 */
+/* ========================================================= */
+/* Radni dani u blagom ledeno-plavom tonu umesto čisto bele */
+:host ::ng-deep .fc-theme-standard td {
+  background-color: #f8fafc !important;
+  border-color: #dbe4ee !important;
+}
+
+/* Vikendi blago tamniji radi lakše orijentacije */
+:host ::ng-deep .fc-day-sat,
+:host ::ng-deep .fc-day-sun {
+  background-color: #f1f5f9 !important;
+}
+
+/* Danas polje sa uočljivim akcentom */
+:host ::ng-deep .fc .fc-day-today {
+  background-color: #eaf3fb !important;
+}
+
+/* Brojevi dana krupniji i uočljiviji */
+:host ::ng-deep .fc-daygrid-day-number {
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: #475569 !important;
+  padding: 6px 8px !important;
+}
+
+/* ========================================================= */
+/* 3. REDIZAJN KARTICA ISPITA (PRO CARD STIL)                */
+/* ========================================================= */
+:host ::ng-deep .clean-cal-card {
+  height: 34px !important;
+  border-radius: 6px !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.08) !important;
+  overflow: hidden !important;
+  margin-bottom: 3px !important;
+}
+
+/* Satnica - tamnija, kompaktna značka levo */
+:host ::ng-deep .clean-cal-card > div:first-child {
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  padding: 0 7px !important;
+  letter-spacing: 0.02em;
+  background-color: rgba(15, 23, 42, 0.28) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* Naziv predmeta - čist, uvećan tekst */
+:host ::ng-deep .clean-cal-card .cal-title-container {
+  padding-left: 8px !important;
+}
+
+:host ::ng-deep .clean-cal-card .cal-title-text {
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  line-height: 34px !important;
+  color: #ffffff !important;
+  letter-spacing: -0.01em;
+}
+
+/* Bela kartica za kolokvijume sa obojenom ivicom */
+:host ::ng-deep .clean-cal-card.is-kolokvijum {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05) !important;
+}
+
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-title-text {
+  color: #1e293b !important;
+  font-weight: 800 !important;
+}
+
+:host ::ng-deep .clean-cal-card.is-kolokvijum > div:first-child {
+  background-color: #f1f5f9 !important;
+  color: #0284c7 !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+/* ========================================================= */
+/* 1. UVEĆANI I PROŠIRENI DUGMIĆI U HEDERU                  */
+/* ========================================================= */
+header .flex-row {
+  gap: 10px !important;
+}
+
+header .flex-row button {
+  height: 44px !important;
+  padding: 0 18px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 8px !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Krupnije ikonice u heder dugmićima */
+header .flex-row button svg {
+  width: 18px !important;
+  height: 18px !important;
+}
+
+/* Dugme Sačuvaj - šire i dominantno u zlatnoj boji */
+header button.bg-\[\#34b9f7\],
+.btn-primary {
+  padding: 0 24px !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  background-color: #f39c12 !important;
+  border: 1.5px solid #d68910 !important;
+  color: #ffffff !important;
+}
+
+/* ========================================================= */
+/* 2. NOVI "TICKET" REDIZAJN KARTICA ISPITA U KALENDARU      */
+/* ========================================================= */
+/* Poništavanje fabričke FullCalendar pozadine */
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin-bottom: 4px !important;
+}
+
+:host ::ng-deep .fc-event,
+:host ::ng-deep .fc-event-main {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Glavna kartica: Bela podloga sa diskretnim okvirom i senkom */
+:host ::ng-deep .clean-cal-card {
+  height: 34px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 7px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* Leva vertikalna traka u boji godine (umesto bojenja cele kartice) */
+:host ::ng-deep .clean-cal-card::before {
+  content: '';
   position: absolute;
   left: 0;
   top: 0;
   bottom: 0;
   width: 5px;
-  border-top-left-radius: 8px;
-  border-bottom-left-radius: 8px;
+  background-color: var(--fc-event-bg-color, #1F63A0);
 }
 
-.subject-info {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  padding-left: 0.25rem;
+/* Satnica: Kompaktni "Badge" bedž sa leve strane */
+:host ::ng-deep .clean-cal-card > div:first-child {
+  margin-left: 8px !important;
+  background-color: #0f172a !important; /* Tamno mastilo za oštar kontrast */
+  color: #ffffff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  height: 20px !important;
+  line-height: 20px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  letter-spacing: 0.02em;
+  border: none !important;
 }
 
-.subject-title {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin: 0;
-}
-
-.subject-prof {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #64748b;
-  margin: 0;
-}
-
-.badge-wrapper {
-  margin-top: 0.35rem;
-}
-
-.year-badge {
-  display: inline-block;
-  padding: 0.2rem 0.5rem;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 800;
-}
-
-.empty-msg {
-  font-size: 0.8rem;
-  color: #94a3b8;
-  text-align: center;
-  padding: 1.5rem 0;
-}
-
-/* ========================================================= */
-/* 5. DESNI PANEL & HEADER                                   */
-/* ========================================================= */
-.right-panel {
+/* Naziv predmeta: Krupna, tamna i savršeno čitljiva slova */
+:host ::ng-deep .clean-cal-card .cal-title-container {
+  padding-left: 8px !important;
+  padding-right: 6px !important;
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
 }
 
-.top-bar {
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  padding: 1.25rem 1.75rem;
-  margin-bottom: 1.25rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-}
-
-.header-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-
-.main-title {
-  font-size: 1.5rem;
-  font-weight: 800;
-  color: #1e293b;
-  margin: 0;
+:host ::ng-deep .clean-cal-card .cal-title-text {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important; /* Tamno sivi tekst na čistoj beloj podlozi */
+  line-height: 34px !important;
   letter-spacing: -0.01em;
 }
 
-.unsaved-badge {
-  background-color: #fffbebf5;
-  border: 1px solid #fef3c7;
-  color: #d97706;
-  font-size: 0.78rem;
-  font-weight: 800;
-  padding: 0.35rem 0.75rem;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
+/* Kada je ispit u pitanju (opcioni blagi ton) */
+:host ::ng-deep .clean-cal-card:not(.is-kolokvijum) {
+  background-color: #ffffff !important;
+  border-left: none !important;
 }
 
-.pulse-dot {
-  width: 7px;
-  height: 7px;
-  background-color: #f59e0b;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
+/* Kada je kolokvijum (blaga isprekidana ivica ili specifičan tag) */
+:host ::ng-deep .clean-cal-card.is-kolokvijum {
+  background-color: #fafbfc !important;
+  border-style: dashed !important;
 }
-
-.filters-group {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.custom-select {
-  padding: 0.65rem 1.1rem;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #334155;
-  outline: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.custom-select:focus {
-  border-color: #34b9f7;
-  background-color: #ffffff;
-}
-
-.actions-group {
-  display: flex;
-  align-items: center;
-  gap: 0.85rem;
-}
-
-.btn-secondary {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.7rem 1.25rem;
-  background-color: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #334155;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.btn-secondary:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
-}
-
-.btn-icon {
-  width: 18px;
-  height: 18px;
-  color: #475569;
-}
-
-.btn-primary {
-  padding: 0.7rem 1.5rem;
-  background-color: #34b9f7;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(52, 185, 247, 0.35);
-  transition: all 0.2s ease;
-}
-
-.btn-primary:hover {
-  background-color: #20a6e4;
-  box-shadow: 0 6px 18px rgba(52, 185, 247, 0.45);
-  transform: translateY(-1px);
-}
-
 /* ========================================================= */
-/* 6. KONTEJNER KALENDARA & NIVOI SKRIVANJA (OVERFLOW FIX)   */
+/* 1. IDENTIČNA VISINA DUGMIĆA (44px GORE I DOLE)            */
 /* ========================================================= */
-.calendar-card {
-  flex: 1;
-  background-color: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  padding: 1.25rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  display: flex;
-  flex-direction: column;
-  min-height: 550px;
-  /* KLJUČNO: Omogućava iskakanje pop-upa van bele kartice */
-  overflow: visible !important; 
-}
-
-/* Otključavanje unutrašnjih slojeva FullCalendar-a da ne seku pop-up */
-:host ::ng-deep .fc,
-:host ::ng-deep .fc-view-harness,
-:host ::ng-deep .fc-view-harness-active,
-:host ::ng-deep .fc-scroller,
-:host ::ng-deep .fc-daygrid-body,
-:host ::ng-deep .fc-scrollgrid-section,
-:host ::ng-deep .fc-scrollgrid-section > * {
-  overflow: visible !important;
-}
-
-:host ::ng-deep .fc .fc-toolbar {
-  margin-bottom: 1.25rem !important;
-  flex-wrap: wrap !important;
-  gap: 0.5rem !important;
-}
-
-:host ::ng-deep .fc-toolbar-title {
-  font-weight: 800 !important;
-  font-size: 1.35rem !important;
-  color: #1e293b !important;
-}
-
+header .flex-row button,
 :host ::ng-deep .fc .fc-button-primary {
-  background-color: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
-  color: #475569 !important;
-  border-radius: 8px !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  max-height: 44px !important;
+  line-height: 44px !important;
+  padding: 0 18px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.95rem !important;
   font-weight: 700 !important;
-  font-size: 0.85rem !important;
-  padding: 0.45rem 0.9rem !important;
+  border-radius: 8px !important;
+  box-sizing: border-box !important;
+}
+
+/* ========================================================= */
+/* 2. REDIZAJN KARTICA TERMINA PO IMI BOJAMA (TINTED STIL)  */
+/* ========================================================= */
+:host ::ng-deep .fc-event {
+  background: transparent !important;
+  border: none !important;
   box-shadow: none !important;
-  transition: all 0.2s ease !important;
+  padding: 0 !important;
+  margin-bottom: 4px !important;
 }
 
-:host ::ng-deep .fc .fc-button-primary:hover {
-  background-color: #f1f5f9 !important;
-  color: #34b9f7 !important;
-  border-color: #34b9f7 !important;
+:host ::ng-deep .clean-cal-card {
+  height: 34px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08) !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-left-width: 5px !important; /* Deblji, uočljiv akcentni levi border */
 }
 
-:host ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
-  background-color: #34b9f7 !important;
+/* Satnica u obliku elegantne kapsule sa levim razmakom */
+:host ::ng-deep .clean-cal-card > div:first-child {
+  height: 22px !important;
+  line-height: 22px !important;
+  padding: 0 7px !important;
+  margin-left: 6px !important;
+  border-radius: 4px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
   color: #ffffff !important;
-  border-color: #34b9f7 !important;
+  border: none !important;
 }
 
-/* Dimenzije ćelija dana */
-:host ::ng-deep .fc .fc-daygrid-day {
-  min-height: 90px !important;
+/* Naziv ispita sa krupnim, tamnim i oštrim tekstom */
+:host ::ng-deep .clean-cal-card .cal-title-container {
+  padding-left: 8px !important;
+  padding-right: 6px !important;
+  overflow: hidden !important;
 }
 
-:host ::ng-deep .fc .fc-daygrid-day-frame {
-  min-height: 90px !important;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: relative !important;
-  overflow: visible !important;
+:host ::ng-deep .clean-cal-card .cal-title-text {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  color: #0f172a !important; /* Tamna boja teksta za savršen kontrast */
+  line-height: 34px !important;
+  letter-spacing: -0.01em !important;
 }
 
-/* DANAS KRUŽIĆ */
-:host ::ng-deep .fc .fc-day-today {
-  background-color: rgba(52, 185, 247, 0.04) !important;
+/* ========================================================= */
+/* 3. SPECIFIČNE IMI BOJE PO GODINAMA STUDIJA               */
+/* ========================================================= */
+
+/* 1. GODINA - IMI Azurno plava (Matematika kocka) */
+:host ::ng-deep .fc-event[data-godina="1"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="1"] {
+  background-color: #eff8ff !important;
+  border-left-color: #009bd9 !important;
+  border-top-color: #dbeafe !important;
+  border-right-color: #dbeafe !important;
+  border-bottom-color: #dbeafe !important;
+}
+:host ::ng-deep .fc-event[data-godina="1"] .clean-cal-card > div:first-child,
+:host ::ng-deep .clean-cal-card[data-godina="1"] > div:first-child {
+  background-color: #009bd9 !important;
 }
 
-:host ::ng-deep .fc .fc-day-today .fc-daygrid-day-number {
+/* 2. GODINA - IMI Rubin crvena (Upis kocka) */
+:host ::ng-deep .fc-event[data-godina="2"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="2"] {
+  background-color: #fdf2f4 !important;
+  border-left-color: #d81b43 !important;
+  border-top-color: #fce7ec !important;
+  border-right-color: #fce7ec !important;
+  border-bottom-color: #fce7ec !important;
+}
+:host ::ng-deep .fc-event[data-godina="2"] .clean-cal-card > div:first-child,
+:host ::ng-deep .clean-cal-card[data-godina="2"] > div:first-child {
+  background-color: #d81b43 !important;
+}
+
+/* 3. GODINA - IMI Zlatno-žuta (Informatika kocka / Logo) */
+:host ::ng-deep .fc-event[data-godina="3"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="3"] {
+  background-color: #fefbeb !important;
+  border-left-color: #f39c12 !important;
+  border-top-color: #fef3c7 !important;
+  border-right-color: #fef3c7 !important;
+  border-bottom-color: #fef3c7 !important;
+}
+:host ::ng-deep .fc-event[data-godina="3"] .clean-cal-card > div:first-child,
+:host ::ng-deep .clean-cal-card[data-godina="3"] > div:first-child {
+  background-color: #f39c12 !important;
+}
+
+/* 4. GODINA - IMI Smaragdno zelena / Tamno plava */
+:host ::ng-deep .fc-event[data-godina="4"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="4"] {
+  background-color: #ecfdf5 !important;
+  border-left-color: #059669 !important;
+  border-top-color: #d1fae5 !important;
+  border-right-color: #d1fae5 !important;
+  border-bottom-color: #d1fae5 !important;
+}
+:host ::ng-deep .fc-event[data-godina="4"] .clean-cal-card > div:first-child,
+:host ::ng-deep .clean-cal-card[data-godina="4"] > div:first-child {
+  background-color: #059669 !important;
+}
+
+/* Kolokvijum specifičnost: Bela unutrašnjost sa isprekidanom bordurom */
+:host ::ng-deep .clean-cal-card.is-kolokvijum {
+  background-color: #ffffff !important;
+  border-top-style: dashed !important;
+  border-right-style: dashed !important;
+  border-bottom-style: dashed !important;
+}
+/* ========================================================= */
+/* 1. USKLAĐIVANJE VELIČINE GORNJIH I DONJIH DUGMIĆA         */
+/* ========================================================= */
+/* Ista visina, isti font i isti padding i gore i dole */
+header .flex-row button,
+:host ::ng-deep .fc .fc-button-primary {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  line-height: 38px !important;
+  padding: 0 13px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important; /* Veličina usklađena sa donjim tasterima */
+  font-weight: 700 !important;
+  border-radius: 7px !important;
+  box-sizing: border-box !important;
+}
+
+header .flex-row button svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+/* ========================================================= */
+/* 2. KARTICE U KALENDARU OBOJENE CELE PO BOJAMA GODINE     */
+/* ========================================================= */
+:host ::ng-deep .fc-event {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  margin-bottom: 3px !important;
+}
+
+:host ::ng-deep .clean-cal-card {
+  height: 32px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  border: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Uklanjanje belog jezička */
+:host ::ng-deep .clean-cal-card::before {
+  display: none !important;
+}
+
+/* Satnica - tamnija, poluprozirna integrisana značka */
+:host ::ng-deep .clean-cal-card > div:first-child {
+  height: 100% !important;
+  line-height: 32px !important;
+  padding: 0 8px !important;
+  margin-left: 0 !important;
+  background-color: rgba(15, 23, 42, 0.22) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em;
+}
+
+/* Tekst ispita - krupan i snežno beo preko cele obojene kartice */
+:host ::ng-deep .clean-cal-card .cal-title-container {
+  padding-left: 8px !important;
+  padding-right: 6px !important;
+  flex: 1;
+  overflow: hidden;
+}
+
+:host ::ng-deep .clean-cal-card .cal-title-text {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important; /* Čista bela slova */
+  line-height: 32px !important;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* ========================================================= */
+/* 3. PUNE IMI BOJE PREKO CELE KARTICE                       */
+/* ========================================================= */
+/* 1. Godina - Azurno plava */
+:host ::ng-deep .fc-event[data-godina="1"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="1"] {
+  background-color: #009bd9 !important;
+}
+
+/* 2. Godina - Rubin crvena */
+:host ::ng-deep .fc-event[data-godina="2"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="2"] {
+  background-color: #d81b43 !important;
+}
+
+/* 3. Godina - Zlatno-narandžasta */
+:host ::ng-deep .fc-event[data-godina="3"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="3"] {
+  background-color: #f39c12 !important;
+}
+
+/* 4. Godina - Smaragdno zelena */
+:host ::ng-deep .fc-event[data-godina="4"] .clean-cal-card,
+:host ::ng-deep .clean-cal-card[data-godina="4"] {
+  background-color: #059669 !important;
+}
+
+/* Dinamički fallback: ako kartica ima inline stil u HTML-u (style="background-color: ...") */
+:host ::ng-deep .clean-cal-card[style*="background"] {
+  background-color: inherit;
+}
+/* ========================================================= */
+/* DIREKTNO FORSIRANJE BOJE KARTICE BEZ SIVILA               */
+/* ========================================================= */
+:host ::ng-deep .fc-event,
+:host ::ng-deep .fc-event-main {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 0 3px 0 !important;
+}
+
+:host ::ng-deep .clean-cal-card {
+  height: 32px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.12) !important;
+  border: none !important;
+}
+
+/* Satnica - tamnija, kompaktna značka */
+:host ::ng-deep .clean-cal-card > div:first-child,
+:host ::ng-deep .clean-cal-card .cal-time-badge {
+  height: 32px !important;
+  line-height: 32px !important;
+  padding: 0 8px !important;
+  margin: 0 !important;
+  background-color: rgba(0, 0, 0, 0.28) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  letter-spacing: -0.01em;
+}
+
+/* Naziv predmeta - snežno bela slova */
+:host ::ng-deep .clean-cal-card .cal-title-container {
+  padding-left: 8px !important;
+  padding-right: 6px !important;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+:host ::ng-deep .clean-cal-card .cal-title-text {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  line-height: 32px !important;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Kolokvijumi ako treba da ostanu beli */
+:host ::ng-deep .clean-cal-card.is-kolokvijum {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-title-text {
+  color: #0f172a !important;
+  text-shadow: none !important;
+}
+
+:host ::ng-deep .clean-cal-card.is-kolokvijum > div:first-child,
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-time-badge {
+  background-color: #f1f5f9 !important;
+  color: #1F63A0 !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+/* ========================================================= */
+/* SAVRŠENO CENTRIRANJE STRELICA (< i >)                     */
+/* ========================================================= */
+:host ::ng-deep .fc .fc-prev-button,
+:host ::ng-deep .fc .fc-next-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  height: 38px !important;
+  box-sizing: border-box !important;
+}
+
+:host ::ng-deep .fc .fc-prev-button .fc-icon,
+:host ::ng-deep .fc .fc-next-button .fc-icon {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  vertical-align: middle !important;
+  font-size: 1.15rem !important;
+}
+/* ========================================================= */
+/* MONOHROMATSKI REDIZAJN DUGMADI U HEDERU                   */
+/* ========================================================= */
+header .flex-row {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+/* Osnovna geometrija za sve dugmiće u hederu */
+header .flex-row button {
+  height: 38px !important;
+  min-height: 38px !important;
+  max-height: 38px !important;
+  padding: 0 14px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease !important;
+  cursor: pointer !important;
+}
+
+header .flex-row button svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+/* 1. SEKUNDARNA DUGMAD (Statistika, Filteri, Izvezi, IMI Sync) */
+/* Matirana duboka teget koja se stapa sa hederom uz blagi kontrast */
+header button.bg-gray-50,
+header button.bg-gray-100,
+header button.bg-purple-600 {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+header button.bg-gray-50 svg,
+header button.bg-gray-100 svg,
+header button.bg-purple-600 svg {
+  color: #ffffff !important;
+}
+
+header button.bg-gray-50:hover,
+header button.bg-gray-100:hover,
+header button.bg-purple-600:hover {
+  background-color: rgba(255, 255, 255, 0.22) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+}
+
+/* 2. DUGME OBJAVI - Čisto, neutralno belo dugme */
+header button.bg-green-500 {
+  background-color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+  color: #1F63A0 !important;
+  font-weight: 800 !important;
+}
+
+header button.bg-green-500 svg {
+  color: #1F63A0 !important;
+}
+
+header button.bg-green-500:hover {
+  background-color: #f0f7fc !important;
+  border-color: #f0f7fc !important;
+  color: #164f82 !important;
+}
+
+header button.bg-green-500:hover svg {
+  color: #164f82 !important;
+}
+
+/* 3. DUGME SAČUVAJ - Jedini fokusni akcenat (IMI Zlatno-narandžasta) */
+header button.bg-\[\#34b9f7\],
+.btn-primary {
+  background-color: #F39C12 !important;
+  border: 1px solid #d68910 !important;
   color: #ffffff !important;
   font-weight: 800 !important;
-  background-color: #34b9f7 !important;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) !important;
+}
+
+header button.bg-\[\#34b9f7\]:hover,
+.btn-primary:hover {
+  background-color: #e67e22 !important;
+  border-color: #cf6d17 !important;
+}
+/* ========================================================= */
+/* CENTRIRAN BELI DATUM U DANAŠNJOJ TAČKICI                  */
+/* ========================================================= */
+/* Standardni brojevi dana u ćelijama */
+:host ::ng-deep .fc .fc-daygrid-day-number {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 800 !important;
+  color: #475569 !important;
+  padding: 0 !important;
+  text-decoration: none !important;
+}
+
+/* Današnji dan: krug u IMI plavoj boji sa centriranim belim brojem */
+:host ::ng-deep .fc .fc-day-today .fc-daygrid-day-number {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
   border-radius: 50% !important;
   width: 26px !important;
+  min-width: 26px !important;
   height: 26px !important;
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  margin: 3px !important;
-  box-shadow: 0 4px 10px rgba(52, 185, 247, 0.3) !important;
-}
-
-/* EVENT CARDS UNUTAR ĆELIJE - POPRAVLJENA VISINA */
-:host ::ng-deep .fc-daygrid-day-events {
-  overflow-y: auto !important;
-  max-height: 100% !important;
-  flex: 1 1 auto !important;
-  padding: 2px !important;
-}
-
-/* Tanak i uredan skrolbar samo ako se polje prepuni */
-:host ::ng-deep .fc-daygrid-day-events::-webkit-scrollbar {
-  width: 4px;
-}
-:host ::ng-deep .fc-daygrid-day-events::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 4px;
-}
-
-:host ::ng-deep .fc-daygrid-event-harness {
-  margin-bottom: 2px !important;
-}
-
-:host ::ng-deep .fc-event {
-  border-radius: 6px !important;
-  padding: 0.2rem 0.4rem !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.06) !important;
-  margin-bottom: 2px !important;
-}
-
-/* FORCE FIX ZA IVICE TABELE */
-:host ::ng-deep .fc-theme-standard .fc-scrollgrid-sync-table td,
-:host ::ng-deep .fc-theme-standard .fc-scrollgrid-sync-table th,
-:host ::ng-deep .fc .fc-daygrid-day {
-  border-right: 1px solid #e2e8f0 !important;
-  border-bottom: 1px solid #e2e8f0 !important;
-  box-sizing: border-box !important;
-}
-
-:host ::ng-deep .fc-theme-standard .fc-scrollgrid {
-  border: 1px solid #e2e8f0 !important;
-}
-
-/* ZAGLAVLJE KALENDARA - Centriranje meseca */
-:host ::ng-deep .fc .fc-toolbar {
-  display: flex !important;
-  flex-wrap: wrap !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 0.75rem !important;
-  margin-bottom: 1.25rem !important;
-}
-
-:host ::ng-deep .fc .fc-toolbar-chunk:nth-child(1) {
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.5rem !important;
-}
-
-:host ::ng-deep .fc .fc-toolbar-chunk:nth-child(2) {
-  flex: 1 !important;
   text-align: center !important;
-  min-width: 180px !important;
-}
-
-:host ::ng-deep .fc-toolbar-title {
+  line-height: 26px !important;
+  font-size: 12px !important;
   font-weight: 800 !important;
-  font-size: 1.4rem !important;
-  color: #1e293b !important;
-  margin: 0 !important;
-  display: inline-block !important;
+  box-shadow: 0 1px 3px rgba(31, 99, 160, 0.35) !important;
 }
 
-:host ::ng-deep .fc .fc-toolbar-chunk:nth-child(3) {
+/* Oslobađamo prostor u gornjoj liniji ćelije da se olovčica i datum ne sudaraju */
+:host ::ng-deep .fc .fc-daygrid-day-top {
+  padding: 4px 6px !important;
   display: flex !important;
   align-items: center !important;
-  justify-content: flex-end !important;
+}
+/* ========================================================= */
+/* UKLANJANJE DVOSTRUKOG KRUGA U DANAS KELIJI                 */
+/* ========================================================= */
+:host ::ng-deep .fc .fc-daygrid-day-top a {
+  text-decoration: none !important;
 }
 
-/* Mobilno prilagođavanje zaglavlja */
-@media (max-width: 640px) {
-  :host ::ng-deep .fc .fc-toolbar {
-    flex-direction: column !important;
-    justify-content: center !important;
-  }
-  :host ::ng-deep .fc .fc-toolbar-chunk {
-    width: 100% !important;
-    justify-content: center !important;
-    text-align: center !important;
-  }
-}
-:host ::ng-deep .custom-multi-select {
-  width: 100%;
-  max-width: 100%; /* Promenjeno na 100% da bi moglo da se razvuče */
-}
-/* 1. Font, veličina i boja (Isto kao text-sm, font-semibold, text-gray-700) */
-:host ::ng-deep .custom-multi-select .mat-mdc-select-value-text,
-:host ::ng-deep .custom-multi-select .mat-mdc-select-placeholder {
-  font-family: 'Montserrat', sans-serif !important;
-  font-size: 0.875rem !important; 
-  font-weight: 600 !important; 
-  color: #374151 !important; 
-}
-
-/* 2. Poništavamo Materialov padding da bi visina bila ista kao py-2 */
-:host ::ng-deep .custom-multi-select .mat-mdc-form-field-infix {
-  padding: 0.5rem 0 !important; 
-  min-height: auto !important;
-  display: flex;
-  align-items: center;
-}
-
-/* 3. Kutija: Zaobljenje (rounded-xl = 12px), pozadina (bg-gray-50) i ivice (border-gray-200) */
-:host ::ng-deep .custom-multi-select .mdc-text-field--outlined {
-  --mdc-outlined-text-field-container-shape: 12px !important; 
-  --mdc-outlined-text-field-outline-color: #e5e7eb !important; 
-  --mdc-outlined-text-field-focus-outline-color: rgba(52, 185, 247, 0.5) !important; 
-  --mdc-outlined-text-field-hover-outline-color: #d1d5db !important;
-}
-
-:host ::ng-deep .custom-multi-select .mat-mdc-text-field-wrapper {
-  background-color: #f9fafb !important; 
-  padding: 0 0.75rem !important; 
-}
-
-/* 4. Sklanjanje one ružne unutrašnje "isečene" linije */
-:host ::ng-deep .custom-multi-select .mdc-notched-outline__notch {
-  border: none !important;
-}
-:host ::ng-deep .custom-multi-select .mdc-notched-outline__leading,
-:host ::ng-deep .custom-multi-select .mdc-notched-outline__trailing {
-  border-color: #e5e7eb !important;
-}
-
-/* 5. Uklanjanje nevidljivog prostora za greške na dnu */
-:host ::ng-deep .custom-multi-select .mat-mdc-form-field-subscript-wrapper {
+/* Isključujemo podrazumevani FullCalendar kružić koji se crtao u ćošku */
+:host ::ng-deep .fc .fc-day-today .fc-daygrid-day-top::after,
+:host ::ng-deep .fc .fc-day-today .fc-daygrid-day-top::before {
   display: none !important;
 }
-/* Prisilno zaobljenje početka i kraja Material outline-a */
-:host ::ng-deep .custom-multi-select .mdc-notched-outline__leading {
-  border-top-left-radius: 12px !important;
-  border-bottom-left-radius: 12px !important;
-}
 
-:host ::ng-deep .custom-multi-select .mdc-notched-outline__trailing {
-  border-top-right-radius: 12px !important;
-  border-bottom-right-radius: 12px !important;
+:host ::ng-deep .fc .fc-daygrid-day-top {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  padding: 4px 6px !important;
 }
+/* ========================================================= */
+/* IMI REDIZAJN MODALA ZA UPRAVLJANJE DANOM I PREUREĐIVANJE  */
+/* ========================================================= */
 
-:host ::ng-deep .custom-multi-select .mdc-text-field--outlined {
-  --mdc-outlined-text-field-container-shape: 12px !important;
-}
-:host ::ng-deep .fc, :host ::ng-deep .fc-view-harness, :host ::ng-deep .fc-view-harness-active, :host ::ng-deep .fc-scroller, :host ::ng-deep .fc-daygrid-body, :host ::ng-deep .fc-scrollgrid-section, :host ::ng-deep .fc-scrollgrid-section > * {
-  overflow: visible !important;
-}
-.header-filters select, 
-.fc-toolbar select,
-select[name="godinaFilter"],
-select[name="salaFilter"],
-select[name="saradnikFilter"] {
-  max-width: 140px !important;
-  min-width: 110px !important;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  overflow: hidden;
-  padding-right: 20px !important;
-}
-
-/* Automatsko prilagođavanje boji teksta roditelja */
-:host ::ng-deep .fc .fc-timegrid-slot-label-cushion,
-:host ::ng-deep .fc .fc-timegrid-axis-cushion,
-:host ::ng-deep .fc .fc-col-header-cell-cushion {
-  color: inherit !important; /* Uzima boju teksta iz trenutne teme */
-  opacity: 0.9;
-  font-weight: 600;
-}
-
-/* Blage linije mreže prilagođene za obe teme */
-:host ::ng-deep .fc-theme-standard td, 
-:host ::ng-deep .fc-theme-standard th {
-  border-color: rgba(150, 150, 150, 0.2) !important;
-}
-
-/* ==========================================
-   1. SVETLA TEMA (Podrazumevano kad nema klase)
-   ========================================== */
-:host ::ng-deep .fc .fc-timegrid-slot-label-cushion,
-:host ::ng-deep .fc .fc-timegrid-axis-cushion {
-  color: #1e293b !important; /* Tamno siva slova za sate na beloj pozadini */
-  font-weight: 600;
-}
-
-:host ::ng-deep .fc .fc-col-header-cell-cushion {
-  color: #0f172a !important; /* Tamna slova za dane (Pon, Uto...) */
-}
-
-
-/* ==========================================
-   2. TAMNA TEMA (Aktivira se preko .dark-theme iz ThemeService-a)
-   ========================================== */
-body.dark-theme :host ::ng-deep .fc .fc-timegrid-slot-label-cushion,
-body.dark-theme :host ::ng-deep .fc .fc-timegrid-axis-cushion {
-  color: #e2e8f0 !important; /* Svetla slova za sate i all-day */
-  font-weight: 600;
-}
-
-body.dark-theme :host ::ng-deep .fc .fc-col-header-cell-cushion {
-  color: #ffffff !important; /* Bela slova za zaglavlje dana */
-}
-
-body.dark-theme :host ::ng-deep .fc-theme-standard td, 
-body.dark-theme :host ::ng-deep .fc-theme-standard th {
-  border-color: rgba(255, 255, 255, 0.15) !important; /* Blage bele linije mreže */
-}
-
-/* Uklanjanje neželjenog skrola u pojedinačnim danima */
-.fc-daygrid-day-events {
-  overflow: visible !important;
-}
-.fc-daygrid-day-bottom {
-  padding: 2px 4px !important;
-}
-
-/* Izgled kartice u kalendaru */
-.fc-event {
-  border-radius: 6px !important;
-  margin-bottom: 3px !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
-  border-width: 1.5px !important;
-}
-
-.custom-cal-event {
-  display: flex;
-  align-items: center;
-  padding: 3px 6px;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 11.5px;
-  font-weight: 700;
-  width: 100%;
-}
-
-/* Stil za Kolokvijum: bela pozadina sa istaknutim okvirom */
-.custom-cal-event.is-kolokvijum {
+/* Glavni omotač dijaloga dana */
+.day-modal-box,
+[class*="dan-modal"],
+div:has(> h2:contains("Upravljanje danom")) {
+  border-radius: 14px !important;
+  overflow: hidden !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.25) !important;
   background-color: #ffffff !important;
 }
 
-/* Auto-skrol (Marquee) na hover kada je tekst predugačak */
-.custom-cal-event .event-text {
-  display: inline-block;
-  white-space: nowrap;
-  transition: transform 3s ease-in-out;
-}
-
-.fc-event:hover .custom-cal-event .event-text {
-  transform: translateX(-35%);
-}
-
-/* Brief Info Popup prozorčić */
-.custom-brief-tooltip {
-  position: absolute;
-  z-index: 10000;
-  background: #ffffff;
-  border-radius: 10px;
-  padding: 8px 12px;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05);
-  pointer-events: none;
-  font-family: inherit;
-  min-width: 160px;
-  max-width: 240px;
-  animation: fadeInBrief 0.15s ease-out forwards;
-}
-
-.brief-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.brief-header .badge {
-  font-size: 9px;
-  text-transform: uppercase;
-  font-weight: 800;
-  padding: 2px 6px;
-  border-radius: 4px;
-}
-
-.badge-ispit {
-  background: #e0f2fe;
-  color: #0284c7;
-}
-
-.badge-kol {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.brief-room {
-  font-size: 10.5px;
-  font-weight: 700;
-  color: #64748b;
-}
-
-.brief-title {
-  font-size: 12px;
-  font-weight: 800;
-  color: #1e293b;
-  line-height: 1.3;
-  margin-bottom: 4px;
-}
-
-.brief-time {
-  font-size: 11px;
-  font-weight: 600;
-  color: #475569;
-}
-
-@keyframes fadeInBrief {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-/* ========================================================= */
-/* 1. DINAMIČKI SKROL BEZ ŠIRENJA REDOVA (APSOLUTNI OKVIR)   */
-/* ========================================================= */
-
-/* Sama ćelija mora biti relativna da bi zadržala elemente unutar sebe */
-:host ::ng-deep .fc .fc-daygrid-day {
-  position: relative !important;
-}
-
-/* Okvir (frame) se širi apsolutno na sve 4 strane ćelije. 
-   Ovo 100% SPREČAVA širenje tabele, a visina se prilagođava svakom monitoru! */
-:host ::ng-deep .fc .fc-daygrid-day-frame {
-  position: absolute !important;
-  top: 0 !important;
-  bottom: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
+/* 1. HEDER DIJALOGA SA TEGET POZADINOM */
+.day-modal-header {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  padding: 1rem 1.4rem !important;
   display: flex !important;
-  flex-direction: column !important;
-  height: auto !important;
-  min-height: 0 !important;
-  overflow: hidden !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid #164f82 !important;
 }
 
-/* Broj dana - Forsiramo "row" kako bi flex-end STVARNO bio u gornjem desnom uglu */
-:host ::ng-deep .fc .fc-daygrid-day-top {
-  display: flex !important;
-  flex-direction: row !important; 
-  justify-content: flex-end !important;
-  padding: 4px 6px !important;
-  flex-shrink: 0 !important;
-  z-index: 2 !important;
-}
-
-/* Događaji uzimaju sav PREOSTALI prostor i dodaju skrol ako ih ima previše */
-:host ::ng-deep .fc .fc-daygrid-day-events {
-  position: relative !important;
-  flex: 1 1 auto !important;
-  min-height: 0 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  padding: 0 4px 2px 4px !important;
+.day-modal-header h2,
+.day-modal-header h3 {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
   margin: 0 !important;
 }
 
-/* Tanak, elegantan skrolbar */
-:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar {
-  width: 4px;
-}
-:host ::ng-deep .fc .fc-daygrid-day-events::-webkit-scrollbar-thumb {
-  background-color: #cbd5e1;
-  border-radius: 4px;
-}
-
-/* Uklanjamo FullCalendar sistemske strelice/dugmad za dno */
-:host ::ng-deep .fc .fc-daygrid-day-bottom,
-:host ::ng-deep .fc .fc-daygrid-more-link {
-  display: none !important;
+.day-modal-header button.close-btn {
+  color: #ffffff !important;
+  opacity: 0.8 !important;
+  background: transparent !important;
+  border: none !important;
+  font-size: 1.25rem !important;
+  cursor: pointer !important;
 }
 
-/* Odvajanje pojedinačnih kartica */
-:host ::ng-deep .fc-daygrid-event-harness {
-  margin-bottom: 2px !important;
+.day-modal-header button.close-btn:hover {
+  opacity: 1 !important;
 }
+
+/* 2. MENI REŽIM: 3 ELEGANNTNA DUGMETA */
+.day-modal-actions {
+  padding: 1.5rem !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+}
+
+/* Dugme: Preuredi ispite u ovom danu */
+.day-modal-actions button:nth-child(1),
+button.btn-preuredi {
+  height: 46px !important;
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  border: 1px solid #164f82 !important;
+  border-radius: 9px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 16px !important;
+  box-shadow: 0 2px 4px rgba(31, 99, 160, 0.2) !important;
+  transition: all 0.15s ease !important;
+}
+
+.day-modal-actions button:nth-child(1):hover,
+button.btn-preuredi:hover {
+  background-color: #185285 !important;
+}
+
+/* Dugme: Kopiraj dan na druge datume */
+.day-modal-actions button:nth-child(2),
+button.btn-kopiraj {
+  height: 46px !important;
+  background-color: #ffffff !important;
+  color: #1F63A0 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 9px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 16px !important;
+  transition: all 0.15s ease !important;
+}
+
+.day-modal-actions button:nth-child(2):hover,
+button.btn-kopiraj:hover {
+  background-color: #f0f7fc !important;
+  border-color: #1F63A0 !important;
+}
+
+/* Dugme: Obriši sve ispite u danu */
+.day-modal-actions button:nth-child(3),
+button.btn-obrisi-dan {
+  height: 46px !important;
+  background-color: #ffffff !important;
+  color: #ef4444 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 9px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 800 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0 16px !important;
+  transition: all 0.15s ease !important;
+}
+
+.day-modal-actions button:nth-child(3):hover,
+button.btn-obrisi-dan:hover {
+  background-color: #fef2f2 !important;
+  border-color: #ef4444 !important;
+}
+
+/* 3. REŽIM PREUREĐIVANJA ISPITA: KARTICE ISPITA */
+.exam-reorder-card,
+.day-modal-card {
+  background-color: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  border-left: 4px solid #1F63A0 !important; /* Elegantan akcenat */
+  border-radius: 10px !important;
+  padding: 12px 14px !important;
+  margin-bottom: 10px !important;
+}
+
+.exam-reorder-card h4,
+.day-modal-card-title {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.92rem !important;
+  font-weight: 800 !important;
+  color: #0f172a !important;
+  margin: 0 0 8px 0 !important;
+}
+
+/* Input polja za vreme i sala unutar kartice */
+.exam-reorder-card input,
+.exam-reorder-card select,
+.day-modal-card input,
+.day-modal-card select {
+  height: 34px !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 6px !important;
+  background-color: #ffffff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  padding: 0 8px !important;
+}
+
+.exam-reorder-card input:focus,
+.exam-reorder-card select:focus {
+  border-color: #1F63A0 !important;
+  outline: none !important;
+}
+
+/* Dugme za brisanje pojedinačnog ispita u kartici */
+.exam-reorder-card .delete-btn,
+.btn-remove-item {
+  color: #ef4444 !important;
+  opacity: 0.7 !important;
+  transition: opacity 0.15s ease !important;
+}
+
+.exam-reorder-card .delete-btn:hover,
+.btn-remove-item:hover {
+  opacity: 1 !important;
+}
+
+/* 4. PODNOŽJE (NAZAD / SAČUVAJ IZMENE) */
+.day-modal-footer {
+  padding: 1rem 1.4rem !important;
+  background-color: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 10px !important;
+}
+
+.day-modal-footer button.btn-back {
+  height: 38px !important;
+  padding: 0 18px !important;
+  border-radius: 8px !important;
+  border: 1px solid #cbd5e1 !important;
+  background-color: #ffffff !important;
+  color: #475569 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+}
+
+.day-modal-footer button.btn-back:hover {
+  background-color: #f1f5f9 !important;
+}
+
+/* Sačuvaj izmene - IMI Zlatno */
+.day-modal-footer button.btn-save-day,
+button:has-text("Sačuvaj izmene") {
+  height: 38px !important;
+  padding: 0 22px !important;
+  border-radius: 8px !important;
+  border: 1px solid #d68910 !important;
+  background-color: #F39C12 !important;
+  color: #ffffff !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  box-shadow: 0 2px 4px rgba(243, 156, 18, 0.25) !important;
+  cursor: pointer !important;
+}
+
+.day-modal-footer button.btn-save-day:hover {
+  background-color: #e67e22 !important;
+}
+
 
 /* ========================================================= */
-/* 2. ANIMACIJA TEKSTA: KAJRON SA "TELEPORTOM"               */
+/* KAJRON (MARQUEE SLIDE) ANIMACIJA NA KARTICAMA PRI HOVERU  */
 /* ========================================================= */
-/* Početno stanje - tekst stoji fiksno i isečen je ako je dug */
-:host ::ng-deep .cal-title-container {
-  overflow: hidden;
-  white-space: nowrap;
+
+.clean-cal-card .cal-ticker-wrap {
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  position: relative !important;
 }
 
-/* Animacija se pali SAMO kad staviš miš na karticu */
-:host ::ng-deep .clean-cal-card:hover .cal-title-text {
-  animation: kliziITeleportuj 4s linear infinite !important;
+.clean-cal-card .cal-ticker-text {
+  display: inline-block !important;
+  will-change: transform !important;
+  transition: transform 0.2s ease-out !important;
 }
 
-/* Tekst stoji 1 sekundu, klizi ulevo 3 sekunde, i momentalno se teleportuje na početak */
-@keyframes kliziITeleportuj {
-  0%, 15% {
-    transform: translateX(0);
-  }
-  95% {
-    transform: translateX(-65%);
-  }
-  96%, 100% {
-    transform: translateX(0);
-  }
+/* Kada miš pređe preko kartice, dugačak tekst počinje glatko da slajduje */
+.clean-cal-card:hover .cal-ticker-text {
+  animation: calMarqueeSlide 6s linear infinite !important;
 }
 
-/* ========================================================= */
-/* 2. ANIMACIJA TEKSTA: KAJRON SA "TELEPORTOM"               */
-/* ========================================================= */
-/* Početno stanje - tekst stoji fiksno i isečen je ako je dug */
-:host ::ng-deep .cal-title-container {
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-/* Animacija se pali SAMO kad staviš miš na karticu */
-:host ::ng-deep .clean-cal-card:hover .cal-title-text {
-  animation: kliziITeleportuj 4s linear infinite !important;
-}
-
-/* Tekst stoji 1 sekundu, klizi ulevo 3 sekunde, i momentalno se teleportuje na početak */
-@keyframes kliziITeleportuj {
-  0%, 15% {
-    transform: translateX(0);
+@keyframes calMarqueeSlide {
+  0% {
+    transform: translateX(0%);
   }
-  95% {
-    transform: translateX(-65%); /* Klizi dok se ne pročita (prilagodi procenat ako treba) */
+  20% {
+    transform: translateX(0%); /* Kratka pauza pre nego što krene da klizi */
   }
-  96%, 100% {
-    transform: translateX(0); /* Nema vraćanja unazad - teleport na početak */
+  80% {
+    transform: translateX(-55%); /* Odskroluje do kraja teksta */
   }
-}
-/* ========================================================= */
-/* ANIMACIJE ZA FILTER PANELE                                */
-/* ========================================================= */
-@keyframes fadeInPanel {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
+  100% {
+    transform: translateX(0%);  /* Glatko vraćanje na početak */
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeInPanel 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
