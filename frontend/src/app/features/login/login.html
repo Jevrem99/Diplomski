@@ -1,24 +1,22 @@
 <div class="login-wrapper">
-  <div class="bg-shape circle-1"></div>
-  <div class="bg-shape circle-2"></div>
   <div class="login-card">
     
     <div class="header-section">
       <img ngSrc="assets/logopmf.png" width="80" height="80" class="logo-image" alt="PMF Logo" priority>
       <h1 class="portal-title">Platforma za Raspored Ispita</h1>
-      <p class="portal-subtitle">Institut za matematiku i informatiku</p>
+      <p class="portal-subtitle">Institut za matematiku i informatiku PMF</p>
     </div>
 
-    <!-- 1. STANDARDNA LOGIN FORMA -->
+    <!-- 1. LOGIN FORMA -->
     @if (prikazModala === 'login') {
       <form class="form-fields" (ngSubmit)="onLogin()">
-        <mat-form-field appearance="outline" class="custom-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="custom-field">
           <mat-label>Korisničko ime ili email</mat-label>
           <input matInput autofocus [(ngModel)]="loginData.username" name="username" required>
           <mat-icon matSuffix class="field-icon">person_outline</mat-icon>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="custom-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="custom-field">
           <mat-label>Lozinka</mat-label>
           <input matInput [type]="hide ? 'password' : 'text'" [(ngModel)]="loginData.password" name="password" required>
           <button mat-icon-button matSuffix (click)="hide = !hide" type="button">
@@ -26,8 +24,8 @@
           </button>
         </mat-form-field>
 
-        <div class="flex justify-end -mt-2">
-          <button type="button" (click)="prikazModala = 'forgot'" class="text-xs font-bold text-[#34b9f7] hover:underline bg-transparent border-none cursor-pointer">
+        <div class="flex justify-end mt-1">
+          <button type="button" (click)="prikazModala = 'forgot'" class="text-xs font-bold text-[#1F63A0] hover:underline bg-transparent border-none cursor-pointer">
             Zaboravili ste lozinku?
           </button>
         </div>
@@ -38,14 +36,14 @@
       </form>
     }
 
-    <!-- 2. FORMA ZA ZABORAVLJENU LOZINKU -->
+    <!-- 2. FORMA ZA RESET -->
     @if (prikazModala === 'forgot') {
       <form class="form-fields" (ngSubmit)="posaljiResetEmail()">
-        <p class="text-xs text-gray-500 text-center mb-1">
+        <p class="text-xs text-slate-500 text-center mb-1">
           Unesite email vašeg naloga. Poslaćemo vam link za resetovanje lozinke.
         </p>
 
-        <mat-form-field appearance="outline" class="custom-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="custom-field">
           <mat-label>Vaš Email</mat-label>
           <input matInput type="email" [(ngModel)]="forgotEmail" name="forgotEmail" placeholder="primer@pmf.kg.ac.rs" required>
           <mat-icon matSuffix class="field-icon">mail_outline</mat-icon>
@@ -55,25 +53,25 @@
           Pošalji link za reset
         </button>
 
-        <button type="button" (click)="prikazModala = 'login'" class="w-full mt-2 py-2 text-xs font-bold text-gray-500 hover:text-gray-800 bg-transparent border-none cursor-pointer">
+        <button type="button" (click)="prikazModala = 'login'" class="w-full mt-2 py-2 text-xs font-bold text-slate-500 hover:text-slate-800 bg-transparent border-none cursor-pointer">
           ← Nazad na prijavu
         </button>
       </form>
     }
 
-    <!-- 3. FORMA ZA UNOS NOVE LOZINKE (KADA STIGNE SA LINKA) -->
+    <!-- 3. UNOS NOVE LOZINKE -->
     @if (prikazModala === 'reset') {
       <form class="form-fields" (ngSubmit)="promeniZaboravljenuLozinku()">
-        <p class="text-xs text-gray-500 text-center mb-1">
+        <p class="text-xs text-slate-500 text-center mb-1">
           Unesite novu lozinku za vaš nalog.
         </p>
 
-        <mat-form-field appearance="outline" class="custom-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="custom-field">
           <mat-label>Nova lozinka</mat-label>
           <input matInput type="password" [(ngModel)]="newPassword" name="newPassword" required>
         </mat-form-field>
 
-        <mat-form-field appearance="outline" class="custom-field">
+        <mat-form-field appearance="outline" subscriptSizing="dynamic" class="custom-field">
           <mat-label>Potvrdite novu lozinku</mat-label>
           <input matInput type="password" [(ngModel)]="confirmNewPassword" name="confirmNewPassword" required>
         </mat-form-field>

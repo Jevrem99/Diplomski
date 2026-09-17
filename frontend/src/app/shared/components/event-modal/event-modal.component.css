@@ -1,57 +1,710 @@
-/* 1. HOST I GLOBALNA KUTIJA MODALA */
 :host {
   display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-:host *, 
-::ng-deep .mat-mdc-dialog-container, 
-::ng-deep .mdc-dialog__surface {
   font-family: 'Montserrat', sans-serif !important;
-  box-sizing: border-box !important;
-}
-
-/* 2. POTPUNO UKLANJANJE MATERIAL MARGINA I PADDING-A KOJI GURAJU DESNU STRANU */
-::ng-deep .cdk-overlay-pane:has(app-event-modal) {
-  max-width: 95vw !important;
-  padding: 0 !important;
 }
 
 ::ng-deep .mat-mdc-dialog-container {
   padding: 0 !important;
-  border-radius: 1.25rem !important;
+  border-radius: 12px !important;
   overflow: hidden !important;
-  box-sizing: border-box !important;
 }
 
 ::ng-deep .mdc-dialog__surface {
   padding: 0 !important;
-  border-radius: 1.25rem !important;
+  border-radius: 12px !important;
   overflow: hidden !important;
-  box-sizing: border-box !important;
 }
 
-/* 3. MATERIAL FORM FIELD POPRAVKA SHIRINE */
+.event-modal-container {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+  max-height: 88vh;
+}
+
+/* ========================================================= */
+/* IMI TEGET HEDER                                           */
+/* ========================================================= */
+.modal-header {
+  background-color: #1F63A0;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #164f82;
+}
+
+.modal-title-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+}
+
+.modal-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 3px;
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.modal-meta-line strong {
+  color: #ffffff;
+}
+
+.meta-separator {
+  opacity: 0.5;
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  cursor: pointer;
+  opacity: 0.8;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.modal-close-btn:hover {
+  opacity: 1;
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ========================================================= */
+/* TELO MODALA                                               */
+/* ========================================================= */
+.modal-body {
+  padding: 1.5rem;
+  display: flex;
+  gap: 1.5rem;
+  overflow-y: auto;
+  max-height: 65vh;
+}
+
+.modal-form-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.field-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1F63A0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Segmentirani radio izbor Tipa */
+.radio-group-segmented {
+  display: inline-flex;
+  background-color: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  gap: 3px;
+  width: fit-content;
+}
+
+.segmented-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.15s ease;
+}
+
+.segmented-option input[type="radio"] {
+  display: none;
+}
+
+.segmented-option.active {
+  background-color: #1F63A0;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(31, 99, 160, 0.25);
+}
+
+/* Material input overrides */
 ::ng-deep .mat-mdc-form-field {
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+  --mdc-outlined-text-field-container-shape: 8px !important;
+}
+
+/* Kutija za izabrane saradnike */
+.selected-box {
+  background-color: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+}
+
+.selected-box-title {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #1F63A0;
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.dezurni-chip {
+  background-color: #1F63A0;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-remove {
+  background: transparent;
+  border: none;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.chip-remove:hover {
+  color: #fca5a5;
+}
+
+.empty-hint {
+  font-size: 0.82rem;
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  font-size: 0.82rem;
+  font-weight: 700;
+  padding: 0.6rem 0.85rem;
+  border-radius: 6px;
+}
+
+/* DESNA KOLONA: Saradnici */
+.modal-side-col {
+  width: 290px;
+  flex-shrink: 0;
+  border-left: 1px solid #e2e8f0;
+  padding-left: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.side-col-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+.saradnici-scroll-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 320px;
+  padding-right: 4px;
+}
+
+.saradnik-row {
+  padding: 8px 12px;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.saradnik-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.saradnik-warning {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ef4444;
+}
+
+.saradnik-row.is-odsutan {
+  background-color: #fef2f2;
+  border-color: #fecaca;
+}
+
+.btn-add-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid #1F63A0;
+  background-color: #ffffff;
+  color: #1F63A0;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.btn-add-circle:hover:not(:disabled) {
+  background-color: #1F63A0;
+  color: #ffffff;
+}
+
+.btn-add-circle:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+  color: #cbd5e1;
+}
+
+/* ========================================================= */
+/* PODNOŽJE                                                  */
+/* ========================================================= */
+.modal-footer {
+  padding: 0.85rem 1.5rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.btn-delete {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 7px;
+  border: 1px solid #fecaca;
+  background-color: #ffffff;
+  color: #ef4444;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-delete:hover {
+  background-color: #fef2f2;
+}
+
+.btn-cancel {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 7px;
+  border: 1px solid #cbd5e1;
+  background-color: #ffffff;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background-color: #f1f5f9;
+}
+
+.btn-save {
+  height: 38px;
+  padding: 0 22px;
+  border-radius: 7px;
+  border: 1px solid #d68910;
+  background-color: #F39C12;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.btn-save:hover {
+  background-color: #e67e22;
+}
+/* ========================================================= */
+/* FINO CENTRIRANI I ZAOBLJENI DROPDOWN-I                    */
+/* ========================================================= */
+::ng-deep .mat-mdc-form-field {
   --mdc-outlined-text-field-container-shape: 12px !important;
+  --mdc-outlined-text-field-outline-color: #cbd5e1 !important;
+  --mdc-outlined-text-field-focus-outline-color: #1F63A0 !important;
+  --mdc-outlined-text-field-hover-outline-color: #94a3b8 !important;
+  width: 100% !important;
+  margin-bottom: 4px !important;
 }
 
-::ng-deep .mat-mdc-form-field .mdc-floating-label {
-  font-family: 'Montserrat', sans-serif !important;
-  font-size: 0.85rem !important;
-  font-weight: 500 !important;
+/* Eksplicitno zaobljenje za Angular Material notched okvir */
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__leading {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
 }
 
-::ng-deep .mat-mdc-input-element, 
-::ng-deep .mat-mdc-select-value, 
+::ng-deep .mat-mdc-text-field-wrapper.mdc-text-field--outlined .mdc-notched-outline .mdc-notched-outline__trailing {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+::ng-deep .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+}
+
+/* Spoljni omotač - fiksna visina i komforan padding */
+::ng-deep .mat-mdc-text-field-wrapper {
+  height: 46px !important;
+  padding: 0 14px !important;
+  background-color: #f8fafc !important;
+  border-radius: 12px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Unutrašnji nosač teksta - precizno vertikalno centriranje */
+::ng-deep .mat-mdc-form-field-infix {
+  padding: 0 !important;
+  min-height: unset !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* Labela i selektovani tekst u sredini linije */
+::ng-deep .mat-mdc-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+  height: 100% !important;
+}
+
+::ng-deep .mat-mdc-select-value {
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .mat-mdc-select-value-text,
 ::ng-deep .mat-mdc-select-placeholder {
   font-family: 'Montserrat', sans-serif !important;
-  font-size: 0.95rem !important;
+  font-size: 0.88rem !important;
   font-weight: 600 !important;
+  line-height: 1.2 !important;
   color: #334155 !important;
+}
+
+/* Pozicija plutajuće labele pri fokusu */
+::ng-deep .mat-mdc-form-field-label-wrapper {
+  top: -8px !important;
+  padding-top: 0 !important;
+}
+
+::ng-deep .mat-mdc-floating-label {
+  top: 23px !important;
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+::ng-deep .mdc-text-field--outlined:not(.mdc-text-field--disabled) .mdc-floating-label--float-above {
+  top: 14px !important;
+  font-size: 0.75rem !important;
+}
+
+/* Strelica poravnata u istoj ravni */
+::ng-deep .mat-mdc-select-arrow-wrapper {
+  transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .mat-mdc-select-arrow svg {
+  fill: #1F63A0 !important;
+}
+/* ========================================================= */
+/* FINO ZAOBLJENI I VERTIKALNO CENTRIRANI MAT-SELECT DROPDOWN */
+/* ========================================================= */
+
+/* 1. Globalna definicija oblika i kontrasta */
+::ng-deep app-event-modal .mat-mdc-form-field {
+  width: 100% !important;
+  --mdc-outlined-text-field-container-shape: 10px !important;
+  --mdc-outlined-text-field-outline-color: #cbd5e1 !important;
+  --mdc-outlined-text-field-focus-outline-color: #1F63A0 !important;
+  --mdc-outlined-text-field-hover-outline-color: #94a3b8 !important;
+}
+
+/* 2. Zaobljenje ivica na levoj i desnoj strani outline-a */
+::ng-deep app-event-modal .mdc-notched-outline__leading {
+  border-top-left-radius: 10px !important;
+  border-bottom-left-radius: 10px !important;
+  border-right: none !important;
+}
+
+::ng-deep app-event-modal .mdc-notched-outline__trailing {
+  border-top-right-radius: 10px !important;
+  border-bottom-right-radius: 10px !important;
+  border-left: none !important;
+}
+
+/* 3. Uklanjanje donjeg praznog prostora za greške/hintove */
+::ng-deep app-event-modal .mat-mdc-form-field-subscript-wrapper {
+  display: none !important;
+}
+
+/* 4. Prirodna visina i vertikalno centriranje celog polja */
+::ng-deep app-event-modal .mat-mdc-text-field-wrapper {
+  background-color: #f8fafc !important;
+  border-radius: 10px !important;
+  box-sizing: border-box !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-form-field-flex {
+  align-items: center !important;
+  height: 48px !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-form-field-infix {
+  min-height: auto !important;
+  padding-top: 14px !important;
+  padding-bottom: 14px !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+/* 5. Tekst unutar polja */
+::ng-deep app-event-modal .mat-mdc-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-select-value-text,
+::ng-deep app-event-modal .mat-mdc-select-placeholder {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.9rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+/* 6. Pozicija plutajuće labele kada polje nije popunjeno */
+::ng-deep app-event-modal .mat-mdc-floating-label {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 600 !important;
+  color: #64748b !important;
+}
+
+/* 7. Strelica poravnata u centru */
+::ng-deep app-event-modal .mat-mdc-select-arrow-wrapper {
+  display: flex !important;
+  align-items: center !important;
+  transform: none !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-select-arrow svg {
+  fill: #1F63A0 !important;
+}
+/* ========================================================= */
+/* ZAOBLJENI I VERTIKALNO CENTRIRANI DROPDOWN-I              */
+/* ========================================================= */
+
+/* Zaobljenje okvira (12px) */
+::ng-deep app-event-modal .mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: 12px !important;
+  width: 100% !important;
+}
+
+::ng-deep app-event-modal .mdc-notched-outline__leading {
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+::ng-deep app-event-modal .mdc-notched-outline__trailing {
+  border-top-right-radius: 12px !important;
+  border-bottom-right-radius: 12px !important;
+}
+
+/* Pozadina i visina omotača */
+::ng-deep app-event-modal .mat-mdc-text-field-wrapper {
+  background-color: #f8fafc !important;
+  border-radius: 12px !important;
+  box-sizing: border-box !important;
+}
+
+/* Resetovanje unutrašnjeg infix-a i ravnomerno vertikalno centriranje */
+::ng-deep app-event-modal .mat-mdc-form-field-infix {
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+  min-height: 46px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+}
+
+/* Tekst i placeholder unutar polja - podignuti sa dna */
+::ng-deep app-event-modal .mat-mdc-select-trigger {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 24px !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-select-value {
+  display: inline-flex !important;
+  align-items: center !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-select-value-text,
+::ng-deep app-event-modal .mat-mdc-select-placeholder {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  line-height: 24px !important;
+}
+
+/* Strelica poravnata sa tekstom */
+::ng-deep app-event-modal .mat-mdc-select-arrow-wrapper {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 24px !important;
+  transform: none !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-select-arrow svg {
+  fill: #1F63A0 !important;
+}
+/* ========================================================= */
+/* UVEĆANA I ČITLJIVA LABELA DROPDOWN-A                      */
+/* ========================================================= */
+/* 1. Labela u mirovanju (pre klika / dok stoji unutar polja) */
+::ng-deep app-event-modal .mat-mdc-floating-label {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+  color: #475569 !important;
+}
+
+/* 2. Lebdeća labela na okviru (kada je polje selektovano ili ima vrednost) */
+::ng-deep app-event-modal .mdc-text-field--outlined .mdc-floating-label--float-above {
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  color: #1F63A0 !important;
+  transform: translateY(-22px) scale(1) !important;
+}
+/* ========================================================= */
+/* UVEĆANJE CELOG EVENT MODALA (SKALIRANJE PROSTORA I FONTA)  */
+/* ========================================================= */
+.event-modal-container {
+  max-height: 92vh !important;
+}
+
+/* Krupniji i prostraniji heder */
+.modal-header {
+  padding: 1.25rem 2rem !important;
+}
+
+.modal-title {
+  font-size: 1.45rem !important;
+}
+
+.modal-meta-line {
+  font-size: 0.92rem !important;
+  margin-top: 5px !important;
+}
+
+/* Širi prostor u telu dijaloga */
+.modal-body {
+  padding: 1.75rem 2rem !important;
+  gap: 2rem !important;
+  max-height: 70vh !important;
+}
+
+/* Proširenje desne kolone sa saradnicima */
+.modal-side-col {
+  width: 340px !important;
+  padding-left: 2rem !important;
+}
+
+.side-col-title {
+  font-size: 1.1rem !important;
+}
+
+.saradnici-scroll-list {
+  max-height: 380px !important;
+}
+
+.saradnik-row {
+  padding: 10px 14px !important;
+}
+
+.saradnik-name {
+  font-size: 0.92rem !important;
+}
+
+/* Uvećana polja dropdown-a */
+::ng-deep app-event-modal .mat-mdc-text-field-wrapper {
+  height: 52px !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-form-field-infix {
+  min-height: 52px !important;
+}
+
+::ng-deep app-event-modal .mat-mdc-select-value-text,
+::ng-deep app-event-modal .mat-mdc-select-placeholder {
+  font-size: 0.98rem !important;
+}
+
+/* Krupniji segmentirani tasteri za Tip */
+.segmented-option {
+  padding: 8px 18px !important;
+  font-size: 0.9rem !important;
+}
+
+/* Uvećano podnožje i dugmići */
+.modal-footer {
+  padding: 1.1rem 2rem !important;
+}
+
+.modal-footer button {
+  height: 44px !important;
+  font-size: 0.95rem !important;
+  padding: 0 24px !important;
+  border-radius: 8px !important;
 }

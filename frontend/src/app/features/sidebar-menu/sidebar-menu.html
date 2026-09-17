@@ -1,9 +1,13 @@
 <mat-sidenav-container class="main-container">
+  <!-- BOČNA FIOKA -->
   <mat-sidenav #drawer mode="over" position="end">
     <div id="drawer_content">
       <div id="menu_title_div">
-        <h2 id="menu_title">MENI</h2>
-        <span>Korisnik: {{username}} ({{uloga}})</span>
+        <div class="drawer-header-row">
+          <h2 id="menu_title">MENI</h2>
+          <button class="drawer-close-btn" (click)="drawer.close()" title="Zatvori meni">✕</button>
+        </div>
+        <span class="user-subtitle">Korisnik: <strong>{{username}}</strong> ({{uloga}})</span>
       </div>
 
       <!-- SAMO ZA ADMINA I PROFESORA -->
@@ -50,8 +54,52 @@
     </div>
   </mat-sidenav>
 
+  <!-- GLAVNI TOP-BAR -->
   <mat-sidenav-content>
-    <app-header (toggleMenu)="drawer.toggle()"></app-header>
+    <nav class="top-bar-imi">
+      <!-- LEVO: imi_logo.png + NASLOVI KAO PRE -->
+      <div class="top-bar-left" (click)="navigateToMain()">
+        <img src="assets/imi_logo.png" alt="IMI Logo" class="imi-logo-img" />
+        <div class="imi-titles">
+          <span class="imi-subtitle">Prirodno-matematički fakultet</span>
+          <span class="imi-main-title">Institut za matematiku i informatiku</span>
+        </div>
+      </div>
+
+      <!-- SREDINA: DESKTOP LINKOVI -->
+      <div class="top-bar-links">
+        @if (uloga === 'admin' || uloga === 'profesor') {
+          <a class="nav-item-link" (click)="navigateToMain()">Raspored</a>
+        }
+        @if (uloga === 'admin') {
+          <a class="nav-item-link" (click)="navigateToDatabaseManagement()">Upravljaj bazom</a>
+          <a class="nav-item-link" (click)="navigateToZaduzenja()">Pregled zaduženja</a>
+        }
+        @if (uloga === 'asistent' || uloga === 'saradnik') {
+          <a class="nav-item-link" (click)="navigateToMojaDezurstva()">Moj Raspored</a>
+          <a class="nav-item-link" (click)="navigateToMojeObaveze()">Prijavi odsustvo</a>
+        }
+        <a class="nav-item-link" (click)="navigateToSettings()">Podešavanja</a>
+      </div>
+
+      <!-- DESNA STRANA: ODJAVA I MENI -->
+      <div class="top-bar-right">
+        <button class="desktop-logout-btn" (click)="logout()" title="Odjavi se">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+          </svg>
+          <span>Odjava</span>
+        </button>
+
+        <button class="toggle-topbar" (click)="drawer.toggle()" title="Glavni meni">
+          <span>Meni</span>
+          <svg class="menu-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+        </button>
+      </div>
+    </nav>
+
     <router-outlet></router-outlet>
   </mat-sidenav-content>
 </mat-sidenav-container>

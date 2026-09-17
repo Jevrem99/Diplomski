@@ -10,77 +10,83 @@ import * as XLSX from 'xlsx-js-style';
   standalone: true,
   imports: [CommonModule, FormsModule, SidebarMenu],
   template: `
-    <div class="flex flex-col lg:flex-row min-h-screen w-full bg-[#f4f7fb] p-3 sm:p-4 md:p-6 gap-4 md:gap-6">
+    <div class="flex flex-col lg:flex-row min-h-screen w-full bg-[#e9f0f8] p-3 sm:p-5 gap-4 font-montserrat">
       
-      <main class="flex-1 flex flex-col min-w-0 w-full">
-        <!-- HEADER SA FILTERIMA -->
-        <header class="mb-4 sm:mb-6 p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between bg-white rounded-2xl shadow-sm border border-gray-100 gap-4">
+      <main class="flex-1 flex flex-col min-w-0 w-full gap-4">
+        <!-- HEDER SA FILTERIMA -->
+        <header class="p-4 sm:p-5 flex flex-col xl:flex-row items-stretch xl:items-center justify-between bg-[#1F63A0] rounded-2xl shadow-md border border-[#164f82] gap-4">
           <div>
-            <h1 class="text-xl font-bold text-gray-800 tracking-tight">Pregled Zaduženja</h1>
-            <p class="text-xs text-gray-500 mt-1">Ukupan broj sati angažovanja po saradniku</p>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Pregled Zaduženja</h1>
+            <p class="text-xs text-blue-100/80 font-medium mt-0.5">Analitika sati i angažovanja nastavnog osoblja</p>
           </div>
           
-          <!-- FILTERI -->
-          <div class="flex flex-col sm:flex-row items-center gap-2">
-            <select [(ngModel)]="filterGodina" (change)="primeniFiltere()" class="w-full sm:w-32 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
-              <option value="sve">Sve godine</option>
+          <!-- FILTERI I AKCIJA -->
+          <div class="flex flex-wrap sm:flex-nowrap items-center gap-2">
+            <select [(ngModel)]="filterGodina" (change)="primeniFiltere()" 
+                    class="h-[38px] px-3 bg-white/10 hover:bg-white/20 text-white border border-white/25 rounded-lg text-xs font-bold focus:outline-none cursor-pointer">
+              <option value="sve" class="text-slate-800">Sve godine</option>
               @for (god of dostupneGodine; track god) {
-                <option [value]="god">{{ god }}.</option>
+                <option [value]="god" class="text-slate-800">{{ god }}.</option>
               }
             </select>
 
-            <select [(ngModel)]="filterSemestar" (change)="primeniFiltere()" class="w-full sm:w-44 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
-              <option value="sve">Svi semestri</option>
-              <option value="zimski">Zimski semestar</option>
-              <option value="letnji">Letnji semestar</option>
+            <select [(ngModel)]="filterSemestar" (change)="primeniFiltere()" 
+                    class="h-[38px] px-3 bg-white/10 hover:bg-white/20 text-white border border-white/25 rounded-lg text-xs font-bold focus:outline-none cursor-pointer">
+              <option value="sve" class="text-slate-800">Svi semestri</option>
+              <option value="zimski" class="text-slate-800">Zimski semestar</option>
+              <option value="letnji" class="text-slate-800">Letnji semestar</option>
             </select>
 
-            <select [(ngModel)]="filterMesec" (change)="primeniFiltere()" class="w-full sm:w-36 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#34b9f7]/50">
-              <option value="sve">Svi meseci</option>
-              <option value="1">Januar</option>
-              <option value="2">Februar</option>
-              <option value="3">Mart</option>
-              <option value="4">April</option>
-              <option value="5">Maj</option>
-              <option value="6">Jun</option>
-              <option value="7">Jul</option>
-              <option value="8">Avgust</option>
-              <option value="9">Septembar</option>
-              <option value="10">Oktobar</option>
-              <option value="11">Novembar</option>
-              <option value="12">Decembar</option>
+            <select [(ngModel)]="filterMesec" (change)="primeniFiltere()" 
+                    class="h-[38px] px-3 bg-white/10 hover:bg-white/20 text-white border border-white/25 rounded-lg text-xs font-bold focus:outline-none cursor-pointer">
+              <option value="sve" class="text-slate-800">Svi meseci</option>
+              <option value="1" class="text-slate-800">Januar</option>
+              <option value="2" class="text-slate-800">Februar</option>
+              <option value="3" class="text-slate-800">Mart</option>
+              <option value="4" class="text-slate-800">April</option>
+              <option value="5" class="text-slate-800">Maj</option>
+              <option value="6" class="text-slate-800">Jun</option>
+              <option value="7" class="text-slate-800">Jul</option>
+              <option value="8" class="text-slate-800">Avgust</option>
+              <option value="9" class="text-slate-800">Septembar</option>
+              <option value="10" class="text-slate-800">Oktobar</option>
+              <option value="11" class="text-slate-800">Novembar</option>
+              <option value="12" class="text-slate-800">Decembar</option>
             </select>
 
-            <button (click)="izveziUExcel()" class="w-full sm:w-auto px-5 py-2 text-sm font-bold text-white bg-green-500 rounded-xl hover:bg-green-600 transition-all shadow-md flex items-center justify-center gap-2">
+            <button (click)="izveziUExcel()" 
+                    class="h-[38px] px-4 text-xs font-bold text-white bg-[#F39C12] border border-[#d68910] rounded-lg hover:bg-[#e67e22] transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
               </svg>
-              Izvezi u Excel
+              <span>Izvezi Excel</span>
             </button>
           </div>
         </header>
 
-        <!-- TABELA -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex-1">
+        <!-- AKADEMSKA TABELA -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden flex-1">
           <div class="overflow-x-auto">
             <table class="w-full text-left text-sm">
-              <thead class="bg-slate-50 border-b border-gray-100 text-slate-500 uppercase text-[11px] font-extrabold tracking-wider">
+              <thead class="bg-[#1F63A0] text-white uppercase text-[11px] font-extrabold tracking-wider">
                 <tr>
-                  <th class="px-6 py-4">Saradnik / Profesor</th>
-                  <th class="px-6 py-4 text-center">Broj ispita/kolokvijuma</th>
-                  <th class="px-6 py-4 text-right">Ukupno zaduženje (Sati)</th>
+                  <th class="px-6 py-3.5 border-r border-white/10">Saradnik / Profesor</th>
+                  <th class="px-6 py-3.5 text-center border-r border-white/10">Broj ispita / kolokvijuma</th>
+                  <th class="px-6 py-3.5 text-right">Ukupno zaduženje</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-gray-50">
+              <tbody class="divide-y divide-slate-100">
                 @for (saradnik of zaduzenjaSati; track saradnik.id) {
                   <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-4 font-bold text-gray-800">{{ saradnik.ime }} {{ saradnik.prezime }}</td>
-                    <td class="px-6 py-4 font-semibold text-gray-500 text-center">{{ saradnik.brojIspita }}</td>
-                    <td class="px-6 py-4 font-black text-indigo-600 text-right">{{ saradnik.ukupnoSati | number:'1.2-2' }}h</td>
+                    <td class="px-6 py-3.5 font-bold text-slate-800">{{ saradnik.ime }} {{ saradnik.prezime }}</td>
+                    <td class="px-6 py-3.5 font-semibold text-slate-500 text-center">{{ saradnik.brojIspita }}</td>
+                    <td class="px-6 py-3.5 font-extrabold text-[#1F63A0] text-right">{{ saradnik.ukupnoSati | number:'1.2-2' }} h</td>
                   </tr>
                 } @empty {
                   <tr>
-                    <td colspan="3" class="px-6 py-8 text-center text-gray-400 font-semibold">Nema podataka o zaduženjima za izabrani filter.</td>
+                    <td colspan="3" class="px-6 py-10 text-center text-slate-400 font-semibold">
+                      Nema podataka o zaduženjima za zadate filtere.
+                    </td>
                   </tr>
                 }
               </tbody>

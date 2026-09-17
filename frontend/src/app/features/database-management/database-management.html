@@ -1,92 +1,103 @@
 <div class="db-container">
-  <h2>Upravljanje bazom podataka</h2>
-  <div class="button-group">
-    <button class="nav-btn" [class.active]="activeEntity === 'profesori'"
-      (click)="selectEntity('profesori')">Profesori</button>
-    <button class="nav-btn" [class.active]="activeEntity === 'saradnici'"
-      (click)="selectEntity('saradnici')">Saradnici</button>
-    <button class="nav-btn" [class.active]="activeEntity === 'predmeti'"
-      (click)="selectEntity('predmeti')">Predmeti</button>
-    <button class="nav-btn" [class.active]="activeEntity === 'ispiti'" (click)="selectEntity('ispiti')">Ispiti</button>
+  <!-- GLAVNI IMI KONTROLNI HEDER -->
+  <header class="db-header">
+    <div class="db-header-left">
+      <h1 class="db-title">Upravljanje bazom podataka</h1>
+      <span class="db-subtitle">Administratorski panel za upravljanje entitetima i šifarnicima</span>
+    </div>
 
-    <!-- Dugme za dodavanje novog reda, odgurnuto skroz desno -->
-    <button class="nav-btn font-bold text-amber-600" [class.active]="activeEntity === 'korisnici'" (click)="selectEntity('korisnici')">Nalozi</button>
-    <button class="nav-btn font-bold text-indigo-600" [class.active]="activeEntity === 'dnevnik'" (click)="selectEntity('dnevnik')">Dnevnik rada</button>
+    <!-- DESNA GRUPA AKCIJA (Zlatno Dodaj dugme + Alati) -->
+    <div class="db-header-actions">
+      @if (activeEntity !== 'dnevnik') {
+        <button class="btn-action-primary" (click)="openCrudModal()">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>Dodaj {{ getSingularName(activeEntity) }}</span>
+        </button>
+      }
 
-  <!-- AZURIRANO PLAVO DUGME -->
-  <button class="nav-btn !bg-[#34b9f7] !text-white !font-bold" style="margin-left: auto;" (click)="openCrudModal()">
-    + Dodaj {{ activeEntity == 'profesori' ? 'profesora' : activeEntity == 'saradnici' ? 'saradnika' : activeEntity == 'predmeti' ? 'predmet' : activeEntity == 'ispiti' ? 'ispit' : activeEntity == 'korisnici' ? 'korisnika' : ''}}
-  </button>
-
-    <button class="nav-btn" id="delete-btn" (click)="deleteDatabase()">Obrisi sve podatke</button>
-
-    <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls" style="display: none;" />
-    <button class="nav-btn" id="import-btn" (click)="fileInput.click()" [disabled]="uploading">
-      {{ uploading ? 'Učitavanje...' : 'Import EXCEL' }}
-    </button>
-  </div>
-
-  @if (loading) {
-  <div class="loader">Učitavanje podataka...</div>
-  } @else {
-  <div class="table-wrapper">
-    @if (tableData.length > 0) {
-    <table class="styled-table">
-      <thead>
-        @if (activeEntity !== 'dnevnik') {
-      <th class="w-24 text-center">Akcije</th>
-    }
-        <tr>
-          @for (col of currentColumnsDef; track col.key) {
-          <th>{{ col.label }}</th>
-          }
-          <!-- Kolona za akcije -->
-          <th class="w-24 text-center">Akcije</th>
-        </tr>
-      </thead>
-      <tbody>
-        @if (activeEntity !== 'dnevnik') {
-      <td class="flex justify-center gap-3">
-         <!-- postojeće ikonice za edit i delete -->
-      </td>
-    }
-        @for (row of tableData; track $index) {
-        <tr>
-          @for (col of currentColumnsDef; track col.key) {
-          <td class="px-6 py-4 text-sm text-gray-700">
-            {{ formatCellValue(row, col.key) }}
-          </td>
-          }
-          <!-- Ikonice za edit i brisanje -->
-          <td class="flex justify-center gap-3">
-            <button class="text-blue-500 hover:text-blue-700 transition-colors" (click)="editRow(row)" title="Izmeni">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
-                </path>
-              </svg>
-            </button>
-            <button class="text-red-500 hover:text-red-700 transition-colors" (click)="deleteRow(row.id)"
-              title="Obriši">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
-                </path>
-              </svg>
-            </button>
-          </td>
-        </tr>
-        }
-      </tbody>
-    </table>
-    } @else {
-    <div class="empty-state">Nema dostupnih podataka za prikaz.</div>
-    }
-  </div>
-  }
-  @if (activeEntity !== 'dnevnik') {
-      <button class="nav-btn !bg-[#34b9f7] !text-white !font-bold" style="margin-left: auto;" (click)="openCrudModal()">
-        + Dodaj {{ activeEntity == 'profesori' ? 'profesora' : activeEntity == 'saradnici' ? 'saradnika' : activeEntity == 'predmeti' ? 'predmet' : activeEntity == 'ispiti' ? 'ispit' : activeEntity == 'korisnici' ? 'korisnika' : ''}}
+      <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls" style="display: none;" />
+      <button class="btn-action-secondary" (click)="fileInput.click()" [disabled]="uploading" title="Uvezi podatke iz Excel tabele">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+        </svg>
+        <span>{{ uploading ? 'Učitavanje...' : 'Import EXCEL' }}</span>
       </button>
-    }
+
+      <button class="btn-action-danger" (click)="deleteDatabase()" title="Reset baze">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+        </svg>
+        <span>Obriši sve</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ENTITETSKI TASTERI (TABOVI) -->
+  <div class="tabs-toolbar">
+    <div class="tabs-group">
+      <button class="tab-btn" [class.active]="activeEntity === 'profesori'" (click)="selectEntity('profesori')">Profesori</button>
+      <button class="tab-btn" [class.active]="activeEntity === 'saradnici'" (click)="selectEntity('saradnici')">Saradnici</button>
+      <button class="tab-btn" [class.active]="activeEntity === 'predmeti'" (click)="selectEntity('predmeti')">Predmeti</button>
+      <button class="tab-btn" [class.active]="activeEntity === 'ispiti'" (click)="selectEntity('ispiti')">Ispiti</button>
+      <button class="tab-btn" [class.active]="activeEntity === 'korisnici'" (click)="selectEntity('korisnici')">Nalozi</button>
+      <button class="tab-btn" [class.active]="activeEntity === 'dnevnik'" (click)="selectEntity('dnevnik')">Dnevnik rada</button>
+    </div>
+  </div>
+
+  <!-- TABELA SA PODACIMA -->
+  @if (loading) {
+    <div class="loading-state">
+      <div class="loader-spinner"></div>
+      <span>Učitavanje podataka iz baze...</span>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      @if (tableData.length > 0) {
+        <table class="styled-table">
+          <thead>
+            <tr>
+              @for (col of currentColumnsDef; track col.key) {
+                <th>{{ col.label }}</th>
+              }
+              @if (activeEntity !== 'dnevnik') {
+                <th class="text-center w-28">Akcije</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of tableData; track $index) {
+              <tr>
+                @for (col of currentColumnsDef; track col.key) {
+                  <td>{{ formatCellValue(row, col.key) }}</td>
+                }
+                @if (activeEntity !== 'dnevnik') {
+                  <td class="action-cell">
+                    <button class="action-btn edit-btn" (click)="editRow(row)" title="Izmeni">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                      </svg>
+                    </button>
+                    <button class="action-btn delete-btn" (click)="deleteRow(row.id)" title="Obriši">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                      </svg>
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      } @else {
+        <div class="empty-state">
+          <svg class="w-12 h-12 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+          </svg>
+          <span>Nema dostupnih podataka za izabrani entitet.</span>
+        </div>
+      }
+    </div>
+  }
 </div>

@@ -59,7 +59,7 @@ interface Predmet {
 export class Main implements OnInit, AfterViewInit {
   @ViewChild('draggableContainer') draggableContainer!: ElementRef;
   @ViewChild('calendar') calendarComponent!: FullCalendarComponent;
-  
+
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
   private API_URL = 'http://localhost:5000';
@@ -75,17 +75,17 @@ export class Main implements OnInit, AfterViewInit {
   modifiedEvents: any[] = [];
   unsavedEvents: any[] = [];
   hasUnsavedChanges: boolean = false;
-  
+
   prikaziIspite: boolean = true;
   prikaziKolokvijume: boolean = true;
   isDashboardOpen: boolean = false;
-  
+
   // --- VARIJABLE ZA NOVO BRZO UREĐIVANJE ---
-  daniSaIspitima = new Set<string>(); 
+  daniSaIspitima = new Set<string>();
   rezimKopiranjaDana: boolean = false;
   danZaKopiranje: string = '';
-  ciljniDatumiZaKopiranje = new Set<string>(); 
-  
+  ciljniDatumiZaKopiranje = new Set<string>();
+
   prikaziDanModal: boolean = false;
   danModalPrikaz: 'meni' | 'preuredi' = 'meni';
   selektovanDan: string = '';
@@ -99,8 +99,13 @@ export class Main implements OnInit, AfterViewInit {
   filterLevoGodina: string = 'sve';
   filterLevoProfesor: string = 'svi';
   izabranaGodinaBanka: string | number = 'sve';
-  
-  defaultGodinaColors: any = { 1: '#34b9f7', 2: '#ef4444', 3: '#eab308', 4: '#10b981' };
+
+  defaultGodinaColors: any = {
+    1: '#009bd9', // Azurno plava sa kocke "Matematika" sa sajta
+    2: '#d81b43', // Rubin crvena sa kocke "Upis" sa sajta
+    3: '#f39c12', // Zlatno-narandžasta sa kocke "Informatika" sa sajta
+    4: '#1a4975'  // Zvanična IMI tamno plava
+  };
   godinaColors: any = { ...this.defaultGodinaColors };
   // --- IZVOZ EXCEL VARIJABLE ---
   prikaziIzvozModal: boolean = false;
@@ -123,13 +128,16 @@ export class Main implements OnInit, AfterViewInit {
   // ============================================
   // FUNKCIJE ZA MODAL DANA (BRZO UREĐIVANJE I KOPIRANJE)
   // ============================================
- otvoriIzvozModal() {
+  trackById(index: number, item: any): any {
+    return item?.id ?? index;
+  }
+  otvoriIzvozModal() {
     this.prikaziIzvozModal = true;
-    
+
     // Postavi default datume (od danas do mesec dana)
     const danas = new Date();
     this.izvozPodaci.datumOd = danas.toISOString().split('T')[0];
-    
+
     const sledeciMesec = new Date();
     sledeciMesec.setMonth(sledeciMesec.getMonth() + 1);
     this.izvozPodaci.datumDo = sledeciMesec.toISOString().split('T')[0];
@@ -168,7 +176,7 @@ export class Main implements OnInit, AfterViewInit {
       const godA = a.extendedProps.godina || 99;
       const godB = b.extendedProps.godina || 99;
       if (godA !== godB) return godA - godB;
-      
+
       const datumA = new Date(a.start.split('T')[0]).getTime();
       const datumB = new Date(b.start.split('T')[0]).getTime();
       if (datumA !== datumB) return datumA - datumB;
@@ -213,14 +221,14 @@ export class Main implements OnInit, AfterViewInit {
       if (ispitGodina !== trenutnaGodina) {
         trenutnaGodina = ispitGodina;
         redniBroj = 1;
-        
+
         const rimska = ['I', 'II', 'III', 'IV', 'Мастер'][trenutnaGodina - 1] || trenutnaGodina;
-        
+
         // Red "I година"
         wsData.push([`${rimska} година`, null, null, null]);
         cellStyles[`A${rowIndex}`] = { font: { bold: true, sz: 12, name: 'Calibri' } };
         rowIndex++;
-        
+
         // Red sa zaglavljem kolona
         wsData.push([null, 'Предмет', nazivRoka, null]);
         cellStyles[`B${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
@@ -229,25 +237,25 @@ export class Main implements OnInit, AfterViewInit {
       }
 
       const nazivPredmeta = ispit.title.split(' (')[0];
-      
+
       // Datum formatiramo u "dd.mm." tačno kao sa slike
       const datumSirovo = ispit.start.split('T')[0].split('-');
       const datumPrikaz = `${datumSirovo[2]}.${datumSirovo[1]}.`;
-      
+
       // Vreme formatiramo dodavanjem "h" na kraj
       const vremePrikaz = ispit.extendedProps.vreme + 'h';
 
       wsData.push([redniBroj, nazivPredmeta, datumPrikaz, vremePrikaz]);
-      
+
       const bgColor = bojaPoGodini[trenutnaGodina] || 'FFFFFFFF';
-      
+
       // STILIZACIJA PODATAKA REDA:
       // A) Redni broj
       cellStyles[`A${rowIndex}`] = { border: tankiOkvir, alignment: { horizontal: 'right' }, font: { name: 'Calibri', sz: 11 } };
       // B) Predmet (OBOJEN)
-      cellStyles[`B${rowIndex}`] = { 
-        fill: { fgColor: { rgb: bgColor } }, 
-        border: tankiOkvir, 
+      cellStyles[`B${rowIndex}`] = {
+        fill: { fgColor: { rgb: bgColor } },
+        border: tankiOkvir,
         font: { name: 'Calibri', sz: 11 }
       };
       // C) Datum
@@ -285,16 +293,16 @@ export class Main implements OnInit, AfterViewInit {
   otvoriKopiranjeDanaIzModala() {
     this.rezimKopiranjaDana = true;
     this.danZaKopiranje = this.selektovanDan;
-    this.ciljniDatumiZaKopiranje.clear(); 
+    this.ciljniDatumiZaKopiranje.clear();
     this.prikaziDanModal = false;
-    this.applyFilters(); 
+    this.applyFilters();
   }
 
   otkaziKopiranjeDana() {
     this.rezimKopiranjaDana = false;
     this.danZaKopiranje = '';
     this.ciljniDatumiZaKopiranje.clear();
-    this.applyFilters(); 
+    this.applyFilters();
   }
 
   izvrsiVisestrukoKopiranje() {
@@ -309,7 +317,7 @@ export class Main implements OnInit, AfterViewInit {
     }
 
     const ispitiIzDana = this.allLoadedEvents.filter(e => e.start.startsWith(this.danZaKopiranje) && !e.extendedProps?.isNastava);
-    
+
     this.hasUnsavedChanges = true;
 
     this.ciljniDatumiZaKopiranje.forEach(ciljniDatum => {
@@ -317,20 +325,20 @@ export class Main implements OnInit, AfterViewInit {
         const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
         const noviStart = stariEvent.start.replace(this.danZaKopiranje, ciljniDatum);
         const noviEnd = stariEvent.end ? stariEvent.end.replace(this.danZaKopiranje, ciljniDatum) : undefined;
-        
+
         const noviEvent = { ...stariEvent, id: tempId, start: noviStart, end: noviEnd };
         this.allLoadedEvents.push(noviEvent);
-        
+
         this.unsavedEvents.push({
-           tempId: tempId,
-           predmet_id: stariEvent.extendedProps.predmetId,
-           title: stariEvent.title.split(' (')[0],
-           datum: ciljniDatum,
-           vreme: stariEvent.extendedProps.vreme,
-           vreme_kraja: stariEvent.extendedProps.vremeKraja,
-           sala: stariEvent.extendedProps.sala,
-           is_ispit: stariEvent.extendedProps.is_ispit,
-           dezurni_ids: stariEvent.extendedProps.dezurni?.map((d:any)=>d.id) || []
+          tempId: tempId,
+          predmet_id: stariEvent.extendedProps.predmetId,
+          title: stariEvent.title.split(' (')[0],
+          datum: ciljniDatum,
+          vreme: stariEvent.extendedProps.vreme,
+          vreme_kraja: stariEvent.extendedProps.vremeKraja,
+          sala: stariEvent.extendedProps.sala,
+          is_ispit: stariEvent.extendedProps.is_ispit,
+          dezurni_ids: stariEvent.extendedProps.dezurni?.map((d: any) => d.id) || []
         });
       });
     });
@@ -359,40 +367,40 @@ export class Main implements OnInit, AfterViewInit {
     this.hasUnsavedChanges = true;
 
     this.ispitiZaBrisanje.forEach(id => {
-       if (!id.startsWith('temp_')) this.http.delete(`${this.API_URL}/ispit/${id}`).subscribe();
-       this.allLoadedEvents = this.allLoadedEvents.filter(e => e.id !== id);
-       this.unsavedEvents = this.unsavedEvents.filter(e => e.tempId !== id);
-       this.modifiedEvents = this.modifiedEvents.filter(e => e.id !== id);
+      if (!id.startsWith('temp_')) this.http.delete(`${this.API_URL}/ispit/${id}`).subscribe();
+      this.allLoadedEvents = this.allLoadedEvents.filter(e => e.id !== id);
+      this.unsavedEvents = this.unsavedEvents.filter(e => e.tempId !== id);
+      this.modifiedEvents = this.modifiedEvents.filter(e => e.id !== id);
     });
 
     this.ispitiZaPreuredjivanje.forEach(modIspit => {
-       const idx = this.allLoadedEvents.findIndex(e => e.id === modIspit.id);
-       if (idx > -1) {
-          this.allLoadedEvents[idx].start = `${this.selektovanDan}T${modIspit.extendedProps.vreme}:00`;
-          this.allLoadedEvents[idx].end = modIspit.extendedProps.vremeKraja ? `${this.selektovanDan}T${modIspit.extendedProps.vremeKraja}:00` : undefined;
-          this.allLoadedEvents[idx].extendedProps.vreme = modIspit.extendedProps.vreme;
-          this.allLoadedEvents[idx].extendedProps.vremeKraja = modIspit.extendedProps.vremeKraja;
-          this.allLoadedEvents[idx].extendedProps.sala = modIspit.extendedProps.sala;
-          this.allLoadedEvents[idx].title = `${modIspit.title.split(' (')[0]} (${modIspit.extendedProps.sala})`;
-       }
+      const idx = this.allLoadedEvents.findIndex(e => e.id === modIspit.id);
+      if (idx > -1) {
+        this.allLoadedEvents[idx].start = `${this.selektovanDan}T${modIspit.extendedProps.vreme}:00`;
+        this.allLoadedEvents[idx].end = modIspit.extendedProps.vremeKraja ? `${this.selektovanDan}T${modIspit.extendedProps.vremeKraja}:00` : undefined;
+        this.allLoadedEvents[idx].extendedProps.vreme = modIspit.extendedProps.vreme;
+        this.allLoadedEvents[idx].extendedProps.vremeKraja = modIspit.extendedProps.vremeKraja;
+        this.allLoadedEvents[idx].extendedProps.sala = modIspit.extendedProps.sala;
+        this.allLoadedEvents[idx].title = `${modIspit.title.split(' (')[0]} (${modIspit.extendedProps.sala})`;
+      }
 
-       if (modIspit.id.startsWith('temp_')) {
-          const uIdx = this.unsavedEvents.findIndex(e => e.tempId === modIspit.id);
-          if (uIdx > -1) {
-             this.unsavedEvents[uIdx].vreme = modIspit.extendedProps.vreme;
-             this.unsavedEvents[uIdx].vreme_kraja = modIspit.extendedProps.vremeKraja;
-             this.unsavedEvents[uIdx].sala = modIspit.extendedProps.sala;
-          }
-       } else {
-          const mIdx = this.modifiedEvents.findIndex(e => e.id === modIspit.id);
-          const payload = {
-             id: modIspit.id, datum: this.selektovanDan, vreme: modIspit.extendedProps.vreme,
-             vreme_kraja: modIspit.extendedProps.vremeKraja, sala: modIspit.extendedProps.sala,
-             predmet_id: modIspit.extendedProps.predmetId, is_ispit: modIspit.extendedProps.is_ispit,
-             dezurni_ids: modIspit.extendedProps.dezurni?.map((d:any)=>d.id) || []
-          };
-          if (mIdx > -1) this.modifiedEvents[mIdx] = payload; else this.modifiedEvents.push(payload);
-       }
+      if (modIspit.id.startsWith('temp_')) {
+        const uIdx = this.unsavedEvents.findIndex(e => e.tempId === modIspit.id);
+        if (uIdx > -1) {
+          this.unsavedEvents[uIdx].vreme = modIspit.extendedProps.vreme;
+          this.unsavedEvents[uIdx].vreme_kraja = modIspit.extendedProps.vremeKraja;
+          this.unsavedEvents[uIdx].sala = modIspit.extendedProps.sala;
+        }
+      } else {
+        const mIdx = this.modifiedEvents.findIndex(e => e.id === modIspit.id);
+        const payload = {
+          id: modIspit.id, datum: this.selektovanDan, vreme: modIspit.extendedProps.vreme,
+          vreme_kraja: modIspit.extendedProps.vremeKraja, sala: modIspit.extendedProps.sala,
+          predmet_id: modIspit.extendedProps.predmetId, is_ispit: modIspit.extendedProps.is_ispit,
+          dezurni_ids: modIspit.extendedProps.dezurni?.map((d: any) => d.id) || []
+        };
+        if (mIdx > -1) this.modifiedEvents[mIdx] = payload; else this.modifiedEvents.push(payload);
+      }
     });
 
     this.applyFilters();
@@ -402,10 +410,10 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   obrisiCeoDan() {
-    if(confirm(`Da li ste sigurni da želite da obrišete SVE ispite na dan ${this.selektovanDan}?`)) {
+    if (confirm(`Da li ste sigurni da želite da obrišete SVE ispite na dan ${this.selektovanDan}?`)) {
       const ispitiIzDana = this.allLoadedEvents.filter(e => e.start.startsWith(this.selektovanDan) && !e.extendedProps?.isNastava);
       ispitiIzDana.forEach(stariEvent => {
-         if (!stariEvent.id.startsWith('temp_')) this.http.delete(`${this.API_URL}/ispit/${stariEvent.id}`).subscribe();
+        if (!stariEvent.id.startsWith('temp_')) this.http.delete(`${this.API_URL}/ispit/${stariEvent.id}`).subscribe();
       });
       const idsToRemove = ispitiIzDana.map(e => e.id);
       this.allLoadedEvents = this.allLoadedEvents.filter(e => !idsToRemove.includes(e.id));
@@ -437,13 +445,35 @@ export class Main implements OnInit, AfterViewInit {
     droppable: true,
     editable: true,
 
-    dayCellContent: (arg) => {
+dayCellContent: (arg) => {
       const d = arg.date;
       const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const hasEvents = this.daniSaIspitima.has(dateStr);
       
-      let html = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:10px;">`; 
-      
+      const today = new Date();
+      const isToday = d.getFullYear() === today.getFullYear() &&
+                      d.getMonth() === today.getMonth() &&
+                      d.getDate() === today.getDate();
+
+      let html = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:6px; box-sizing:border-box;">`;
+
+      // 1. DATUM (Skroz levo)
+      if (isToday) {
+        html += `
+          <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; min-width:24px; border-radius:50%; background-color:#1F63A0; color:#ffffff !important; font-family:'Montserrat', sans-serif; font-size:12px; font-weight:800; line-height:1; pointer-events:none; box-shadow:0 1px 3px rgba(31,99,160,0.35);">
+            ${arg.dayNumberText}
+          </span>`;
+      } else {
+        html += `
+          <span style="font-family:'Montserrat', sans-serif; font-size:13px; font-weight:800; color:#475569; pointer-events:none; padding:2px;">
+            ${arg.dayNumberText}
+          </span>`;
+      }
+
+      // DESNA GRUPA: Olovčica pa Warning
+      html += `<div class="day-actions-wrapper" data-date="${dateStr}" style="display:flex; align-items:center; gap:4px;">`;
+
+      // 2. OLOVČICA (U sredini, pre warninga)
       if (this.rezimKopiranjaDana) {
          const isSelected = this.ciljniDatumiZaKopiranje.has(dateStr);
          if (isSelected) {
@@ -454,17 +484,16 @@ export class Main implements OnInit, AfterViewInit {
             html += `<div class="target-circle hover:border-indigo-400 hover:bg-indigo-50" data-date="${dateStr}" style="width:20px; height:20px; border-radius:50%; border:2px solid #cbd5e1; background-color:#f8fafc; flex-shrink:0; pointer-events:auto; cursor:pointer; z-index:50; transition:all 0.2s;"></div>`;
          }
       } else if (hasEvents) {
-         html += `<div class="edit-day-icon hover:bg-slate-200 transition-colors" data-date="${dateStr}" style="padding:4px; border-radius:6px; flex-shrink:0; pointer-events:auto; cursor:pointer; z-index:50;">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+         html += `<div class="edit-day-icon hover:bg-slate-200 transition-colors" data-date="${dateStr}" style="padding:2px 4px; border-radius:4px; flex-shrink:0; pointer-events:auto; cursor:pointer; z-index:50; display:flex; align-items:center;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                     </svg>
                   </div>`;
-      } else {
-         html += `<div></div>`;
       }
-      
-      html += `<span style="font-size:12px; font-weight:700; color:#475569; pointer-events:none;">${arg.dayNumberText}</span></div>`;
+
+      // Zatvaramo desnu grupu i gornji red (warning se ubacuje unutar .day-actions-wrapper)
+      html += `</div></div>`;
       return { html };
     },
 
@@ -472,9 +501,9 @@ export class Main implements OnInit, AfterViewInit {
       if (this.rezimKopiranjaDana) {
         const eventDate = info.dateStr;
         if (this.ciljniDatumiZaKopiranje.has(eventDate)) {
-           this.ciljniDatumiZaKopiranje.delete(eventDate);
+          this.ciljniDatumiZaKopiranje.delete(eventDate);
         } else {
-           this.ciljniDatumiZaKopiranje.add(eventDate);
+          this.ciljniDatumiZaKopiranje.add(eventDate);
         }
         this.applyFilters();
         return;
@@ -488,21 +517,21 @@ export class Main implements OnInit, AfterViewInit {
 
       if (this.rezimKopiranjaDana) {
         if (this.ciljniDatumiZaKopiranje.has(eventDate)) {
-           this.ciljniDatumiZaKopiranje.delete(eventDate);
+          this.ciljniDatumiZaKopiranje.delete(eventDate);
         } else {
-           this.ciljniDatumiZaKopiranje.add(eventDate);
+          this.ciljniDatumiZaKopiranje.add(eventDate);
         }
         this.applyFilters();
-        return; 
+        return;
       }
 
       const cistNaslov = info.event.title.split(' (')[0];
       const sviDogadjaji = this.calendarComponent.getApi().getEvents();
-      
+
       const zauzecaNaDan = sviDogadjaji
         .filter(e => {
           const dStr = e.startStr.split('T')[0] || (e.start?.toISOString().split('T')[0] || '');
-          return dStr === eventDate && e.id !== info.event.id; 
+          return dStr === eventDate && e.id !== info.event.id;
         })
         .map(e => ({
           sala: e.extendedProps['sala'],
@@ -511,8 +540,8 @@ export class Main implements OnInit, AfterViewInit {
         }));
 
       const dialogRef = this.dialog.open(EventModal, {
-        maxWidth: '95vw', width: '1000px', maxHeight: '90vh',
-        data: { 
+        maxWidth: '95vw', width: '1100px', maxHeight: '120vh',
+        data: {
           title: cistNaslov, date: eventDate,
           startTime: info.event.extendedProps['vreme'], endTime: info.event.extendedProps['vremeKraja'],
           room: info.event.extendedProps['sala'], predmetId: info.event.extendedProps['predmetId'],
@@ -603,7 +632,7 @@ export class Main implements OnInit, AfterViewInit {
         }));
 
       const dialogRef = this.dialog.open(EventModal, {
-        maxWidth: '95vw', width: '1000px', maxHeight: '90vh',
+        maxWidth: '95vw', width: '1100px', maxHeight: '120vh',
         data: {
           title: originalEvent.title, date: eventDate, predmetId: predmetId,
           dezurni: droppedPredmet?.saradnici || [], is_ispit: true, zauzeteSaleNaDan: zauzecaNaDan
@@ -680,33 +709,57 @@ export class Main implements OnInit, AfterViewInit {
     eventContent: (arg) => {
       if (arg.event.display === 'background') return null;
 
-      const title = arg.event.title.split(' (')[0];
+      const title = arg.event.title ? arg.event.title.split(' (')[0] : '';
       const isIspit = arg.event.extendedProps['is_ispit'] ?? true;
       const vreme = arg.event.extendedProps['vreme'] || '00:00';
-      const boja = arg.event.borderColor || '#34b9f7';
+      const godina = arg.event.extendedProps['godina'] || 1;
 
+      // Direktno uzimamo definisanu IMI boju za datu godinu
+      const boja = this.getGodinaColor(godina);
       const bg = isIspit ? boja : '#ffffff';
-      const textColor = isIspit ? '#ffffff' : boja;
-      const border = `1.5px solid ${boja}`;
-      const timeBg = isIspit ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)';
+      const textColor = isIspit ? '#ffffff' : '#0f172a';
+      const border = isIspit ? `none` : `1.5px solid ${boja}`;
+      const timeBg = isIspit ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.08)';
+      const timeTextColor = isIspit ? '#ffffff' : boja;
 
       return {
         html: `
-          <div class="clean-cal-card" style="display: flex; align-items: center; width: 100%; height: 22px; background-color: ${bg}; color: ${textColor}; border: ${border}; border-radius: 4px; overflow: hidden; box-sizing: border-box; cursor: pointer;">
-            <div style="flex-shrink: 0; background-color: ${timeBg}; font-size: 10px; font-weight: 800; padding: 0 4px; height: 100%; display: flex; align-items: center; border-right: 1px solid ${isIspit ? 'rgba(255,255,255,0.25)' : 'rgba(0,0,0,0.1)'};">
+          <div class="clean-cal-card ${!isIspit ? 'is-kolokvijum' : ''}" 
+               style="display: flex !important; align-items: center !important; width: 100% !important; height: 32px !important; background-color: ${bg} !important; border: ${border} !important; border-radius: 6px !important; overflow: hidden !important; box-sizing: border-box !important; cursor: pointer !important; box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;">
+            <div style="flex-shrink: 0 !important; background-color: ${timeBg} !important; font-size: 11.5px !important; font-weight: 800 !important; font-family: 'Montserrat', sans-serif !important; padding: 0 7px !important; height: 100% !important; display: flex !important; align-items: center !important; color: ${timeTextColor} !important; border-right: 1px solid rgba(255,255,255,0.2) !important;">
               ${vreme}
             </div>
-            <div class="cal-title-container" style="flex: 1; overflow: hidden; white-space: nowrap; padding: 0 4px; position: relative;">
-              <span class="cal-title-text" style="display: inline-block; font-size: 11px; font-weight: 700; color: ${textColor};">${title}</span>
+            <div class="cal-title-container cal-ticker-wrap" style="flex: 1 !important; overflow: hidden !important; position: relative !important; padding: 0 6px !important;">
+              <span class="cal-title-text cal-ticker-text" style="display: inline-block !important; font-size: 12.5px !important; font-weight: 800 !important; font-family: 'Montserrat', sans-serif !important; color: ${textColor} !important; line-height: 32px !important; white-space: nowrap !important;">
+                ${title}
+              </span>
             </div>
           </div>
         `
       };
     },
 
-    eventMouseEnter: (info) => {
+eventMouseEnter: (info) => {
       if (info.event.display === 'background') return;
 
+      // ----------------------------------------------------
+      // 1. KAJRON ANIMACIJA (SLIDE TEKSTA)
+      // ----------------------------------------------------
+      const wrap = info.el.querySelector('.cal-ticker-wrap') as HTMLElement;
+      const text = info.el.querySelector('.cal-ticker-text') as HTMLElement;
+
+      if (wrap && text) {
+        const overflowDistance = text.scrollWidth - wrap.clientWidth;
+        if (overflowDistance > 0) {
+          const trajanje = Math.max(2, overflowDistance / 35);
+          text.style.transition = `transform ${trajanje}s linear`;
+          text.style.transform = `translateX(-${overflowDistance + 8}px)`;
+        }
+      }
+
+      // ----------------------------------------------------
+      // 2. IMI TOOLTIP POPUP
+      // ----------------------------------------------------
       const postojeci = document.getElementById('brief-info-popup');
       if (postojeci) postojeci.remove();
 
@@ -720,16 +773,28 @@ export class Main implements OnInit, AfterViewInit {
 
       const tooltip = document.createElement('div');
       tooltip.id = 'brief-info-popup';
-      tooltip.style.cssText = `position: fixed; z-index: 9999999; background: #ffffff; color: #1e293b; border-radius: 10px; padding: 10px 14px; box-shadow: 0 12px 24px -4px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(0, 0, 0, 0.05); pointer-events: none; font-family: inherit; min-width: 210px; max-width: 300px;`;
+      tooltip.style.cssText = `
+        position: fixed;
+        z-index: 9999999;
+        background: #ffffff;
+        color: #1e293b;
+        border-radius: 12px;
+        padding: 12px 15px;
+        box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(31, 99, 160, 0.1);
+        pointer-events: none;
+        font-family: 'Montserrat', sans-serif;
+        min-width: 220px;
+        max-width: 320px;
+      `;
 
       tooltip.innerHTML = `
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-          <span style="font-size: 10px; font-weight: 700; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: ${props['is_ispit'] === false ? '#dcfce7' : '#e0f2fe'}; color: ${props['is_ispit'] === false ? '#15803d' : '#0369a1'};">${tip}</span>
-          <span style="font-size: 11px; font-weight: 600; color: #64748b;">${sala}</span>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
+          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2.5px 8px; border-radius: 6px; background: ${props['is_ispit'] === false ? '#fef3c7' : '#e0f2fe'}; color: ${props['is_ispit'] === false ? '#b45309' : '#1F63A0'};">${tip}</span>
+          <span style="font-size: 11px; font-weight: 700; color: #64748b;">${sala}</span>
         </div>
-        <div style="font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 6px; line-height: 1.3;">${naslov}</div>
-        <div style="font-size: 11.5px; font-weight: 600; color: #0284c7; margin-bottom: 6px;">Termin: ${vremePocetka}${vremeKraja}</div>
-        <div style="font-size: 11px; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 6px; margin-top: 2px;">Dežurni: <strong style="color: #334155;">${dezurniImena}</strong></div>
+        <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; line-height: 1.3;">${naslov}</div>
+        <div style="font-size: 12px; font-weight: 700; color: #1F63A0; margin-bottom: 7px;">Termin: ${vremePocetka}${vremeKraja}</div>
+        <div style="font-size: 11px; font-weight: 600; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 7px;">Dežurni: <strong style="color: #334155;">${dezurniImena}</strong></div>
       `;
       document.body.appendChild(tooltip);
 
@@ -739,7 +804,15 @@ export class Main implements OnInit, AfterViewInit {
       tooltip.style.left = `${rect.left + (rect.width / 2) - (tooltip.offsetWidth / 2)}px`;
     },
 
-    eventMouseLeave: () => {
+    eventMouseLeave: (info) => {
+      // 1. Reset teksta kajrona
+      const text = info.el.querySelector('.cal-ticker-text') as HTMLElement;
+      if (text) {
+        text.style.transition = 'transform 0.3s ease-out';
+        text.style.transform = 'translateX(0px)';
+      }
+
+      // 2. Uklanjanje popup-a
       const tooltip = document.getElementById('brief-info-popup');
       if (tooltip) tooltip.remove();
     },
@@ -785,9 +858,9 @@ export class Main implements OnInit, AfterViewInit {
 
   applyFilters(): void {
     let filtered = [...this.allLoadedEvents];
-    
+
     filtered = filtered.filter(e => {
-      if (e.extendedProps?.isNastava) return true; 
+      if (e.extendedProps?.isNastava) return true;
       const isIspit = e.extendedProps?.is_ispit ?? true;
       if (isIspit && !this.prikaziIspite) return false;
       if (!isIspit && !this.prikaziKolokvijume) return false;
@@ -868,7 +941,7 @@ export class Main implements OnInit, AfterViewInit {
     }
 
     this.calendarOptions.events = [...filtered, ...backgroundEvents];
-    this.calendarOptions = { ...this.calendarOptions }; 
+    this.calendarOptions = { ...this.calendarOptions };
     this.cdr.detectChanges();
   }
 
@@ -893,7 +966,7 @@ export class Main implements OnInit, AfterViewInit {
 
   odaberiGodinuFilter(god: string | number) {
     this.izabranaGodinaBanka = god;
-    this.filterLevoGodina = god.toString(); 
+    this.filterLevoGodina = god.toString();
   }
 
   fetchUcionice() {
@@ -958,11 +1031,11 @@ export class Main implements OnInit, AfterViewInit {
     this.fetchPredmeti(); this.fetchIspiti(); this.fetchSviSaradniciIObaveze();
     this.loadAllUcioniceForFilter();
     this.fetchStats(); this.fetchUcionice(); this.loadSavedColors();
-    
+
     // --- GLOBALNI OSLUŠKIVAČ (OČIŠĆEN OD DUPLIKATA ZA KRUŽIĆE) ---
     document.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
-      
+
       const editIcon = target.closest('.edit-day-icon');
       if (editIcon) {
         const dateStr = editIcon.getAttribute('data-date');
@@ -1006,17 +1079,35 @@ export class Main implements OnInit, AfterViewInit {
     forkJoin({ ispiti: this.http.get<any[]>(`${this.API_URL}/ispit`), redovnaNastava: this.http.get<any[]>(`${this.API_URL}/ispit/zauzeti-termini`) }).subscribe({
       next: ({ ispiti, redovnaNastava }) => {
         const ispitEvents = ispiti.map(i => {
-          const boja = this.getGodinaColor(i.predmet?.godina);
+          // Fallback: ako i.predmet nije popunjen sa bekenda, nađi ga u this.predmeti
+          const pronadjeniPredmet = this.predmeti.find(p => p.id === (i.predmet_id || i.predmet?.id));
+          const godina = i.predmet?.godina || pronadjeniPredmet?.godina || i.godina || 1;
+          const boja = this.getGodinaColor(godina);
+
           const isIspit = i.is_ispit ?? true;
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
           const formatiranoVreme = i.vreme ? (i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5)) : '00:00';
           const formatiranoVremeKraja = i.vreme_kraja ? (i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5)) : '';
+          const nazivPredmeta = i.predmet?.naziv || pronadjeniPredmet?.naziv || 'Ispit';
 
           return {
-            id: i.id.toString(), title: `${i.predmet?.naziv || 'Ispit'} (${salaNaziv})`,
-            start: `${i.datum}T${formatiranoVreme}`, end: formatiranoVremeKraja ? `${i.datum}T${formatiranoVremeKraja}` : undefined,
-            display: 'block', backgroundColor: isIspit ? boja : '#ffffff', textColor: isIspit ? '#ffffff' : boja, borderColor: boja,
-            extendedProps: { vreme: formatiranoVreme, vremeKraja: formatiranoVremeKraja, sala: salaNaziv, predmetId: i.predmet_id, godina: i.predmet?.godina, is_ispit: isIspit, dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : [] }
+            id: i.id.toString(),
+            title: `${nazivPredmeta} (${salaNaziv})`,
+            start: `${i.datum}T${formatiranoVreme}`,
+            end: formatiranoVremeKraja ? `${i.datum}T${formatiranoVremeKraja}` : undefined,
+            display: 'block',
+            backgroundColor: isIspit ? boja : '#ffffff',
+            textColor: isIspit ? '#ffffff' : boja,
+            borderColor: boja,
+            extendedProps: {
+              vreme: formatiranoVreme,
+              vremeKraja: formatiranoVremeKraja,
+              sala: salaNaziv,
+              predmetId: i.predmet_id,
+              godina: godina,
+              is_ispit: isIspit,
+              dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : []
+            }
           };
         });
 
@@ -1037,7 +1128,7 @@ export class Main implements OnInit, AfterViewInit {
         const sviDogadjaji = [...ispitEvents, ...nastavaEvents];
         this.allLoadedEvents = sviDogadjaji; this.calendarOptions.events = sviDogadjaji;
         // this.dostupneSale = [...new Set(ispitEvents.map(e => e.extendedProps.sala).filter(s => s && s !== 'Bez sale'))];
-        
+
         this.applyFilters();
         setTimeout(() => this.detectConflicts(), 200);
       },
@@ -1127,23 +1218,29 @@ export class Main implements OnInit, AfterViewInit {
       const frame = cell.querySelector('.fc-daygrid-day-frame');
       cell.style.backgroundColor = '';
 
-      const oldWarning = frame?.querySelector('.conflict-warning');
+      const oldWarning = cell.querySelector('.conflict-warning');
       if (oldWarning) oldWarning.remove();
 
       if (date && conflictsByDate.has(date)) {
         cell.style.backgroundColor = '#fff9c4';
 
-        if (frame) {
-          frame.style.position = 'relative';
+        // Nalazimo kontejner sa desne strane u kom je već olovčica
+        const actionsWrapper = cell.querySelector('.day-actions-wrapper');
+
+        if (actionsWrapper) {
           const warning = document.createElement('div');
           warning.className = 'conflict-warning';
-          warning.innerHTML = `<div style="position: relative; display: inline-block;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 22px; height: 22px; filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.15));">
+          warning.style.cssText = 'display:inline-flex; align-items:center; cursor:pointer; z-index:50; flex-shrink:0;';
+          
+          warning.innerHTML = `
+            <div style="position: relative; display: inline-flex; align-items: center;">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 18px; height: 18px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
                 <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
               </svg>
-              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #334155; border: 1px solid #cbd5e1; padding: 16px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; line-height: 1.5; white-space: normal; width: max-content; max-width: 320px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 9999px rgba(0, 0, 0, 0.1); z-index: 999999; pointer-events: none; text-align: center;">${conflictsByDate.get(date)!.join('<br><br>')}</div>
+              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #334155; border: 1px solid #cbd5e1; padding: 16px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; line-height: 1.5; white-space: normal; width: max-content; max-width: 320px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 9999px rgba(0, 0, 0, 0.1); z-index: 999999; pointer-events: none; text-align: center;">
+                ${conflictsByDate.get(date)!.join('<br><br>')}
+              </div>
             </div>`;
-          warning.style.position = 'absolute'; warning.style.top = '4px'; warning.style.left = '4px'; warning.style.cursor = 'pointer'; warning.style.zIndex = '10';
 
           warning.addEventListener('click', (e) => {
             e.stopPropagation();
@@ -1152,13 +1249,16 @@ export class Main implements OnInit, AfterViewInit {
             document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => { el.style.setProperty('display', 'none', 'important'); });
             if (!isCurrentlyVisible) tooltip.style.setProperty('display', 'block', 'important');
           });
-          let ukupanBrojKonflikata = 0;
-          for (const razlozi of conflictsByDate.values()) ukupanBrojKonflikata += razlozi.length;
-          this.stats.konflikti = ukupanBrojKonflikata;
-          frame.appendChild(warning);
+
+          // Dodaje se tačno iza olovčice
+          actionsWrapper.appendChild(warning);
         }
       }
     });
+
+    let ukupanBrojKonflikata = 0;
+    for (const razlozi of conflictsByDate.values()) ukupanBrojKonflikata += razlozi.length;
+    this.stats.konflikti = ukupanBrojKonflikata;
   }
 
   private timeToMins(timeStr: string): number {
