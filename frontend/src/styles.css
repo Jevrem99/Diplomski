@@ -431,3 +431,189 @@ body.dark-theme :host ::ng-deep .fc .fc-button-primary.fc-button-active {
   color: #ffffff !important;
   border-color: #1F63A0 !important;
 }
+/* ========================================================= */
+/* FULLCALENDAR TOOLBAR & ZAGLAVLJE                          */
+/* ========================================================= */
+
+/* 1. Glavni toolbar heder */
+.fc .fc-header-toolbar {
+  background-color: #ffffff !important;
+  padding: 12px 16px !important;
+  border-radius: 16px !important;
+  margin-bottom: 12px !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+body.dark-theme .fc .fc-header-toolbar {
+  background-color: #0d1533 !important;
+  border-color: #1e293b !important;
+}
+
+/* 2. Naslov meseca (npr. Septembar 2026.) */
+.fc .fc-toolbar-title {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 1.15rem !important;
+  font-weight: 800 !important;
+  color: #1e293b !important;
+  background-color: #f1f5f9 !important;
+  padding: 6px 18px !important;
+  border-radius: 12px !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+body.dark-theme .fc .fc-toolbar-title {
+  color: #38bdf8 !important;
+  background-color: #111c44 !important;
+  border-color: #1F63A0 !important;
+}
+
+/* 3. Dugmad u hederu kalendara (<, >, Danas, Mesec, Nedelja, Dan) */
+.fc .fc-button-primary {
+  background-color: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+}
+
+.fc .fc-button-primary:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+.fc .fc-button-primary.fc-button-active {
+  background-color: #1F63A0 !important;
+  border-color: #1F63A0 !important;
+  color: #ffffff !important;
+}
+
+body.dark-theme .fc .fc-button-primary {
+  background-color: #111c44 !important;
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+body.dark-theme .fc .fc-button-primary:hover {
+  background-color: #1e293b !important;
+}
+
+body.dark-theme .fc .fc-button-primary.fc-button-active {
+  background-color: #1F63A0 !important;
+  border-color: #1F63A0 !important;
+  color: #ffffff !important;
+}
+
+/* 4. Traka sa danima (PON, UTO, SRE, ČET, PET, SUB, NED) */
+.fc .fc-col-header-cell {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  padding: 8px 0 !important;
+}
+
+.fc .fc-col-header-cell-cushion {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  color: #475569 !important;
+  letter-spacing: 0.05em !important;
+  text-decoration: none !important;
+}
+
+body.dark-theme .fc .fc-col-header-cell {
+  background-color: #164f82 !important;
+  border-color: #1F63A0 !important;
+}
+
+body.dark-theme .fc .fc-col-header-cell-cushion {
+  color: #ffffff !important;
+}
+/* =definitivno rešenje za teme i levu banku predmeta = */
+
+/* 1. Svetla tema - osnovne vrednosti */
+.main-wrapper {
+  background-color: #f4f7fb !important;
+}
+
+aside.w-full, .left-panel, aside.left-bank-aside {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.bank-items-scroll, div[draggableContainer] {
+  background-color: #ffffff !important;
+}
+
+/* Kartice predmeta u banci - sprečavanje da linija seče tekst i bela pozadina u svetloj */
+.fc-event.subject-card, .fc-event.bank-card-item, aside .fc-event {
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  padding: 10px 12px 10px 22px !important;
+  position: relative !important;
+  border-radius: 12px !important;
+}
+
+.fc-event.subject-card h3, .fc-event.bank-card-item h3, aside .fc-event h3 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.fc-event.subject-card p, .fc-event.bank-card-item p, aside .fc-event p {
+  color: #64748b !important;
+}
+
+
+/* 2. Tamna tema (Podržava i body.dark-theme i Tailwind .dark klasu) */
+body.dark-theme .main-wrapper,
+.dark .main-wrapper {
+  background-color: #080e1e !important;
+}
+
+body.dark-theme aside.w-full,
+.dark aside.w-full,
+body.dark-theme .left-panel,
+.dark .left-panel {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+}
+
+body.dark-theme .bank-items-scroll,
+.dark .bank-items-scroll,
+body.dark-theme div[draggableContainer],
+.dark div[draggableContainer] {
+  background-color: #0b1329 !important;
+}
+
+/* Kartice predmeta u banci za tamnu temu */
+body.dark-theme .fc-event.subject-card, 
+body.dark-theme .fc-event.bank-card-item, 
+body.dark-theme aside .fc-event,
+.dark .fc-event.subject-card, 
+.dark .fc-event.bank-card-item, 
+.dark aside .fc-event {
+  background-color: #0d1a44 !important;
+  border-color: #1e293b !important;
+}
+
+body.dark-theme .fc-event h3, 
+body.dark-theme .fc-event.bank-card-item h3,
+.dark .fc-event h3, 
+.dark .fc-event.bank-card-item h3 {
+  color: #f8fafc !important;
+}
+
+body.dark-theme .fc-event p, 
+body.dark-theme .fc-event.bank-card-item p,
+.dark .fc-event p, 
+.dark .fc-event.bank-card-item p {
+  color: #94a3b8 !important;
+}
+
+/* Heder kalendara i toolbar u tamnoj temi da prate ostatak */
+body.dark-theme header,
+.dark header,
+body.dark-theme .fc-header-toolbar,
+.dark .fc-header-toolbar {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+}
