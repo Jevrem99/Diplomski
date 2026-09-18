@@ -403,7 +403,7 @@ dayCellContent: (arg) => {
       setTimeout(() => this.detectConflicts(), 300);
     },
 
-    eventContent: (arg) => {
+eventContent: (arg) => {
       if (arg.event.display === 'background') return null;
 
       const title = arg.event.title ? arg.event.title.split(' (')[0] : '';
@@ -414,19 +414,19 @@ dayCellContent: (arg) => {
 
       const bg = isIspit ? boja : '#ffffff';
       const textColor = isIspit ? '#ffffff' : '#0f172a';
-      const border = isIspit ? `none` : `1.5px solid ${boja}`;
+      const border = isIspit ? 'none' : `1.5px solid ${boja}`;
       const timeBg = isIspit ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.08)';
       const timeTextColor = isIspit ? '#ffffff' : boja;
 
       return {
         html: `
           <div class="clean-cal-card ${!isIspit ? 'is-kolokvijum' : ''}" 
-               style="display: flex !important; align-items: center !important; width: 100% !important; height: 32px !important; background-color: ${bg} !important; border: ${border} !important; border-radius: 6px !important; overflow: hidden !important; box-sizing: border-box !important; cursor: pointer !important; box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;">
-            <div style="flex-shrink: 0 !important; background-color: ${timeBg} !important; font-size: 11.5px !important; font-weight: 800 !important; font-family: 'Montserrat', sans-serif !important; padding: 0 7px !important; height: 100% !important; display: flex !important; align-items: center !important; color: ${timeTextColor} !important; border-right: 1px solid rgba(255,255,255,0.2) !important;">
+               style="background-color: ${bg} !important; border: ${border} !important;">
+            <div class="cal-card-time" style="background-color: ${timeBg} !important; color: ${timeTextColor} !important;">
               ${vreme}
             </div>
-            <div class="cal-title-container cal-ticker-wrap" style="flex: 1 !important; overflow: hidden !important; position: relative !important; padding: 0 6px !important;">
-              <span class="cal-title-text cal-ticker-text" style="display: inline-block !important; font-size: 12.5px !important; font-weight: 800 !important; font-family: 'Montserrat', sans-serif !important; color: ${textColor} !important; line-height: 32px !important; white-space: nowrap !important;">
+            <div class="cal-title-container cal-ticker-wrap">
+              <span class="cal-title-text cal-ticker-text" style="color: ${textColor} !important;">
                 ${title}
               </span>
             </div>
@@ -437,17 +437,6 @@ dayCellContent: (arg) => {
 
     eventMouseEnter: (info) => {
       if (info.event.display === 'background') return;
-
-      const wrap = info.el.querySelector('.cal-ticker-wrap') as HTMLElement;
-      const text = info.el.querySelector('.cal-ticker-text') as HTMLElement;
-      if (wrap && text) {
-        const overflowDistance = text.scrollWidth - wrap.clientWidth;
-        if (overflowDistance > 0) {
-          const trajanje = Math.max(2, overflowDistance / 35);
-          text.style.transition = `transform ${trajanje}s linear`;
-          text.style.transform = `translateX(-${overflowDistance + 8}px)`;
-        }
-      }
 
       const postojeci = document.getElementById('brief-info-popup');
       if (postojeci) postojeci.remove();
@@ -494,11 +483,6 @@ dayCellContent: (arg) => {
     },
 
     eventMouseLeave: (info) => {
-      const text = info.el.querySelector('.cal-ticker-text') as HTMLElement;
-      if (text) {
-        text.style.transition = 'transform 0.3s ease-out';
-        text.style.transform = 'translateX(0px)';
-      }
       const tooltip = document.getElementById('brief-info-popup');
       if (tooltip) tooltip.remove();
     },

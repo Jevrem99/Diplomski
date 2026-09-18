@@ -791,3 +791,96 @@ aside .fc-event ::ng-deep .fc-event-main {
 :host ::ng-deep .day-select-circle:hover {
   transform: scale(1.1) !important;
 }
+/* ========================================================= */
+/* 6. KARTICE TERMINA I ČISTI KAJRON NA HOVER               */
+/* ========================================================= */
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin-bottom: 3px !important;
+}
+
+:host ::ng-deep .fc-event,
+:host ::ng-deep .fc-event-main {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+:host ::ng-deep .clean-cal-card {
+  height: 32px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+:host ::ng-deep .cal-card-time {
+  flex-shrink: 0 !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  padding: 0 7px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  z-index: 5 !important;
+}
+
+:host ::ng-deep .cal-ticker-wrap {
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  position: relative !important;
+  padding: 0 6px !important;
+  display: block !important;
+}
+
+:host ::ng-deep .cal-ticker-text {
+  display: inline-block !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  line-height: 32px !important;
+  white-space: nowrap !important;
+  will-change: transform !important;
+  transform: translateX(0);
+}
+
+/* Kajron animacija: aktivira se čim kursor pređe preko kartice */
+:host ::ng-deep .fc-event:hover .cal-ticker-text,
+:host ::ng-deep .clean-cal-card:hover .cal-ticker-text {
+  animation: kajronScroll 3.8s linear infinite alternate !important;
+}
+
+@keyframes kajronScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  20% {
+    transform: translateX(0%); /* Zadržava početak radi lakšeg čitanja */
+  }
+  100% {
+    transform: translateX(-55%); /* Pomiče dugačak naziv ulijevo */
+  }
+}
+
+:host ::ng-deep .fc-daygrid-day-top,
+:host ::ng-deep .fc-daygrid-day-top a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+:host ::ng-deep .day-select-circle {
+  transition: all 0.15s ease !important;
+}
+
+:host ::ng-deep .day-select-circle:hover {
+  transform: scale(1.1) !important;
+}
