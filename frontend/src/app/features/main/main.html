@@ -1,27 +1,27 @@
-<div class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full bg-[#f4f7fb] dark:bg-[#080e1e] p-3 sm:p-4 md:p-6 gap-4 md:gap-6 font-montserrat">
+<div class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full p-3 sm:p-4 md:p-6 gap-4 md:gap-6 font-montserrat">
 
   <!-- ========================================================= -->
-  <!-- LEVI PANEL: BANKA PREDMETA I FILTERI                      -->
+  <!-- LIJEVI PANEL: BANKA PREDMETA I FILTERI                     -->
   <!-- ========================================================= -->
   <aside
-    class="w-full lg:w-[380px] flex flex-col bg-white dark:bg-[#0b1329] rounded-2xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
+    class="left-bank-aside w-full lg:w-[380px] flex flex-col rounded-2xl shadow-sm overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
     
-    <!-- Heder banke predmeta -->
-    <div class="p-4 bg-[#1F63A0] dark:bg-[#0d1a44] border-b border-[#164f82] dark:border-slate-800 text-white">
+    <!-- Zaglavlje banke predmeta: Plava podloga i bijeli tekst -->
+    <div class="bank-header-box text-white">
       <h2 class="text-base font-extrabold text-white m-0">Banka predmeta</h2>
-      <p class="text-xs text-white/80 dark:text-slate-400 mt-1">Prevuci predmet na željeni datum</p>
+      <p class="text-xs text-white/80 mt-1">Prevuci predmet na željeni datum</p>
 
-      <!-- Pretraga i filter dugme -->
+      <!-- Pretraga i gumb za filtre -->
       <div class="mt-3 flex gap-2">
         <div class="relative flex-1 flex items-center">
           <input type="text" [(ngModel)]="searchPredmet" placeholder="Pretraži predmete..."
-            class="w-full pl-9 pr-3 h-[42px] bg-white dark:bg-[#080e1e] border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1F63A0]/50 transition-all">
+            class="bank-search-input w-full pl-9 pr-3 h-[42px] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F63A0]/50 transition-all">
           <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
         <button (click)="prikaziLevoFiltere = !prikaziLevoFiltere"
-          class="px-3 h-[42px] bg-white dark:bg-[#080e1e] border border-gray-200 dark:border-slate-700 rounded-xl text-gray-600 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors shadow-xs outline-none cursor-pointer flex items-center justify-center"
+          class="bank-filter-btn px-3 h-[42px] rounded-xl transition-colors shadow-xs outline-none cursor-pointer flex items-center justify-center"
           title="Dodatni filteri">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
@@ -29,10 +29,10 @@
         </button>
       </div>
 
-      <!-- FILTERI LEVO -->
+      <!-- FILTERI LIJEVO -->
       <div class="overflow-hidden transition-all duration-300 ease-in-out"
         [ngClass]="prikaziLevoFiltere ? 'max-h-60 opacity-100 mt-3' : 'max-h-0 opacity-0 m-0'">
-        <div class="flex flex-col gap-2.5 bg-black/10 dark:bg-[#080e1e] p-3 rounded-xl border border-white/20 dark:border-slate-800">
+        <div class="bank-filters-panel flex flex-col gap-2.5 p-3 rounded-xl">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full custom-filter-select">
             <mat-select [(ngModel)]="filterLevoProfesor" placeholder="Izaberi profesora">
               <mat-option value="svi">Svi profesori</mat-option>
@@ -46,23 +46,21 @@
 
           <div class="flex flex-col gap-1.5 mt-1">
             <div class="flex items-center justify-between px-0.5">
-              <span class="text-[10px] font-extrabold text-white/80 dark:text-slate-400 uppercase tracking-wider">Godine</span>
+              <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/90">Godine</span>
               @if (izabraneGodine.length > 0) {
                 <button type="button" (click)="toggleSveGodine()"
-                  class="text-[11px] font-bold text-amber-300 dark:text-sky-400 hover:underline bg-transparent border-none cursor-pointer p-0">
+                  class="text-[11px] font-bold text-amber-300 hover:underline bg-transparent border-none cursor-pointer p-0">
                   Prikaži sve
                 </button>
               }
             </div>
-            <div class="grid grid-cols-4 gap-1 bg-white/10 dark:bg-[#0b1329] p-1 rounded-xl border border-white/20 dark:border-slate-700">
+            <div class="godine-grid grid grid-cols-4 gap-1 p-1 rounded-xl">
               @for (god of godineOpcije; track god.id) {
                 <button type="button" (click)="toggleGodina(god.id)"
                   [class.bg-[#1F63A0]]="izabraneGodine.includes(god.id)"
                   [class.text-white]="izabraneGodine.includes(god.id)"
                   [class.font-extrabold]="izabraneGodine.includes(god.id)"
-                  [class.text-white/80]="!izabraneGodine.includes(god.id)"
-                  [class.dark:text-slate-300]="!izabraneGodine.includes(god.id)"
-                  class="py-1.5 text-xs font-semibold rounded-lg text-center cursor-pointer border-none bg-transparent transition-colors">
+                  class="year-tag-btn py-1.5 text-xs font-semibold rounded-lg text-center cursor-pointer border-none bg-transparent transition-colors">
                   {{ god.id }}. God
                 </button>
               }
@@ -72,25 +70,24 @@
       </div>
     </div>
 
+    <!-- LISTA PREDMETA ZA POVLAČENJE -->
     <!-- LISTA PREDMETA ZA PREVLAČENJE -->
-    <div class="flex-1 overflow-y-auto p-3 space-y-3 bg-white dark:bg-[#0b1329]" #draggableContainer>
+    <div class="bank-items-scroll flex-1 overflow-y-auto p-4 flex flex-col gap-3" #draggableContainer>
       @for (predmet of filtriraniPredmeti; track predmet.id) {
         <div
-          class="fc-event subject-drag-card group cursor-grab active:cursor-grabbing rounded-xl shadow-xs hover:shadow-md transition-all select-none"
+          class="fc-event bank-card-item group"
           [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
+          <!-- Obojena vertikalna traka -->
+          <div class="bank-card-color-bar" [style.background-color]="getGodinaColor(predmet.godina)"></div>
           
-          <!-- Leva obojena linija (čvrsto vezana za levu stranu) -->
-          <div class="color-indicator-stripe" [style.background-color]="getGodinaColor(predmet.godina)"></div>
-          
-          <!-- Unutrašnji sadržaj sa fiksiranim levim padding-om tako da linija ne seče slova -->
-          <div class="subject-text-container">
-            <h3 class="subject-item-title">
+          <div class="bank-card-content">
+            <h3 class="bank-card-title">
               {{ predmet.naziv }}
             </h3>
-            <p class="subject-item-prof">
+            <p class="bank-card-prof">
               {{ predmet.profesorImePrezime }}
             </p>
-            <div class="mt-1">
+            <div class="mt-1.5">
               <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold"
                 [style.color]="getGodinaColor(predmet.godina)"
                 [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
@@ -105,7 +102,7 @@
 
       @if (predmeti.length > prikazaniBrojPredmeta) {
         <button (click)="vidiVisePredmeta()"
-          class="w-full py-2.5 mt-2 bg-blue-50 dark:bg-[#1F63A0]/20 text-[#1F63A0] dark:text-sky-300 text-xs font-bold rounded-xl hover:bg-blue-100 dark:hover:bg-[#1F63A0]/30 transition-colors shadow-xs cursor-pointer border-none">
+          class="load-more-btn w-full py-2.5 mt-2 text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer border-none">
           Vidi više predmeta
         </button>
       }
@@ -113,18 +110,18 @@
   </aside>
 
   <!-- ========================================================= -->
-  <!-- GLAVNI KALENDAR DEO                                       -->
+  <!-- GLAVNI KALENDAR DIO                                       -->
   <!-- ========================================================= -->
   <main class="flex-1 flex flex-col min-w-0 w-full">
     
-    <!-- HEDER KONTROLNA TRAKA -->
-    <header class="mb-4 p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between bg-white dark:bg-[#0b1329] border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xs gap-3">
+    <!-- ZAGLAVLJE S KONTROLAMA -->
+    <header class="top-ctrl-header mb-4 p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between shadow-xs gap-3">
       <div class="flex items-center gap-3 shrink-0">
-        <h1 class="text-lg sm:text-xl font-extrabold text-gray-800 dark:text-white tracking-tight whitespace-nowrap m-0">
+        <h1 class="top-title-text text-lg sm:text-xl font-extrabold tracking-tight whitespace-nowrap m-0">
           Raspored Kolokvijuma
         </h1>
         @if (hasUnsavedChanges) {
-          <span class="px-2.5 py-1 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-600 dark:text-amber-400 text-[11px] font-bold rounded-full flex items-center gap-1.5 whitespace-nowrap">
+          <span class="unsaved-badge px-2.5 py-1 text-[11px] font-bold rounded-full flex items-center gap-1.5 whitespace-nowrap">
             <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
             Nesačuvane izmene
           </span>
@@ -134,11 +131,9 @@
       <div class="flex flex-row items-center gap-2 shrink-0 justify-end flex-wrap">
         <!-- Uredi dane -->
         <button (click)="toggleRezimUredjivanja()"
-          [class.bg-[#1F63A0]]="rezimUredjivanjaDana"
-          [class.text-white]="rezimUredjivanjaDana"
-          [class.border-[#164f82]]="rezimUredjivanjaDana"
-          class="h-[40px] px-3.5 bg-gray-50 dark:bg-[#0d1a44] border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-xs outline-none cursor-pointer transition-colors">
-          <svg class="w-4 h-4 shrink-0" [class.text-white]="rezimUredjivanjaDana" [class.text-[#1F63A0]]="!rezimUredjivanjaDana" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          [class.active-mode-btn]="rezimUredjivanjaDana"
+          class="header-btn">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
           </svg>
           <span class="whitespace-nowrap">{{ rezimUredjivanjaDana ? 'Završi uređivanje' : 'Uredi dane' }}</span>
@@ -152,15 +147,8 @@
         @if (rezimUredjivanjaDana && selektovaniDani.size > 0) {
           <!-- Kopiraj dane -->
           <button (click)="toggleKopiranje()"
-            [class.bg-slate-200]="kopiranjeAktivno"
-            [class.dark:bg-slate-800]="kopiranjeAktivno"
-            [class.text-slate-600]="kopiranjeAktivno"
-            [class.dark:text-slate-300]="kopiranjeAktivno"
-            [class.bg-sky-50]="!kopiranjeAktivno"
-            [class.dark:bg-sky-950/40]="!kopiranjeAktivno"
-            [class.text-[#1F63A0]]="!kopiranjeAktivno"
-            [class.dark:text-sky-300]="!kopiranjeAktivno"
-            class="h-[40px] px-3.5 border border-sky-200 dark:border-sky-800 font-extrabold text-xs sm:text-sm rounded-xl transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+            [class.active-mode-btn]="kopiranjeAktivno"
+            class="header-btn">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
             </svg>
@@ -169,7 +157,7 @@
 
           <!-- Obriši -->
           <button (click)="otvoriObrisiModal()"
-            class="h-[40px] px-3.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800 font-extrabold text-xs sm:text-sm rounded-xl hover:bg-rose-100 dark:hover:bg-rose-900/50 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+            class="header-btn btn-danger-action">
             <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
             </svg>
@@ -179,37 +167,36 @@
 
         <!-- Statistika -->
         <div class="relative">
-          <button (click)="isDashboardOpen = !isDashboardOpen"
-            class="h-[40px] px-3.5 bg-gray-50 dark:bg-[#0d1a44] border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition-all">
-            <svg class="w-4 h-4 text-[#1F63A0] dark:text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button (click)="isDashboardOpen = !isDashboardOpen" class="header-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
             </svg>
             <span>Statistika</span>
-            <svg class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200" [class.rotate-180]="isDashboardOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 transition-transform duration-200" [class.rotate-180]="isDashboardOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
 
           @if (isDashboardOpen) {
-            <div class="absolute top-full mt-2 right-0 w-80 bg-white dark:bg-[#0b1329] border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl z-[100] p-3.5 grid grid-cols-2 gap-2.5 animate-fadeIn">
-              <div class="p-2.5 rounded-xl border border-blue-100 dark:border-blue-900 bg-blue-50/50 dark:bg-blue-950/40 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-[#1F63A0] dark:text-sky-400 uppercase tracking-wide">Zakazano termina</span>
-                <span class="text-xl font-black text-gray-800 dark:text-white mt-0.5">{{ stats.totalIspiti }}</span>
+            <div class="statistika-dropdown-card absolute top-full mt-2 right-0 w-80 rounded-2xl shadow-xl z-[100] p-3.5 grid grid-cols-2 gap-2.5 animate-fadeIn">
+              <div class="stat-box stat-blue p-2.5 rounded-xl border flex flex-col justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wide">Zakazano termina</span>
+                <span class="text-xl font-black mt-0.5">{{ stats.totalIspiti }}</span>
               </div>
-              <div class="p-2.5 rounded-xl border border-green-100 dark:border-green-900 bg-green-50/50 dark:bg-green-950/40 flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Aktivni saradnici</span>
-                <span class="text-xl font-black text-gray-800 dark:text-white mt-0.5">{{ stats.totalSaradnici }}</span>
+              <div class="stat-box stat-green p-2.5 rounded-xl border flex flex-col justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wide">Aktivni saradnici</span>
+                <span class="text-xl font-black mt-0.5">{{ stats.totalSaradnici }}</span>
               </div>
-              <div class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#0d1533] flex flex-col justify-between">
-                <span class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Najviše dežurstava</span>
-                <span class="text-xs font-black text-gray-800 dark:text-white mt-0.5 leading-tight">{{ stats.topDezurni }}</span>
+              <div class="stat-box stat-slate p-2.5 rounded-xl border flex flex-col justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wide">Najviše dežurstava</span>
+                <span class="text-xs font-black mt-0.5 leading-tight">{{ stats.topDezurni }}</span>
               </div>
-              <div (click)="otvoriListuKonflikata()" class="p-2.5 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/40 flex flex-col justify-between cursor-pointer hover:bg-amber-100 dark:hover:bg-amber-950/60 transition-colors shadow-xs">
+              <div (click)="otvoriListuKonflikata()" class="stat-box stat-amber p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-colors shadow-xs">
                 <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Konflikti</span>
-                  <span class="text-[10px] text-amber-600 dark:text-amber-400 font-bold">➔</span>
+                  <span class="text-[10px] font-bold uppercase tracking-wide">Konflikti</span>
+                  <span class="text-[10px] font-bold">➔</span>
                 </div>
-                <span class="text-xl font-black mt-0.5" [ngClass]="stats.konflikti > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400'">
+                <span class="text-xl font-black mt-0.5" [ngClass]="stats.konflikti > 0 ? 'text-amber-500' : 'text-slate-400'">
                   {{ stats.konflikti }}
                 </span>
               </div>
@@ -219,34 +206,33 @@
 
         <!-- Filteri -->
         <div class="relative">
-          <button (click)="prikaziDesnoFiltere = !prikaziDesnoFiltere"
-            class="h-[40px] px-4 bg-gray-50 dark:bg-[#0d1a44] border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-1.5 shadow-xs outline-none cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-800 transition-all">
-            <svg class="w-4 h-4 text-gray-500 dark:text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button (click)="prikaziDesnoFiltere = !prikaziDesnoFiltere" class="header-btn">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
             </svg>
             <span>Filteri</span>
           </button>
 
           @if (prikaziDesnoFiltere) {
-            <div class="absolute top-full mt-2 right-0 w-72 bg-white dark:bg-[#0b1329] border border-gray-200 dark:border-slate-800 rounded-2xl shadow-xl z-[100] p-4 flex flex-col gap-3 animate-fadeIn">
-              <div class="flex justify-between items-center border-b border-gray-100 dark:border-slate-800 pb-2">
-                <span class="font-extrabold text-gray-800 dark:text-white text-xs sm:text-sm">Filteri kalendara</span>
-                <button (click)="prikaziDesnoFiltere = false" class="text-gray-400 hover:text-red-500 font-bold text-sm outline-none cursor-pointer border-none bg-transparent">✕</button>
+            <div class="filteri-dropdown-card absolute top-full mt-2 right-0 w-72 rounded-2xl shadow-xl z-[100] p-4 flex flex-col gap-3 animate-fadeIn">
+              <div class="filter-header flex justify-between items-center border-b pb-2">
+                <span class="filter-title font-extrabold text-xs sm:text-sm">Filteri kalendara</span>
+                <button (click)="prikaziDesnoFiltere = false" class="filter-close-btn font-bold text-sm outline-none cursor-pointer border-none bg-transparent">✕</button>
               </div>
 
-              <div class="flex flex-col gap-2 border-b border-gray-100 dark:border-slate-800 pb-3">
-                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-slate-300 cursor-pointer">
+              <div class="filter-checks flex flex-col gap-2 border-b pb-3">
+                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
                   <input type="checkbox" [(ngModel)]="prikaziIspite" (change)="applyFilters()" class="w-4 h-4 text-[#1F63A0] rounded">
                   Prikaži ispite
                 </label>
-                <label class="flex items-center gap-2 text-xs font-bold text-gray-700 dark:text-slate-300 cursor-pointer">
+                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
                   <input type="checkbox" [(ngModel)]="prikaziKolokvijume" (change)="applyFilters()" class="w-4 h-4 text-[#27AE60] rounded">
                   Prikaži kolokvijume
                 </label>
               </div>
 
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Sala</span>
+                <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Sala</span>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
                   <mat-select [(ngModel)]="filterSala" (selectionChange)="applyFilters()">
                     <mat-option value="sve">Sve sale</mat-option>
@@ -258,7 +244,7 @@
               </div>
 
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Godina</span>
+                <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Godina</span>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
                   <mat-select [(ngModel)]="filterGodina" (selectionChange)="applyFilters()">
                     <mat-option value="sve">Sve godine</mat-option>
@@ -271,7 +257,7 @@
               </div>
 
               <div class="flex flex-col gap-1">
-                <span class="text-[10px] font-extrabold text-gray-400 uppercase tracking-wider">Saradnici</span>
+                <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Saradnici</span>
                 <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
                   <mat-select multiple placeholder="Svi saradnici" [(ngModel)]="filterSaradnici" (selectionChange)="applyFilters()">
                     @for (saradnik of sviSaradnici; track saradnik.id) {
@@ -285,9 +271,8 @@
         </div>
 
         <!-- Izvezi -->
-        <button (click)="otvoriIzvozModal()"
-          class="h-[40px] px-4 text-xs sm:text-sm font-bold text-gray-700 dark:text-slate-200 bg-gray-100 dark:bg-[#0d1a44] border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
-          <svg class="w-4 h-4 text-gray-600 dark:text-slate-300 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button (click)="otvoriIzvozModal()" class="header-btn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
           </svg>
           <span class="hidden sm:inline">Izvezi</span>
@@ -296,23 +281,21 @@
         <!-- Sačuvaj -->
         <button (click)="saveDraftSchedule()" [disabled]="!hasUnsavedChanges"
           [class.opacity-50]="!hasUnsavedChanges"
-          class="h-[40px] px-5 text-xs sm:text-sm font-bold text-white bg-[#F39C12] hover:bg-[#e67e22] rounded-xl transition-all shadow-md flex items-center border border-[#d68910] cursor-pointer">
+          class="header-btn btn-save-draft">
           Sačuvaj
         </button>
 
         <!-- Objavi -->
-        <button (click)="objaviRaspored()"
-          class="h-[40px] px-4 font-bold text-white bg-[#27AE60] hover:bg-[#219653] rounded-xl transition-all shadow-xs flex items-center gap-1.5 cursor-pointer border-none text-xs sm:text-sm">
+        <button (click)="objaviRaspored()" class="header-btn btn-publish">
           <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
           </svg>
           Objavi
         </button>
 
-        <!-- IMI Sync (Monohromatsko ujednačeno dugme) -->
-        <button (click)="sinhronizujIMI()"
-          class="h-[40px] px-4 text-xs sm:text-sm font-bold text-gray-700 dark:text-slate-200 bg-gray-100 dark:bg-[#0d1a44] border border-gray-200 dark:border-slate-700 rounded-xl hover:bg-gray-200 dark:hover:bg-slate-800 transition-all shadow-xs flex items-center gap-1.5 cursor-pointer">
-          <svg class="w-4 h-4 text-gray-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <!-- IMI Sync -->
+        <button (click)="sinhronizujIMI()" class="header-btn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
           </svg>
           <span class="hidden sm:inline">IMI Sync</span>
@@ -328,11 +311,11 @@
 </div>
 
 <!-- ========================================================= -->
-<!-- MODALI (BRISANJE, IZVOZ, KONFLIKTI, PREUREĐIVANJE)        -->
+<!-- MODALI (BRISANJE, IZVOZ, KONFLIKTI)                       -->
 <!-- ========================================================= -->
 @if (prikaziObrisiModal) {
   <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat animate-in fade-in duration-150">
-    <div class="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+    <div class="dialog-card-box rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
       <div class="bg-rose-600 px-6 py-4 flex items-center justify-between text-white border-b border-rose-700">
         <div class="flex items-center gap-2.5">
           <svg class="w-5 h-5 text-rose-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -344,16 +327,16 @@
       </div>
 
       <div class="p-6 flex flex-col gap-4">
-        <p class="text-sm font-semibold text-slate-700 dark:text-slate-200 leading-relaxed m-0">
-          Da li ste sigurni da želite da obrišete sve zakazane termine u <strong class="text-rose-600 dark:text-rose-400 font-extrabold">{{ selektovaniDani.size }} selektovanih dana</strong>?
+        <p class="dialog-text text-sm font-semibold leading-relaxed m-0">
+          Da li ste sigurni da želite da obrišete sve zakazane termine u <strong class="text-rose-600 font-extrabold">{{ selektovaniDani.size }} selektovanih dana</strong>?
         </p>
-        <span class="text-xs font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-[#0d1533] p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+        <span class="dialog-hint text-xs font-medium p-3 rounded-xl border">
           Ova akcija će označiti sve ispite i kolokvijume sa izabranih datuma za trajno brisanje.
         </span>
 
         <div class="flex gap-2.5 pt-2">
           <button (click)="prikaziObrisiModal = false"
-            class="flex-1 h-11 bg-slate-100 dark:bg-[#0d1533] text-slate-700 dark:text-slate-300 font-extrabold rounded-xl text-xs cursor-pointer border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+            class="dialog-cancel-btn flex-1 h-11 font-extrabold rounded-xl text-xs cursor-pointer border transition-colors">
             Odustani
           </button>
           <button (click)="potvrdiBrisanjeDana()"
@@ -368,7 +351,7 @@
 
 @if (prikaziIzvozModal) {
   <div class="fixed inset-0 bg-slate-900/60 z-[99999] flex items-center justify-center backdrop-blur-xs p-4 sm:p-6 font-montserrat">
-    <div class="bg-white dark:bg-[#111c44] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+    <div class="dialog-card-box rounded-3xl shadow-2xl w-full max-w-xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       <div class="bg-[#1F63A0] px-7 py-5 flex items-center justify-between border-b border-[#164f82]">
         <div class="flex flex-col">
           <h2 class="text-xl font-extrabold text-white m-0 tracking-tight">Izvezi raspored</h2>
@@ -381,9 +364,9 @@
 
       <div class="p-6 sm:p-7 flex flex-col gap-4">
         <div class="flex flex-col gap-1.5">
-          <label class="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tip termina</label>
+          <label class="dialog-label text-[11px] font-extrabold uppercase tracking-wider">Tip termina</label>
           <select [(ngModel)]="izvozPodaci.tip"
-            class="w-full h-12 px-3.5 bg-slate-50 dark:bg-[#0d1533] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-[#1F63A0] focus:ring-2 focus:ring-[#1F63A0]/20 cursor-pointer">
+            class="dialog-input w-full h-12 px-3.5 rounded-xl text-sm font-bold outline-none focus:border-[#1F63A0] cursor-pointer">
             <option value="ispiti">Ispiti</option>
             <option value="kolokvijumi">Kolokvijumi</option>
           </select>
@@ -391,33 +374,33 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Od datuma</label>
+            <label class="dialog-label text-[11px] font-extrabold uppercase tracking-wider">Od datuma</label>
             <input type="date" [(ngModel)]="izvozPodaci.datumOd"
-              class="w-full h-12 px-3.5 bg-slate-50 dark:bg-[#0d1533] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-[#1F63A0]">
+              class="dialog-input w-full h-12 px-3.5 rounded-xl text-sm font-bold outline-none focus:border-[#1F63A0]">
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Do datuma</label>
+            <label class="dialog-label text-[11px] font-extrabold uppercase tracking-wider">Do datuma</label>
             <input type="date" [(ngModel)]="izvozPodaci.datumDo"
-              class="w-full h-12 px-3.5 bg-slate-50 dark:bg-[#0d1533] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-[#1F63A0]">
+              class="dialog-input w-full h-12 px-3.5 rounded-xl text-sm font-bold outline-none focus:border-[#1F63A0]">
           </div>
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-[11px] font-extrabold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Naziv roka (npr. Јунски рок)</label>
+          <label class="dialog-label text-[11px] font-extrabold uppercase tracking-wider">Naziv roka (npr. Јунски рок)</label>
           <input type="text" [(ngModel)]="izvozPodaci.nazivRoka" placeholder="Unesite naziv roka"
-            class="w-full h-12 px-3.5 bg-slate-50 dark:bg-[#0d1533] border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-[#1F63A0]">
+            class="dialog-input w-full h-12 px-3.5 rounded-xl text-sm font-bold outline-none focus:border-[#1F63A0]">
         </div>
 
-        <div class="flex gap-3 pt-3 mt-1 border-t border-slate-100 dark:border-slate-800">
+        <div class="flex gap-3 pt-3 mt-1 border-t border-slate-200 dark:border-slate-800">
           <button (click)="prikaziIzvozModal = false"
-            class="flex-1 h-12 bg-slate-100 dark:bg-[#0d1533] text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-extrabold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors text-sm cursor-pointer">
+            class="dialog-cancel-btn flex-1 h-12 font-extrabold rounded-xl transition-colors text-sm cursor-pointer">
             Odustani
           </button>
           <button (click)="generisiExcel()"
             class="flex-1 h-12 bg-[#27AE60] hover:bg-[#219653] text-white font-extrabold rounded-xl border border-[#219653] transition-all text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-lg cursor-pointer">
-<svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-</svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            </svg>
             Generiši Excel
           </button>
         </div>
@@ -428,7 +411,7 @@
 
 @if (prikaziKonfliktiModal) {
   <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat">
-    <div class="bg-white dark:bg-[#111c44] rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div class="dialog-card-box rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh]">
       <div class="bg-[#1F63A0] px-6 py-4 flex items-center justify-between text-white border-b border-[#164f82]">
         <div class="flex items-center gap-2.5">
           <svg class="w-5 h-5 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
@@ -441,8 +424,8 @@
 
       <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
         @for (item of listaSvihKonflikata; track item.datum) {
-          <div class="bg-slate-50 dark:bg-[#0d1533] border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-2">
-            <span class="text-xs font-black text-[#1F63A0] dark:text-sky-400 uppercase tracking-wider border-b border-slate-200 dark:border-slate-800 pb-1.5">
+          <div class="dialog-hint rounded-xl p-4 flex flex-col gap-2 border">
+            <span class="text-xs font-black text-[#1F63A0] dark:text-sky-400 uppercase tracking-wider border-b pb-1.5">
               Datum: {{ item.datum }}
             </span>
             <ul class="flex flex-col gap-1.5 mt-1 list-disc pl-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -456,7 +439,7 @@
         }
       </div>
 
-      <div class="bg-slate-50 dark:bg-[#0d1533] border-t border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-end">
+      <div class="dialog-footer border-t px-6 py-3 flex justify-end">
         <button (click)="prikaziKonfliktiModal = false"
           class="h-10 px-6 font-extrabold text-sm bg-[#1F63A0] text-white rounded-xl hover:bg-[#164f82] transition-colors cursor-pointer border-none">
           Zatvori

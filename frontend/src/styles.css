@@ -8,15 +8,14 @@ html, body, :host {
 @tailwind components;
 @tailwind utilities;
 
-/* Zaobilazimo i FullCalendar ikonice (.fc-icon) da ne bi bile pregažene */
+/* Zaobilazimo FullCalendar ikonice da ne bi bile pregažene fontom */
 *:not(.material-icons):not(.material-symbols-outlined):not(mat-icon):not(.fa):not(.fas):not(.fc-icon) {
   font-family: 'Montserrat', sans-serif !important;
 }
+
 /* ========================================================= */
 /* FIX ZA CENTRIRANJE I RASPAGINACIJU MAT-DIALOG MODALA       */
 /* ========================================================= */
-
-/* 1. Centriranje overlay kontejnera na nivou celog ekrana */
 .cdk-global-overlay-wrapper,
 .cdk-overlay-container {
   display: flex !important;
@@ -24,7 +23,6 @@ html, body, :host {
   justify-content: center !important;
 }
 
-/* 2. Prisilno centriranje same modalne površine */
 .cdk-overlay-pane:has(app-event-modal),
 .cdk-overlay-pane:has(.mat-mdc-dialog-container) {
   position: static !important;
@@ -32,7 +30,6 @@ html, body, :host {
   max-width: 90vw !important;
 }
 
-/* 3. Sređivanje bela kartice modala da ne pomera desnu kolonu van okvira */
 .mat-mdc-dialog-container,
 .mdc-dialog__surface {
   border-radius: 1.5rem !important;
@@ -42,255 +39,26 @@ html, body, :host {
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
 }
 
-/* 4. Osiguravamo da unutrašnja componentska struktura ne preliva */
 app-event-modal {
   display: block !important;
   width: 100% !important;
   box-sizing: border-box !important;
 }
+
 :root {
   --primary-blue: #34b9f7;
 }
-/* ========================================================= */
-/* DARK THEME GLOBALNI OVERRIDES                             */
-/* ========================================================= */
 
 html, body {
   min-height: 100%;
 }
 
-body.dark-theme {
-  background-color: #0f172a !important; /* slate-900 */
-  color: #f8fafc !important;
-}
-
-/* 1. Zamena Tailwind background klasa (ESKAPOVANE ZAGRADE) */
-body.dark-theme .bg-white { background-color: #1e293b !important; } /* slate-800 za kartice */
-
-body.dark-theme .bg-\[\#f4f7fb\], 
-body.dark-theme .bg-gray-50, 
-body.dark-theme .bg-gray-100, 
-body.dark-theme .bg-slate-50 { 
-  background-color: #0f172a !important; 
-}
-
-/* 2. Zamena tekstualnih boja */
-body.dark-theme .text-gray-800, 
-body.dark-theme .text-gray-700, 
-body.dark-theme .text-slate-800,
-body.dark-theme h1, body.dark-theme h2, body.dark-theme h3 { 
-  color: #f1f5f9 !important; 
-}
-
-body.dark-theme .text-gray-600, 
-body.dark-theme .text-gray-500, 
-body.dark-theme .text-gray-400, 
-body.dark-theme .text-slate-500,
-body.dark-theme .text-slate-400 { 
-  color: #94a3b8 !important; 
-}
-
-/* 3. Zamena ivica (borders) */
-body.dark-theme .border-gray-100, 
-body.dark-theme .border-gray-200, 
-body.dark-theme .border-slate-100, 
-body.dark-theme .border-slate-200 { 
-  border-color: #334155 !important; 
-}
-
-/* 4. Input polja i modali (Angular Material) */
-body.dark-theme input, 
-body.dark-theme select, 
-body.dark-theme .mat-mdc-select-value-text {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border-color: #334155 !important;
-}
-
-body.dark-theme .mdc-dialog__surface {
-  background-color: #1e293b !important; /* Tamni modali */
-}
-
 /* ========================================================= */
-/* FULLCALENDAR DARK MODE PRILAGOĐAVANJE                     */
+/* SCROLLBAR UNUTAR ĆELIJA KALENDARA                         */
 /* ========================================================= */
-
-body.dark-theme .fc-theme-standard td, 
-body.dark-theme .fc-theme-standard th, 
-body.dark-theme .fc-theme-standard .fc-scrollgrid {
-  border-color: #334155 !important;
-}
-
-body.dark-theme .fc-col-header-cell {
-  background-color: #0f172a !important;
-}
-
-body.dark-theme .fc .fc-daygrid-day-number,
-body.dark-theme .fc .fc-col-header-cell-cushion {
-  color: #cbd5e1 !important;
-}
-
-body.dark-theme .fc .fc-button-primary {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #f1f5f9 !important;
-}
-
-body.dark-theme .fc .fc-button-primary:hover {
-  background-color: #334155 !important;
-}
-
-body.dark-theme .fc-day-today {
-  background-color: rgba(52, 185, 247, 0.1) !important;
-}
-
-body.dark-theme .fc-event {
-  border: none !important;
-}
-/* ========================================================= */
-/* 1. POPRAVKA ZA DATABASE MANAGEMENT (Nevidljiva slova)     */
-/* ========================================================= */
-body.dark-theme .db-container { background-color: #0f172a !important; }
-body.dark-theme .table-wrapper { background-color: #1e293b !important; border-color: #334155 !important; }
-body.dark-theme .styled-table th { background-color: #0f172a !important; border-bottom-color: #334155 !important; color: #94a3b8 !important; }
-body.dark-theme .styled-table td { border-bottom-color: #334155 !important; color: #f1f5f9 !important; }
-body.dark-theme .styled-table tr:hover td { background-color: #334155 !important; }
-body.dark-theme .nav-btn { background-color: #1e293b !important; border-color: #334155 !important; color: #f1f5f9 !important; }
-body.dark-theme .nav-btn:hover { background-color: #334155 !important; }
-body.dark-theme .nav-btn.active { background-color: #34b9f7 !important; color: white !important; border-color: #34b9f7 !important; }
-
-/* ========================================================= */
-/* 2. POPRAVKA PADAJUĆIH MENIJA I MODALA (Bela pozadina)     */
-/* ========================================================= */
-/* Obični HTML select meniji */
-body.dark-theme select option { background-color: #1e293b !important; color: #f1f5f9 !important; }
-
-/* Angular Material padajući meniji (Overlay) */
-body.dark-theme .mat-mdc-select-panel { background-color: #1e293b !important; }
-body.dark-theme .mat-mdc-option { color: #f1f5f9 !important; }
-body.dark-theme .mat-mdc-option:hover, 
-body.dark-theme .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) { background-color: #334155 !important; }
-body.dark-theme .mat-mdc-option.mdc-list-item--disabled { color: #64748b !important; }
-
-/* ========================================================= */
-/* 3. POPRAVKA "SLOBODNI SARADNICI" PILULE (Oblik i boja)    */
-/* ========================================================= */
-body.dark-theme .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
-  background-color: #0f172a !important;
-}
-body.dark-theme .mdc-notched-outline__leading,
-body.dark-theme .mdc-notched-outline__trailing,
-body.dark-theme .mdc-notched-outline__notch {
-  border-color: #334155 !important;
-}
-/* ========================================================= */
-/* 4. POPRAVKA ZA SIDEBAR MENI (Sidenav i Header)            */
-/* ========================================================= */
-body.dark-theme mat-sidenav { background-color: #1e293b !important; border-right-color: #334155 !important; }
-body.dark-theme #menu_title_div { border-bottom-color: #334155 !important; }
-body.dark-theme #menu_title { color: #f8fafc !important; }
-body.dark-theme #menu_title_div span { color: #94a3b8 !important; }
-body.dark-theme .drawer_button { color: #cbd5e1 !important; }
-body.dark-theme .drawer_button:hover { background-color: #334155 !important; color: #34b9f7 !important; }
-body.dark-theme .header_div { background-color: #1e293b !important; border-bottom: 1px solid #334155 !important; box-shadow: none !important; }
-
-/* ========================================================= */
-/* 5. POPRAVKA SIVIH SLOVA U MODALIMA I KARTICAMA            */
-/* ========================================================= */
-body.dark-theme .text-slate-700,
-body.dark-theme .text-slate-600 {
-  color: #f1f5f9 !important;
-}
-body.dark-theme .mat-mdc-select-value-text,
-body.dark-theme .mat-mdc-select-placeholder,
-body.dark-theme .mat-mdc-input-element {
-  color: #f1f5f9 !important;
-}
-body.dark-theme .mdc-floating-label {
-  color: #94a3b8 !important;
-}
-
-/* ========================================================= */
-/* 6. UJEDNAČAVANJE FILTERA U HEADERU                        */
-/* ========================================================= */
-/* Obični select filteri (Sve godine, Sve sale) */
-body.dark-theme select.bg-gray-50 {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #f1f5f9 !important;
-}
-
-/* Angular Material multi-select (Slobodni saradnici) */
-body.dark-theme .custom-multi-select .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
-  background-color: #1e293b !important;
-}
-body.dark-theme .custom-multi-select .mdc-notched-outline__leading,
-body.dark-theme .custom-multi-select .mdc-notched-outline__trailing,
-body.dark-theme .custom-multi-select .mdc-notched-outline__notch {
-  border-color: #334155 !important;
-}
-body.dark-theme .custom-multi-select .mat-mdc-select-arrow {
-  color: #94a3b8 !important;
-}
-/* ========================================================= */
-/* 7. DASHBOARD KARTICE (Brza statistika u Dark Mode-u)      */
-/* ========================================================= */
-/* Prefarbavanje svetlih pozadina u blago prozirne tamne boje */
-body.dark-theme .bg-blue-50\/50 { background-color: rgba(52, 185, 247, 0.1) !important; border-color: rgba(52, 185, 247, 0.2) !important; }
-body.dark-theme .bg-green-50\/50 { background-color: rgba(16, 185, 129, 0.1) !important; border-color: rgba(16, 185, 129, 0.2) !important; }
-body.dark-theme .bg-purple-50\/50 { background-color: rgba(168, 85, 247, 0.1) !important; border-color: rgba(168, 85, 247, 0.2) !important; }
-body.dark-theme .bg-orange-50\/50 { background-color: rgba(249, 115, 22, 0.1) !important; border-color: rgba(249, 115, 22, 0.2) !important; }
-
-/* ========================================================= */
-/* 8. UJEDNAČAVANJE VISINE I BOJE "SLOBODNI SARADNICI"       */
-/* ========================================================= */
-/* Forsiranje visine da bude tačno 38px (kao i ostali filteri) */
-.custom-multi-select .mat-mdc-text-field-wrapper.mdc-text-field--outlined {
-  height: 38px !important;
-}
-
-.custom-multi-select .mat-mdc-form-field-infix {
-  padding-top: 0 !important;
-  padding-bottom: 0 !important;
-  height: 38px !important;
-  display: flex !important;
-  align-items: center !important;
-}
-
-/* Rešavanje sivog teksta unutar Material dropdown-a za Dark Mode */
-body.dark-theme .custom-multi-select .mat-mdc-select-value-text,
-body.dark-theme .custom-multi-select .mat-mdc-select-placeholder,
-body.dark-theme .custom-multi-select .mat-mdc-select-min-line {
-  color: #f8fafc !important;
-}
-/* Forsira širenje ćelija dana na 100% i skida nepotrebne interne scrollbare */
 .fc .fc-daygrid-day-frame {
   height: 100% !important;
   min-height: 100% !important;
-  display: flex !important;
-  flex-direction: column !important;
-}
-
-.fc .fc-daygrid-day-events {
-  flex: 1 1 auto !important;
-  overflow: visible !important;
-  max-height: none !important;
-}
-
-/* Uklanja FullCalendar strelice za skrol unutar ćelije */
-.fc .fc-daygrid-day-bottom,
-.fc .fc-daygrid-more-link {
-  display: none !important;
-}
-
-/* Omogućava da kartica lepo legne u punoj širini kolone */
-.fc .fc-daygrid-event-harness {
-  margin-bottom: 2px !important;
-  width: 100% !important;
-}
-/* Fiksna visina ćelije dana i prirodan skrol tek kad se prepuni */
-.fc .fc-daygrid-day-frame {
-  height: 100% !important;
   display: flex !important;
   flex-direction: column !important;
   overflow: hidden !important;
@@ -298,322 +66,21 @@ body.dark-theme .custom-multi-select .mat-mdc-select-min-line {
 
 .fc .fc-daygrid-day-events {
   flex: 1 1 auto !important;
-  overflow-y: auto !important; /* SKROL SAMO KAD PREMAŠI PROSTOR */
+  overflow-y: auto !important;
   overflow-x: hidden !important;
   padding: 2px 3px !important;
   margin: 0 !important;
 }
 
-/* Potpuno uklanjamo FullCalendar strelice / trougliće */
 .fc .fc-daygrid-day-bottom,
 .fc .fc-daygrid-more-link {
   display: none !important;
 }
 
-/* Lep, tanak sivi skrolbar unutar ćelije umesto glomaznog sistemskog */
 .fc .fc-daygrid-day-events::-webkit-scrollbar {
   width: 4px;
 }
 .fc .fc-daygrid-day-events::-webkit-scrollbar-thumb {
   background-color: #cbd5e1;
   border-radius: 4px;
-}
-
-/* Razmak između kartica */
-.fc-daygrid-event-harness {
-  margin-bottom: 3px !important;
-}
-
-/* Horizontalni auto-skrol dugog naziva predmeta na hover */
-.custom-cal-box:hover .marquee-text {
-  animation: scrollTekst 3s ease-in-out infinite alternate;
-}
-
-@keyframes scrollTekst {
-  0% { transform: translateX(0%); }
-  100% { transform: translateX(-35%); }
-}
-/* ========================================================= */
-/* VRAĆANJE I POPRAVKA DARK THEME                            */
-/* ========================================================= */
-body.dark-theme {
-  background-color: #0b1329 !important;
-  color: #e2e8f0 !important;
-}
-
-/* Glavna pozadina aplikacije i stranice podešavanja */
-body.dark-theme .main-wrapper,
-body.dark-theme .db-container,
-body.dark-theme .settings-page-wrapper {
-  background-color: #0b1329 !important;
-}
-
-/* Kartice, paneli, kalendar i modali u tamnom režimu */
-body.dark-theme aside.w-full,
-body.dark-theme .left-panel,
-body.dark-theme .calendar-card,
-body.dark-theme .table-wrapper,
-body.dark-theme .settings-card,
-body.dark-theme .crud-modal-container,
-body.dark-theme .event-modal-container {
-  background-color: #111c44 !important;
-  border-color: #1e293b !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Kalendarske ćelije i mrežica u tamnom režimu */
-body.dark-theme :host ::ng-deep .fc-theme-standard td,
-body.dark-theme :host ::ng-deep .fc-theme-standard th,
-body.dark-theme :host ::ng-deep .fc .fc-scrollgrid {
-  background-color: #111c44 !important;
-  border-color: #1e293b !important;
-}
-
-body.dark-theme :host ::ng-deep .fc-day-sat,
-body.dark-theme :host ::ng-deep .fc-day-sun {
-  background-color: #0d1636 !important;
-}
-
-body.dark-theme :host ::ng-deep .fc .fc-day-today {
-  background-color: #16255a !important;
-}
-
-/* Tekstovi i brojevi dana */
-body.dark-theme :host ::ng-deep .fc .fc-daygrid-day-number,
-body.dark-theme aside h3,
-body.dark-theme .card-title,
-body.dark-theme .styled-table tbody td {
-  color: #e2e8f0 !important;
-}
-
-/* Polja za unos i dropdown-i u tamnom režimu */
-body.dark-theme input,
-body.dark-theme select,
-body.dark-theme ::ng-deep .mat-mdc-text-field-wrapper {
-  background-color: #1a2656 !important;
-  border-color: #2a3b75 !important;
-  color: #ffffff !important;
-}
-
-body.dark-theme ::ng-deep .mat-mdc-select-value-text,
-body.dark-theme ::ng-deep .mat-mdc-floating-label {
-  color: #e2e8f0 !important;
-}
-
-body.dark-theme ::ng-deep .mat-mdc-select-panel {
-  background-color: #111c44 !important;
-  border-color: #2a3b75 !important;
-}
-
-body.dark-theme ::ng-deep .mat-mdc-option {
-  color: #cbd5e1 !important;
-}
-
-body.dark-theme ::ng-deep .mat-mdc-option:hover:not(.mdc-list-item--disabled),
-body.dark-theme ::ng-deep .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) {
-  background-color: #1a2656 !important;
-  color: #38bdf8 !important;
-}
-
-/* Dugmad u kalendaru (<, >, Danas, Mesec, Nedelja, Dan) u tamnom režimu */
-body.dark-theme :host ::ng-deep .fc .fc-button-primary {
-  background-color: #1a2656 !important;
-  border-color: #2a3b75 !important;
-  color: #e2e8f0 !important;
-}
-
-body.dark-theme :host ::ng-deep .fc .fc-button-primary:hover {
-  background-color: #233373 !important;
-}
-
-body.dark-theme :host ::ng-deep .fc .fc-button-primary.fc-button-active {
-  background-color: #1F63A0 !important;
-  color: #ffffff !important;
-  border-color: #1F63A0 !important;
-}
-/* ========================================================= */
-/* FULLCALENDAR TOOLBAR & ZAGLAVLJE                          */
-/* ========================================================= */
-
-/* 1. Glavni toolbar heder */
-.fc .fc-header-toolbar {
-  background-color: #ffffff !important;
-  padding: 12px 16px !important;
-  border-radius: 16px !important;
-  margin-bottom: 12px !important;
-  border: 1px solid #e2e8f0 !important;
-}
-
-body.dark-theme .fc .fc-header-toolbar {
-  background-color: #0d1533 !important;
-  border-color: #1e293b !important;
-}
-
-/* 2. Naslov meseca (npr. Septembar 2026.) */
-.fc .fc-toolbar-title {
-  font-family: 'Montserrat', sans-serif !important;
-  font-size: 1.15rem !important;
-  font-weight: 800 !important;
-  color: #1e293b !important;
-  background-color: #f1f5f9 !important;
-  padding: 6px 18px !important;
-  border-radius: 12px !important;
-  border: 1px solid #cbd5e1 !important;
-}
-
-body.dark-theme .fc .fc-toolbar-title {
-  color: #38bdf8 !important;
-  background-color: #111c44 !important;
-  border-color: #1F63A0 !important;
-}
-
-/* 3. Dugmad u hederu kalendara (<, >, Danas, Mesec, Nedelja, Dan) */
-.fc .fc-button-primary {
-  background-color: #f8fafc !important;
-  border-color: #cbd5e1 !important;
-  color: #334155 !important;
-  font-weight: 700 !important;
-  border-radius: 10px !important;
-  box-shadow: none !important;
-}
-
-.fc .fc-button-primary:hover {
-  background-color: #e2e8f0 !important;
-  color: #0f172a !important;
-}
-
-.fc .fc-button-primary.fc-button-active {
-  background-color: #1F63A0 !important;
-  border-color: #1F63A0 !important;
-  color: #ffffff !important;
-}
-
-body.dark-theme .fc .fc-button-primary {
-  background-color: #111c44 !important;
-  border-color: #1e293b !important;
-  color: #e2e8f0 !important;
-}
-
-body.dark-theme .fc .fc-button-primary:hover {
-  background-color: #1e293b !important;
-}
-
-body.dark-theme .fc .fc-button-primary.fc-button-active {
-  background-color: #1F63A0 !important;
-  border-color: #1F63A0 !important;
-  color: #ffffff !important;
-}
-
-/* 4. Traka sa danima (PON, UTO, SRE, ČET, PET, SUB, NED) */
-.fc .fc-col-header-cell {
-  background-color: #f8fafc !important;
-  border-color: #e2e8f0 !important;
-  padding: 8px 0 !important;
-}
-
-.fc .fc-col-header-cell-cushion {
-  font-family: 'Montserrat', sans-serif !important;
-  font-size: 0.75rem !important;
-  font-weight: 800 !important;
-  color: #475569 !important;
-  letter-spacing: 0.05em !important;
-  text-decoration: none !important;
-}
-
-body.dark-theme .fc .fc-col-header-cell {
-  background-color: #164f82 !important;
-  border-color: #1F63A0 !important;
-}
-
-body.dark-theme .fc .fc-col-header-cell-cushion {
-  color: #ffffff !important;
-}
-/* =definitivno rešenje za teme i levu banku predmeta = */
-
-/* 1. Svetla tema - osnovne vrednosti */
-.main-wrapper {
-  background-color: #f4f7fb !important;
-}
-
-aside.w-full, .left-panel, aside.left-bank-aside {
-  background-color: #ffffff !important;
-  border-color: #e2e8f0 !important;
-}
-
-.bank-items-scroll, div[draggableContainer] {
-  background-color: #ffffff !important;
-}
-
-/* Kartice predmeta u banci - sprečavanje da linija seče tekst i bela pozadina u svetloj */
-.fc-event.subject-card, .fc-event.bank-card-item, aside .fc-event {
-  background-color: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
-  padding: 10px 12px 10px 22px !important;
-  position: relative !important;
-  border-radius: 12px !important;
-}
-
-.fc-event.subject-card h3, .fc-event.bank-card-item h3, aside .fc-event h3 {
-  color: #0f172a !important;
-  font-weight: 800 !important;
-}
-
-.fc-event.subject-card p, .fc-event.bank-card-item p, aside .fc-event p {
-  color: #64748b !important;
-}
-
-
-/* 2. Tamna tema (Podržava i body.dark-theme i Tailwind .dark klasu) */
-body.dark-theme .main-wrapper,
-.dark .main-wrapper {
-  background-color: #080e1e !important;
-}
-
-body.dark-theme aside.w-full,
-.dark aside.w-full,
-body.dark-theme .left-panel,
-.dark .left-panel {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-body.dark-theme .bank-items-scroll,
-.dark .bank-items-scroll,
-body.dark-theme div[draggableContainer],
-.dark div[draggableContainer] {
-  background-color: #0b1329 !important;
-}
-
-/* Kartice predmeta u banci za tamnu temu */
-body.dark-theme .fc-event.subject-card, 
-body.dark-theme .fc-event.bank-card-item, 
-body.dark-theme aside .fc-event,
-.dark .fc-event.subject-card, 
-.dark .fc-event.bank-card-item, 
-.dark aside .fc-event {
-  background-color: #0d1a44 !important;
-  border-color: #1e293b !important;
-}
-
-body.dark-theme .fc-event h3, 
-body.dark-theme .fc-event.bank-card-item h3,
-.dark .fc-event h3, 
-.dark .fc-event.bank-card-item h3 {
-  color: #f8fafc !important;
-}
-
-body.dark-theme .fc-event p, 
-body.dark-theme .fc-event.bank-card-item p,
-.dark .fc-event p, 
-.dark .fc-event.bank-card-item p {
-  color: #94a3b8 !important;
-}
-
-/* Heder kalendara i toolbar u tamnoj temi da prate ostatak */
-body.dark-theme header,
-.dark header,
-body.dark-theme .fc-header-toolbar,
-.dark .fc-header-toolbar {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
 }

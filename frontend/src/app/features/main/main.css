@@ -13,81 +13,344 @@
 }
 
 /* ========================================================= */
-/* 1. FIKS ZA KARTICE U BANCI PREDMETA (NE SEČE SLOVA)       */
+/* 1. LEVI PANEL: BANKA PREDMETA                             */
 /* ========================================================= */
-.subject-drag-card {
-  position: relative !important;
-  overflow: hidden !important;
-  padding: 10px 12px 10px 22px !important; /* Dovoljan razmak da plava linija nikad ne seče tekst */
-  box-sizing: border-box !important;
-  border-radius: 12px !important;
+aside.left-bank-aside,
+aside.w-full {
+  background-color: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
-  background-color: #f8fafc !important;
+  border-radius: 16px !important;
+  overflow: hidden !important; /* Reže unutrašnje elemente da ne vire */
 }
 
-/* Resetuje interne FullCalendar omotače unutar kartice u banci */
-.subject-drag-card ::ng-deep .fc-event-main {
+/* Plavo zaglavlje banke predmeta - popravlja isečeno slovo "B" */
+.bank-header-box,
+aside > div:first-child {
+  background-color: #1F63A0 !important;
+  border-bottom: 1px solid #164f82 !important;
+  padding: 16px 18px 16px 18px !important;
+  border-top-left-radius: 15px !important;
+  border-top-right-radius: 15px !important;
+  box-sizing: border-box !important;
+}
+
+.bank-header-box h2,
+aside > div:first-child h2 {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  padding-left: 2px !important;
+  line-height: 1.3 !important;
+}
+
+.bank-header-box p,
+aside > div:first-child p {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 0.75rem !important;
+  margin: 4px 0 0 0 !important;
+  padding-left: 2px !important;
+}
+
+.bank-search-input {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.bank-filter-btn {
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #1F63A0 !important;
+}
+
+.bank-filters-panel {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.godine-grid {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.year-tag-btn {
+  color: #ffffff !important;
+}
+
+.bank-items-scroll {
+  background-color: #ffffff !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* Kartice predmeta u banci */
+.bank-card-item,
+aside .fc-event {
+  position: relative !important;
+  display: block !important;
+  background-color: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 12px 14px 12px 24px !important;
+  box-sizing: border-box !important;
+  cursor: grab !important;
+  user-select: none !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 0 !important;
+}
+
+.bank-card-item ::ng-deep .fc-event-main,
+aside .fc-event ::ng-deep .fc-event-main {
   padding: 0 !important;
   margin: 0 !important;
   background: transparent !important;
 }
 
-.color-indicator-stripe {
+.bank-card-color-bar {
   position: absolute !important;
   left: 0 !important;
   top: 0 !important;
   bottom: 0 !important;
-  width: 7px !important;
+  width: 6px !important;
   border-top-left-radius: 12px !important;
   border-bottom-left-radius: 12px !important;
 }
 
-.subject-text-container {
+.bank-card-content {
   display: flex !important;
   flex-direction: column !important;
-  gap: 6px !important; /* Povećano sa 2px na 6px za čistiji prikaz */
+  gap: 3px !important;
   width: 100% !important;
-  padding-right: 4px !important;
 }
 
-.subject-item-title {
-  font-size: 0.85rem !important;
+.bank-card-title {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.88rem !important;
   font-weight: 800 !important;
-  line-height: 1.4 !important; /* Povećan prored */
+  color: #0f172a !important;
+  line-height: 1.35 !important;
   margin: 0 !important;
-  word-break: break-word !important; /* Sprečava da tekst izbije iz okvira */
+  word-break: break-word !important;
 }
-.subject-item-prof {
-  font-size: 0.75rem !important;
+
+.bank-card-prof {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.76rem !important;
   font-weight: 600 !important;
   color: #64748b !important;
   margin: 0 !important;
 }
 
-/* Dark mode za kartice u banci */
-:host-context(body.dark-theme) .subject-drag-card,
-:host-context(.dark) .subject-drag-card {
-  background-color: #0d1a44 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .subject-item-title,
-:host-context(.dark) .subject-item-title {
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) .subject-item-prof,
-:host-context(.dark) .subject-item-prof {
-  color: #94a3b8 !important;
+.load-more-btn {
+  background-color: #eff6ff !important;
+  color: #1F63A0 !important;
 }
 
 /* ========================================================= */
-/* 2. SVETLA TEMA (ČISTA BELA OSNOVA)                        */
+/* 2. DROPDOWN POLJA (MAT-FORM-FIELD)                        */
+/* ========================================================= */
+::ng-deep .mat-mdc-form-field.unified-filter-field,
+::ng-deep .mat-mdc-form-field.custom-filter-select {
+  width: 100% !important;
+  --mdc-outlined-text-field-container-shape: 12px !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-text-field-wrapper,
+::ng-deep .custom-filter-select .mat-mdc-text-field-wrapper {
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .unified-filter-field .mdc-notched-outline,
+::ng-deep .custom-filter-select .mdc-notched-outline {
+  display: none !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-form-field-infix,
+::ng-deep .custom-filter-select .mat-mdc-form-field-infix {
+  padding: 0 !important;
+  min-height: unset !important;
+  height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  border-top: none !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-trigger,
+::ng-deep .custom-filter-select .mat-mdc-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+  height: 42px !important;
+  width: 100% !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-value-text,
+::ng-deep .unified-filter-field .mat-mdc-select-placeholder,
+::ng-deep .custom-filter-select .mat-mdc-select-value-text,
+::ng-deep .custom-filter-select .mat-mdc-select-placeholder {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-arrow-wrapper,
+::ng-deep .custom-filter-select .mat-mdc-select-arrow-wrapper {
+  transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
+::ng-deep .custom-filter-select .mat-mdc-select-arrow svg {
+  fill: #64748b !important;
+}
+
+/* ========================================================= */
+/* 3. GORNJI HEDER (KONTROLNA TRAKA)                        */
+/* ========================================================= */
+.top-ctrl-header {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 16px !important;
+}
+
+.top-title-text {
+  color: #0f172a !important;
+}
+
+.unsaved-badge {
+  background-color: #fef3c7 !important;
+  border: 1px solid #fde68a !important;
+  color: #d97706 !important;
+}
+
+.header-btn {
+  height: 40px !important;
+  padding: 0 14px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  background-color: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
+}
+
+.header-btn svg {
+  color: #1F63A0 !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.header-btn:hover {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.header-btn.active-mode-btn {
+  background-color: #1F63A0 !important;
+  border-color: #164f82 !important;
+  color: #ffffff !important;
+}
+
+.header-btn.active-mode-btn svg {
+  color: #ffffff !important;
+}
+
+.btn-danger-action {
+  background-color: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #e11d48 !important;
+}
+
+.btn-danger-action svg {
+  color: #e11d48 !important;
+}
+
+.btn-danger-action:hover {
+  background-color: #ffe4e6 !important;
+}
+
+.btn-publish {
+  background-color: #27AE60 !important;
+  border: 1px solid #219653 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+.btn-publish svg {
+  color: #ffffff !important;
+}
+
+.btn-publish:hover {
+  background-color: #219653 !important;
+}
+
+.btn-save-draft {
+  background-color: #F39C12 !important;
+  border: 1px solid #d68910 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
+.btn-save-draft:hover {
+  background-color: #e67e22 !important;
+}
+
+/* Padajući meniji */
+.statistika-dropdown-card,
+.filteri-dropdown-card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.stat-blue { background-color: #eff6ff !important; border-color: #bfdbfe !important; color: #1F63A0 !important; }
+.stat-green { background-color: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #16a34a !important; }
+.stat-slate { background-color: #f8fafc !important; border-color: #e2e8f0 !important; color: #475569 !important; }
+.stat-amber { background-color: #fffbeb !important; border-color: #fde68a !important; color: #d97706 !important; }
+
+.filter-header { border-color: #e2e8f0 !important; }
+.filter-title { color: #0f172a !important; }
+.filter-close-btn { color: #94a3b8 !important; }
+.filter-checks { border-color: #e2e8f0 !important; color: #334155 !important; }
+.filter-label { color: #64748b !important; }
+
+/* Modali */
+.dialog-card-box { background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; }
+.dialog-text { color: #334155 !important; }
+.dialog-hint { background-color: #f8fafc !important; border-color: #e2e8f0 !important; color: #64748b !important; }
+.dialog-label { color: #64748b !important; }
+.dialog-input { background-color: #f8fafc !important; border: 1px solid #cbd5e1 !important; color: #1e293b !important; }
+.dialog-cancel-btn { background-color: #f1f5f9 !important; border: 1px solid #cbd5e1 !important; color: #475569 !important; }
+.dialog-footer { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
+
+/* ========================================================= */
+/* 4. KALENDAR & TOOLBAR (SVETLA TEMA)                       */
 /* ========================================================= */
 .main-wrapper {
   background-color: #f4f7fb !important;
   min-height: calc(100vh - 62px);
-  font-family: 'Montserrat', sans-serif !important;
 }
 
 .calendar-container-card {
@@ -96,7 +359,31 @@
   border-radius: 16px !important;
 }
 
-/* Kapsula meseca u svetloj temi */
+:host ::ng-deep .fc {
+  background-color: transparent !important;
+}
+
+:host ::ng-deep .fc .fc-header-toolbar {
+  background-color: transparent !important;
+  margin-bottom: 14px !important;
+  padding: 4px 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+}
+
+:host ::ng-deep .fc .fc-toolbar-chunk:first-child,
+:host ::ng-deep .fc .fc-toolbar-chunk:last-child {
+  flex: 0 0 auto !important;
+}
+
+:host ::ng-deep .fc .fc-toolbar-chunk:nth-child(2) {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
 :host ::ng-deep .fc .fc-toolbar-title {
   font-family: 'Montserrat', sans-serif !important;
   font-size: 1.05rem !important;
@@ -110,7 +397,6 @@
   text-align: center !important;
 }
 
-/* Dugmad kalendara u svetloj temi */
 :host ::ng-deep .fc .fc-button-primary {
   height: 38px !important;
   padding: 0 14px !important;
@@ -137,6 +423,31 @@
   font-weight: 800 !important;
 }
 
+:host ::ng-deep .fc .fc-prev-button,
+:host ::ng-deep .fc .fc-next-button {
+  width: 38px !important;
+  min-width: 38px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+:host ::ng-deep .fc .fc-col-header-cell {
+  background-color: #1F63A0 !important;
+  border-color: #164f82 !important;
+  padding: 7px 0 !important;
+}
+
+:host ::ng-deep .fc .fc-col-header-cell-cushion {
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 0.75rem !important;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase !important;
+  text-decoration: none !important;
+}
+
 :host ::ng-deep .fc-theme-standard th,
 :host ::ng-deep .fc-theme-standard td,
 :host ::ng-deep .fc .fc-scrollgrid {
@@ -158,18 +469,210 @@
   padding: 4px 6px !important;
 }
 
-/* Danas u svetloj temi: blag azurni ton */
 :host ::ng-deep .fc .fc-day-today {
   background-color: rgba(31, 99, 160, 0.06) !important;
 }
 
 /* ========================================================= */
-/* 3. TAMNA TEMA (AKTIVIRA SE ISKLJUČIVO POD .dark ILI .dark-theme) */
+/* 5. TAMNA TEMA (SAMO POD body.dark-theme ILI .dark)        */
 /* ========================================================= */
 :host-context(body.dark-theme) .main-wrapper,
 :host-context(.dark) .main-wrapper {
   background-color: #080e1e !important;
 }
+
+:host-context(body.dark-theme) aside.left-bank-aside,
+:host-context(.dark) aside.left-bank-aside {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .bank-header-box,
+:host-context(.dark) .bank-header-box,
+:host-context(body.dark-theme) aside > div:first-child,
+:host-context(.dark) aside > div:first-child {
+  background-color: #0d1a44 !important;
+  border-bottom-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .bank-search-input,
+:host-context(.dark) .bank-search-input {
+  background-color: #080e1e !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+:host-context(body.dark-theme) .bank-filter-btn,
+:host-context(.dark) .bank-filter-btn {
+  background-color: #080e1e !important;
+  border-color: #1e293b !important;
+  color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .bank-filters-panel,
+:host-context(.dark) .bank-filters-panel {
+  background-color: #080e1e !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .godine-grid,
+:host-context(.dark) .godine-grid {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .bank-items-scroll,
+:host-context(.dark) .bank-items-scroll {
+  background-color: #0b1329 !important;
+}
+
+:host-context(body.dark-theme) .bank-card-item,
+:host-context(.dark) .bank-card-item,
+:host-context(body.dark-theme) aside .fc-event,
+:host-context(.dark) aside .fc-event {
+  background-color: #0d1a44 !important;
+  border-color: #1e293b !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+}
+
+:host-context(body.dark-theme) .bank-card-title,
+:host-context(.dark) .bank-card-title,
+:host-context(body.dark-theme) aside .fc-event h3,
+:host-context(.dark) aside .fc-event h3 {
+  color: #ffffff !important;
+}
+
+:host-context(body.dark-theme) .bank-card-prof,
+:host-context(.dark) .bank-card-prof,
+:host-context(body.dark-theme) aside .fc-event p,
+:host-context(.dark) aside .fc-event p {
+  color: #94a3b8 !important;
+}
+
+:host-context(body.dark-theme) .load-more-btn,
+:host-context(.dark) .load-more-btn {
+  background-color: rgba(31, 99, 160, 0.2) !important;
+  color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) ::ng-deep .unified-filter-field .mat-mdc-text-field-wrapper,
+:host-context(.dark) ::ng-deep .unified-filter-field .mat-mdc-text-field-wrapper,
+:host-context(body.dark-theme) ::ng-deep .custom-filter-select .mat-mdc-text-field-wrapper,
+:host-context(.dark) ::ng-deep .custom-filter-select .mat-mdc-text-field-wrapper {
+  background-color: #080e1e !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) ::ng-deep .unified-filter-field .mat-mdc-select-value-text,
+:host-context(.dark) ::ng-deep .unified-filter-field .mat-mdc-select-value-text,
+:host-context(body.dark-theme) ::ng-deep .custom-filter-select .mat-mdc-select-value-text,
+:host-context(.dark) ::ng-deep .custom-filter-select .mat-mdc-select-value-text {
+  color: #ffffff !important;
+}
+
+:host-context(body.dark-theme) ::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
+:host-context(.dark) ::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
+:host-context(body.dark-theme) ::ng-deep .custom-filter-select .mat-mdc-select-arrow svg,
+:host-context(.dark) ::ng-deep .custom-filter-select .mat-mdc-select-arrow svg {
+  fill: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .top-ctrl-header,
+:host-context(.dark) .top-ctrl-header {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .top-title-text,
+:host-context(.dark) .top-title-text {
+  color: #ffffff !important;
+}
+
+:host-context(body.dark-theme) .unsaved-badge,
+:host-context(.dark) .unsaved-badge {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #fbbf24 !important;
+}
+
+:host-context(body.dark-theme) .header-btn,
+:host-context(.dark) .header-btn {
+  background-color: #0d1a44 !important;
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
+}
+
+:host-context(body.dark-theme) .header-btn svg,
+:host-context(.dark) .header-btn svg {
+  color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .header-btn:hover,
+:host-context(.dark) .header-btn:hover {
+  background-color: #162a6b !important;
+  border-color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .statistika-dropdown-card,
+:host-context(.dark) .statistika-dropdown-card,
+:host-context(body.dark-theme) .filteri-dropdown-card,
+:host-context(.dark) .filteri-dropdown-card {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+}
+
+:host-context(body.dark-theme) .stat-blue,
+:host-context(.dark) .stat-blue {
+  background-color: rgba(31, 99, 160, 0.2) !important;
+  border-color: rgba(31, 99, 160, 0.4) !important;
+  color: #38bdf8 !important;
+}
+
+:host-context(body.dark-theme) .stat-green,
+:host-context(.dark) .stat-green {
+  background-color: rgba(16, 185, 129, 0.2) !important;
+  border-color: rgba(16, 185, 129, 0.4) !important;
+  color: #4ade80 !important;
+}
+
+:host-context(body.dark-theme) .stat-slate,
+:host-context(.dark) .stat-slate {
+  background-color: #0d1533 !important;
+  border-color: #1e293b !important;
+  color: #cbd5e1 !important;
+}
+
+:host-context(body.dark-theme) .stat-amber,
+:host-context(.dark) .stat-amber {
+  background-color: rgba(245, 158, 11, 0.2) !important;
+  border-color: rgba(245, 158, 11, 0.4) !important;
+  color: #fbbf24 !important;
+}
+
+:host-context(body.dark-theme) .filter-header,
+:host-context(.dark) .filter-header { border-color: #1e293b !important; }
+:host-context(body.dark-theme) .filter-title,
+:host-context(.dark) .filter-title { color: #ffffff !important; }
+:host-context(body.dark-theme) .filter-checks,
+:host-context(.dark) .filter-checks { border-color: #1e293b !important; color: #cbd5e1 !important; }
+:host-context(body.dark-theme) .filter-label,
+:host-context(.dark) .filter-label { color: #94a3b8 !important; }
+
+:host-context(body.dark-theme) .dialog-card-box,
+:host-context(.dark) .dialog-card-box { background-color: #0b1329 !important; border-color: #1e293b !important; }
+:host-context(body.dark-theme) .dialog-text,
+:host-context(.dark) .dialog-text { color: #e2e8f0 !important; }
+:host-context(body.dark-theme) .dialog-hint,
+:host-context(.dark) .dialog-hint { background-color: #0d1533 !important; border-color: #1e293b !important; color: #94a3b8 !important; }
+:host-context(body.dark-theme) .dialog-label,
+:host-context(.dark) .dialog-label { color: #94a3b8 !important; }
+:host-context(body.dark-theme) .dialog-input,
+:host-context(.dark) .dialog-input { background-color: #0d1533 !important; border-color: #1e293b !important; color: #ffffff !important; }
+:host-context(body.dark-theme) .dialog-cancel-btn,
+:host-context(.dark) .dialog-cancel-btn { background-color: #0d1533 !important; border-color: #1e293b !important; color: #cbd5e1 !important; }
+:host-context(body.dark-theme) .dialog-footer,
+:host-context(.dark) .dialog-footer { background-color: #0d1533 !important; border-color: #1e293b !important; }
 
 :host-context(body.dark-theme) .calendar-container-card,
 :host-context(.dark) .calendar-container-card {
@@ -177,7 +680,6 @@
   border-color: #1e293b !important;
 }
 
-/* Kapsula meseca u tamnoj temi */
 :host-context(body.dark-theme) ::ng-deep .fc .fc-toolbar-title,
 :host-context(.dark) ::ng-deep .fc .fc-toolbar-title {
   color: #38bdf8 !important;
@@ -186,7 +688,6 @@
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
 }
 
-/* Dugmad u tamnoj temi */
 :host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary,
 :host-context(.dark) ::ng-deep .fc .fc-button-primary {
   background-color: #0d1a44 !important;
@@ -231,7 +732,6 @@
   color: #94a3b8 !important;
 }
 
-/* Danas u tamnoj temi */
 :host-context(body.dark-theme) ::ng-deep .fc .fc-day-today,
 :host-context(.dark) ::ng-deep .fc .fc-day-today {
   background-color: #101c40 !important;
@@ -243,77 +743,8 @@
 }
 
 /* ========================================================= */
-/* 4. GEOMETRIJA KALENDARA I DUGMADI                         */
+/* 6. KARTICE TERMINA I INTERAKCIJA                          */
 /* ========================================================= */
-:host ::ng-deep .fc {
-  font-family: 'Montserrat', sans-serif !important;
-  background-color: transparent !important;
-}
-
-:host ::ng-deep .fc .fc-icon {
-  font-family: 'fcicons' !important;
-}
-
-:host ::ng-deep .fc,
-:host ::ng-deep .fc-view-harness,
-:host ::ng-deep .fc-theme-standard,
-:host ::ng-deep .fc-scrollgrid {
-  background-color: transparent !important;
-}
-
-:host ::ng-deep .fc .fc-header-toolbar {
-  background-color: transparent !important;
-  margin-bottom: 12px !important;
-  padding: 4px 6px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-}
-
-:host ::ng-deep .fc .fc-toolbar-chunk:first-child,
-:host ::ng-deep .fc .fc-toolbar-chunk:last-child {
-  flex: 0 0 auto !important;
-}
-
-:host ::ng-deep .fc .fc-toolbar-chunk:nth-child(2) {
-  flex: 1 1 auto !important;
-  display: flex !important;
-  justify-content: center !important;
-  align-items: center !important;
-}
-
-:host ::ng-deep .fc .fc-prev-button,
-:host ::ng-deep .fc .fc-next-button {
-  width: 38px !important;
-  min-width: 38px !important;
-  padding: 0 !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-}
-
-:host ::ng-deep .fc .fc-col-header-cell {
-  background-color: #1F63A0 !important;
-  border-color: #164f82 !important;
-  padding: 7px 0 !important;
-}
-
-:host ::ng-deep .fc .fc-col-header-cell-cushion {
-  color: #ffffff !important;
-  font-weight: 800 !important;
-  font-size: 0.75rem !important;
-  letter-spacing: 0.06em !important;
-  text-transform: uppercase !important;
-  text-decoration: none !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-col-header-cell,
-:host-context(.dark) ::ng-deep .fc .fc-col-header-cell {
-  background-color: #164f82 !important;
-  border-color: #1F63A0 !important;
-}
-
-/* Kartice ispita unutar kalendara */
 :host ::ng-deep .fc-daygrid-event-harness {
   margin-bottom: 3px !important;
 }
