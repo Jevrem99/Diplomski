@@ -25,6 +25,7 @@
         "cors": "^2.8.5",
         "crypto": "^1.0.1",
         "dotenv": "^17.4.2",
+        "exceljs": "^4.4.0",
         "express": "^4.22.2",
         "express-custom-error": "^1.8.4",
         "has-keys": "^0.1.0",

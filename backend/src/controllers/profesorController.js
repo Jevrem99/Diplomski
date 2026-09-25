@@ -25,6 +25,7 @@ const getAllSaradnici = async (req, res) => {
         const saradnici = await prisma.profesor.findMany({
             where: { is_saradnik: true },
             include: {
+                angazovanja: true,
                 obaveze: true,
                 dezurstva: {
                     include: { ispit: true }

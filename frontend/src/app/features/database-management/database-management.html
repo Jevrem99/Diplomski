@@ -58,7 +58,7 @@
         <table class="styled-table">
           <thead>
             <tr>
-              @for (col of currentColumnsDef; track col.key) {
+              @for (col of visibleColumns; track col.key) {
                 <th>{{ col.label }}</th>
               }
               @if (activeEntity !== 'dnevnik') {
@@ -69,16 +69,31 @@
           <tbody>
             @for (row of tableData; track $index) {
               <tr>
-                @for (col of currentColumnsDef; track col.key) {
+                @for (col of visibleColumns; track col.key) {
                   <td>{{ formatCellValue(row, col.key) }}</td>
                 }
                 @if (activeEntity !== 'dnevnik') {
                   <td class="action-cell">
+                    <!-- DUGME ZA RESET LOZINKE: Prikazuje se SAMO ako korisnik/profesor/saradnik ima upisan email -->
+                    @if (canResetPassword(row)) {
+                      <button 
+                        class="action-btn key-btn text-amber-500 hover:text-amber-600" 
+                        (click)="resetPassword(row)" 
+                        [title]="'Postavi / Resetuj lozinku za ' + row.email">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 0121 9z"></path>
+                        </svg>
+                      </button>
+                    }
+
+                    <!-- DUGME ZA IZMENU -->
                     <button class="action-btn edit-btn" (click)="editRow(row)" title="Izmeni">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                       </svg>
                     </button>
+
+                    <!-- DUGME ZA BRISANJE -->
                     <button class="action-btn delete-btn" (click)="deleteRow(row.id)" title="Obriši">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

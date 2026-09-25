@@ -39,9 +39,6 @@ const getUserByUsername = async (identifier) => {
     });
 };
 
-// Dodaj ove dve funkcije u models/userModel.js i izvezi ih u module.exports
-
-
 
 const resetPasswordWithEmail = async (email, newPassword) => {
     const saltRounds = 10;
@@ -185,5 +182,6 @@ module.exports = {
     generateJwtToken,
     setResetToken,
     getUserByResetToken,
-    updatePasswordByReset
+    updatePasswordByReset,
+    resetPasswordWithEmail
 };

@@ -5,18 +5,21 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
+
 export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'korisnici' | 'dnevnik';
 
 interface ColumnDef {
-  key: string;      // ključ u JSON objektu sa bekena
-  label: string;    // naziv u zaglavlju tabele
+  key: string;           // ključ u JSON objektu sa bekenda
+  label: string;         // naziv u zaglavlju tabele
+  hideInTable?: boolean; // da li je kolona sakrivena u tabeli
 }
 
 @Component({
   selector: 'app-database-management',
   standalone: true,
   imports: [
-    SidebarMenu,MatDialogModule
+    SidebarMenu,
+    MatDialogModule
   ],
   templateUrl: './database-management.html',
   styleUrl: './database-management.css',
@@ -29,11 +32,11 @@ export class DatabaseManagement implements OnInit {
   displayedColumnsKeys: string[] = [];
   currentColumnsDef: ColumnDef[] = [];
   loading: boolean = false;
-  uploading: boolean = false; // Status za učitavanje fajla
+  uploading: boolean = false;
   
   private API_URL = 'http://localhost:5000';
-  allSaradnici: any[] = []; // Dodaj ovu liniju blizu vrha klase
-  allProfesori: any[] = []; // DODATO
+  allSaradnici: any[] = [];
+  allProfesori: any[] = [];
   allPredmeti: any[] = [];
   allRoles: any[] = [];
 
@@ -50,8 +53,8 @@ export class DatabaseManagement implements OnInit {
       { key: 'id', label: 'ID' },
       { key: 'username', label: 'Korisničko ime' },
       { key: 'email', label: 'E-mail' },
-      { key: 'password', label: 'Lozinka' }, // Popravljen naziv
-      { key: 'uloga', label: 'Uloga' }
+      { key: 'password', label: 'Lozinka' },
+      { key: 'uloga', label: 'Uloga' },
     ],
     profesori: [
       { key: 'id', label: 'ID' },
@@ -63,7 +66,9 @@ export class DatabaseManagement implements OnInit {
       { key: 'id', label: 'ID' },
       { key: 'ime', label: 'Ime' },
       { key: 'prezime', label: 'Prezime' },
-      { key: 'email', label: 'E-mail' }
+      { key: 'email', label: 'E-mail' },
+      // hideInTable: true skriva kolonu iz tabele, ali ostavlja polje u modalu
+      { key: 'predmeti_ids', label: 'Predmeti (Zaduženja)', hideInTable: true } 
     ],
     predmeti: [
       { key: 'id', label: 'ID' },
@@ -72,16 +77,16 @@ export class DatabaseManagement implements OnInit {
       { key: 'godina', label: 'Godina' },
       { key: 'semestar', label: 'Semestar' },
       { key: 'profesor_id', label: 'Glavni profesor (ID)' }, 
-      { key: 'status', label: 'Status (O / I)' },// Ako i to želiš
+      { key: 'status', label: 'Status (O / I)' },
       { key: 'broj_studenata', label: 'Broj studenata' },
-      { key: 'saradnici_ids', label: 'Saradnici na predmetu' } // <--- DODATO
+      { key: 'saradnici_ids', label: 'Saradnici na predmetu' }
     ],
     ispiti: [
       { key: 'id', label: 'ID' },
-      { key: 'predmet_id', label: 'Predmet' }, // Postaje padajući meni
+      { key: 'predmet_id', label: 'Predmet' },
       { key: 'datum', label: 'Datum polaganja' },
       { key: 'vreme', label: 'Vreme početka' },
-      { key: 'vreme_kraja', label: 'Vreme kraja' }, // <--- DODATO
+      { key: 'vreme_kraja', label: 'Vreme kraja' },
       { key: 'sala_id', label: 'Sala' }
     ]
   };
@@ -91,14 +96,20 @@ export class DatabaseManagement implements OnInit {
     private cdr: ChangeDetectorRef
   ) {}
 
- ngOnInit(): void {
-  this.selectEntity('profesori');
-  
-  this.http.get<any[]>(`${this.API_URL}/profesors/saradnici`).subscribe(data => this.allSaradnici = data);
-  this.http.get<any[]>(`${this.API_URL}/profesors`).subscribe(data => this.allProfesori = data);
-  this.http.get<any[]>(`${this.API_URL}/predmet`).subscribe(data => this.allPredmeti = data);
-  this.http.get<any[]>(`${this.API_URL}/users/roles`).subscribe(data => this.allRoles = data); // <--- DODATO
-}
+  ngOnInit(): void {
+    this.selectEntity('profesori');
+    
+    this.http.get<any[]>(`${this.API_URL}/profesors/saradnici`).subscribe(data => this.allSaradnici = data);
+    this.http.get<any[]>(`${this.API_URL}/profesors`).subscribe(data => this.allProfesori = data);
+    this.http.get<any[]>(`${this.API_URL}/predmet`).subscribe(data => this.allPredmeti = data);
+    this.http.get<any[]>(`${this.API_URL}/users/roles`).subscribe(data => this.allRoles = data);
+  }
+
+  // Vraća samo definicije kolona koje treba prikazati u tabeli
+  get visibleColumns(): ColumnDef[] {
+    return this.currentColumnsDef.filter(col => !col.hideInTable);
+  }
+
   getSingularName(entity: string): string {
     if (entity === 'predmeti') return 'predmet';
     if (entity === 'ispiti') return 'ispit';
@@ -108,13 +119,16 @@ export class DatabaseManagement implements OnInit {
     if (entity === 'korisnici') return 'korisnika';
     return entity;
   }
+
   selectEntity(entity: EntityType): void {
     this.activeEntity = entity;
     this.currentColumnsDef = this.columnConfigurations[entity];
-    this.displayedColumnsKeys = this.currentColumnsDef.map(col => col.key);
+    // Prikazujemo u tabeli samo ključeve kolona koje nisu skrivene
+    this.displayedColumnsKeys = this.visibleColumns.map(col => col.key);
     
     this.fetchData(entity);
   }
+
   private getEndpoint(entity: EntityType): string {
     const endpointMap: Record<EntityType, string> = {
       profesori: '/profesors/profesori',
@@ -150,7 +164,7 @@ export class DatabaseManagement implements OnInit {
       width: '850px',
       data: {
         title: `Dodaj ${this.activeEntity === 'profesori' ? 'profesora' : this.activeEntity === 'saradnici' ? 'saradnika' : this.activeEntity === 'predmeti' ? 'predmet' : 'ispit'}`,
-        columns: this.currentColumnsDef,
+        columns: this.currentColumnsDef, // Modalu šaljemo SVE kolone (uključujući i skrivene iz tabele)
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori, 
         predmetiList: this.allPredmeti,
@@ -161,11 +175,10 @@ export class DatabaseManagement implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // HTTP POST za kreiranje novog entiteta
         this.http.post(this.getEndpoint(this.activeEntity), result).subscribe({
           next: () => {
             this.toast.show('Uspešno dodato u bazu!', 'success');
-            this.fetchData(this.activeEntity); // Osvežavamo tabelu
+            this.fetchData(this.activeEntity);
           },
           error: (err) => {
             console.error('Greška pri dodavanju:', err);
@@ -177,20 +190,27 @@ export class DatabaseManagement implements OnInit {
   }
 
   editRow(row: any): void {
-    // Ako editujemo predmet, moramo njegove saradnike (objekte) da svedemo na niz ID-jeva za multiselect
     const formDataRow = { ...row };
+
     if (this.activeEntity === 'predmeti' && row.saradnici) {
       formDataRow.saradnici_ids = row.saradnici.map((s: any) => s.id);
+    }
+
+    if (this.activeEntity === 'saradnici') {
+      const predmetiNiz = row.angazovanja || row.predmeti;
+      if (predmetiNiz) {
+        formDataRow.predmeti_ids = predmetiNiz.map((p: any) => p.id);
+      }
     }
 
     const dialogRef = this.dialog.open(CrudModal, {
       width: '850px',
       data: {
-        title: `Izmeni ${this.activeEntity === 'profesori' ? 'profesora' : this.activeEntity === 'saradnici' ? 'saradnika' : this.activeEntity === 'predmeti' ? 'predmet' : 'ispit'}`,
-        columns: this.currentColumnsDef,
+        title: `Izmeni ${this.getSingularName(this.activeEntity)}`,
+        columns: this.currentColumnsDef, // Modalu šaljemo SVE kolone
         rowData: formDataRow, 
-        saradniciList: this.allSaradnici, // <--- DODATO
-        profesoriList: this.allProfesori, // <--- ŠALJEMO PROFESORE
+        saradniciList: this.allSaradnici,
+        profesoriList: this.allProfesori,
         predmetiList: this.allPredmeti,
         rolesList: this.allRoles
       },
@@ -199,7 +219,6 @@ export class DatabaseManagement implements OnInit {
 
     dialogRef.afterClosed().subscribe(result => {
       if (result) {
-        // HTTP PUT za ažuriranje postojećeg entiteta (gađamo /ruta/:id)
         this.http.put(`${this.getEndpoint(this.activeEntity)}/${row.id}`, result).subscribe({
           next: () => {
             this.toast.show('Uspešno izmenjeno!', 'success');
@@ -216,7 +235,6 @@ export class DatabaseManagement implements OnInit {
 
   deleteRow(id: number): void {
     if (confirm('Da li ste sigurni da želite da obrišete ovaj zapis?')) {
-      // HTTP DELETE za brisanje entiteta (gađamo /ruta/:id)
       this.http.delete(`${this.getEndpoint(this.activeEntity)}/${id}`).subscribe({
         next: () => {
           this.toast.show('Zapis je obrisan!', 'success');
@@ -229,23 +247,19 @@ export class DatabaseManagement implements OnInit {
       });
     }
   }
-  
 
   onFileSelected(event: any): void {
     const file: File = event.target.files[0];
 
     if (file) {
       const formData = new FormData();
-      // Ključ mora biti tačno 'excelFile' jer ga Multer tako očekuje
       formData.append('excelFile', file);
 
       this.uploading = true;
 
-      // Zameniti '/api/import-excel' sa tačnom putanjom rute sa tvog bekenda
       this.http.post<any>(`${this.API_URL}/upload/import-excel`, formData).subscribe({
-        next: (response) => {
+        next: () => {
           this.uploading = false;
-          // Osveži trenutno aktivnu tabelu da se vide novi podaci
           this.fetchData(this.activeEntity);
         },
         error: (err) => {
@@ -255,14 +269,44 @@ export class DatabaseManagement implements OnInit {
         }
       });
       
-      // Resetuj vrednost inputa kako bi korisnik mogao ponovo odabrati isti fajl ako zeli
       event.target.value = '';
+    }
+  }
+
+  canResetPassword(row: any): boolean {
+    const isSupportedEntity = ['profesori', 'saradnici', 'korisnici'].includes(this.activeEntity);
+    const hasValidEmail = !!(row && row.email && row.email.trim() !== '');
+    return isSupportedEntity && hasValidEmail;
+  }
+  
+  resetPassword(row: any): void {
+    if (!row.email || row.email.trim() === '') {
+      this.toast.show('Izabrani korisnik nema upisanu e-mail adresu.', 'error');
+      return;
+    }
+
+    const displayName = `${row.ime || ''} ${row.prezime || ''}`.trim() || row.email;
+    const newPassword = prompt(`Unesite novu privremenu lozinku za: ${displayName} (${row.email})`);
+
+    if (newPassword && newPassword.trim() !== '') {
+      this.http.post(`${this.API_URL}/auth/admin-reset-password`, { 
+        email: row.email, 
+        newPassword: newPassword.trim() 
+      }).subscribe({
+        next: () => {
+          this.toast.show(`Lozinka za ${row.email} je uspešno izmenjena!`, 'success');
+        },
+        error: (err) => {
+          console.error('Greška pri resetovanju lozinke:', err);
+          this.toast.show('Greška pri promeni lozinke.', 'error');
+        }
+      });
     }
   }
 
   deleteDatabase(): void {
     if (confirm('Da li ste sigurni da želite da obrišete celu bazu podataka? Ova akcija je nepovratna.')) {
-      this.http.post<any>(`${this.API_URL}/admin/reset-database`,{}).subscribe({
+      this.http.post<any>(`${this.API_URL}/admin/reset-database`, {}).subscribe({
         next: () => {
           alert('Baza podataka je uspešno obrisana.');
           this.tableData = [];
@@ -275,35 +319,48 @@ export class DatabaseManagement implements OnInit {
       });
     }
   }
- formatCellValue(row: any, colKey: string): string {
+
+  formatCellValue(row: any, colKey: string): string {
     if (colKey === 'password') return '********';
+
+    if (colKey === 'predmeti_ids') {
+      const predmetiNiz = row.angazovanja || row.predmeti;
+      if (predmetiNiz && Array.isArray(predmetiNiz) && predmetiNiz.length > 0) {
+        return predmetiNiz.map((p: any) => p.naziv || p.sifra).join(', ');
+      }
+      return 'Nema zaduženja';
+    }
+
+    if (colKey === 'saradnici_ids') {
+      if (row.saradnici && Array.isArray(row.saradnici) && row.saradnici.length > 0) {
+        return row.saradnici.map((s: any) => `${s.ime} ${s.prezime}`).join(', ');
+      }
+      return 'Nema saradnika';
+    }
 
     const val = row[colKey];
     if (val === null || val === undefined || val === '') return '-';
 
-    // 1. Formatiranje za vreme kreiranja loga (Dnevnik rada)
     if (colKey === 'created_at') {
       const d = new Date(val);
       return `${d.toLocaleDateString('sr-RS')} ${d.toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })}`;
     }
 
-    // 2. Ako je u pitanju polje za vreme (vreme ili vreme_kraja)
     if (colKey.includes('vreme') && typeof val === 'string' && val.includes('T')) {
-      return val.substring(11, 16); // Vraća samo "08:00"
+      return val.substring(11, 16);
     }
 
-    // 3. Ako je u pitanju datum polaganja
     if (colKey.includes('datum') && typeof val === 'string' && val.includes('T')) {
-      return val.split('T')[0]; // Vraća "2026-08-01"
+      return val.split('T')[0];
     }
 
-    // 4. Ako je relacija (npr. objekat predmeta ili sale)
     if (typeof val === 'object') {
       return val.naziv || `${val.ime || ''} ${val.prezime || ''}`.trim() || '-';
     }
 
     return val;
   }
+
   refreshDropdownData(callback?: () => void): void {
     forkJoin({
       saradnici: this.http.get<any[]>(`${this.API_URL}/profesors/saradnici`),

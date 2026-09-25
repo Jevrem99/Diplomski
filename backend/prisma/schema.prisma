@@ -52,6 +52,7 @@ model Predmet {
   saradnici   Profesor[] @relation("AngazovaniSaradnici")
   
   ispiti      Ispit[]
+  terminiKolokvijuma TerminKolokvijuma?
 }
 model Sala {
   id        Int      @id @default(autoincrement())
@@ -112,4 +113,35 @@ ispit_id    Int?
 ispit       Ispit?    @relation(fields: [ispit_id], references: [id])
 saradnik_id Int?
 saradnik    Profesor? @relation(fields: [saradnik_id], references: [id])
+}
+
+model TerminKolokvijuma {
+  id                      Int      @id @default(autoincrement())
+  predmet_id              Int      @unique // Jedan predmet ima jedan zapis sa preferencijama
+  predmet                 Predmet  @relation(fields: [predmet_id], references: [id], onDelete: Cascade)
+
+  // Prvi kolokvijum
+  k1_datum                String?  // npr. "29.04.2026"
+  k1_trajanje             Int?     // u minutama (npr. 90)
+  k1_racunarska_sala      Boolean  @default(false)
+
+  // Drugi kolokvijum
+  k2_datum                String?
+  k2_trajanje             Int?
+  k2_racunarska_sala      Boolean  @default(false)
+
+  // Treći kolokvijum
+  k3_datum                String?
+  k3_trajanje             Int?
+  k3_racunarska_sala      Boolean  @default(false)
+
+  // Popravni kolokvijum (opciono)
+  popravni_u_terminu_ispita Boolean @default(false)
+  popravni_trajanje        Int?
+  popravni_racunarska_sala Boolean @default(false)
+
+  napomena                String?
+
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
 }

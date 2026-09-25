@@ -6,7 +6,6 @@ const auditService = require('../services/auditService'); // Uvoz celog servisa
 const router = express.Router();
 
 router.post('/reset-database', protect, restrictToAdmin, adminController.resetDatabase);
-router.post('/insert-test-data', protect, restrictToAdmin, adminController.insertTestData);
 router.post('/sync-imi', protect, restrictToAdmin, adminController.runImiSync);
 
 // Pregled dnevnika rada
