@@ -127,10 +127,11 @@ export class Main implements OnInit, AfterViewInit {
 
   // --- IZVOZ PODACI ---
   izvozPodaci = {
-    tip: 'ispiti',
+    tip: 'kolokvijumi',
     datumOd: '',
     datumDo: '',
-    nazivRoka: 'Испитни рок'
+    nazivRoka: '',
+    naslovRasporeda: ''
   };
 
   // --- PODACI SA SERVERA ---
@@ -159,7 +160,7 @@ export class Main implements OnInit, AfterViewInit {
     droppable: true,
     editable: true,
 
-dayCellContent: (arg) => {
+    dayCellContent: (arg) => {
       const d = arg.date;
       const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const today = new Date();
@@ -280,22 +281,22 @@ dayCellContent: (arg) => {
           if (info.event.id && info.event.id.startsWith('temp_')) {
             const draftEvt = this.unsavedEvents.find(e => e.tempId === info.event.id);
             if (draftEvt) {
-              draftEvt.vreme = result.startTime; 
+              draftEvt.vreme = result.startTime;
               draftEvt.vreme_kraja = result.endTime;
-              draftEvt.sala = result.room; 
-              draftEvt.is_ispit = isIspit; 
+              draftEvt.sala = result.room;
+              draftEvt.is_ispit = isIspit;
               draftEvt.tip_kolokvijuma = tipKolokvijuma;
               draftEvt.dezurni_ids = dezurniIds;
             }
           } else {
             const payload = {
-              id: info.event.id, 
-              datum: eventDate, 
-              vreme: result.startTime, 
+              id: info.event.id,
+              datum: eventDate,
+              vreme: result.startTime,
               vreme_kraja: result.endTime,
-              sala: result.room, 
-              predmet_id: info.event.extendedProps['predmetId'], 
-              is_ispit: isIspit, 
+              sala: result.room,
+              predmet_id: info.event.extendedProps['predmetId'],
+              is_ispit: isIspit,
               tip_kolokvijuma: tipKolokvijuma,
               dezurni_ids: dezurniIds
             };
@@ -313,7 +314,7 @@ dayCellContent: (arg) => {
               backgroundColor: isIspit ? boja : '#ffffff', textColor: isIspit ? '#ffffff' : boja, borderColor: boja,
               extendedProps: {
                 ...this.allLoadedEvents[evtIndex].extendedProps,
-                vreme: result.startTime, vremeKraja: result.endTime, sala: result.room, is_ispit: isIspit, dezurni: izabraniSaradnici
+                vreme: result.startTime, vremeKraja: result.endTime, tip_kolokvijuma: tipKolokvijuma, sala: result.room, is_ispit: isIspit, dezurni: izabraniSaradnici
               }
             };
           }
@@ -360,17 +361,17 @@ dayCellContent: (arg) => {
           const tipKolokvijuma = result.tip_kolokvijuma || 'I';
 
           this.unsavedEvents.push({
-            tempId: tempId, 
-            predmet_id: predmetId, 
+            tempId: tempId,
+            predmet_id: predmetId,
             title: result.title,
-            datum: eventDate, 
-            vreme: result.startTime, 
+            datum: eventDate,
+            vreme: result.startTime,
             vreme_kraja: result.endTime,
-            sala: result.room, 
-            is_ispit: isIspit, 
+            sala: result.room,
+            is_ispit: isIspit,
             tip_kolokvijuma: tipKolokvijuma,
             dezurni_ids: dezurniIds,
-            backgroundColor: originalEvent.backgroundColor, 
+            backgroundColor: originalEvent.backgroundColor,
             borderColor: originalEvent.borderColor
           });
 
@@ -382,7 +383,7 @@ dayCellContent: (arg) => {
             extendedProps: {
               vreme: result.startTime, vremeKraja: result.endTime, sala: result.room,
               predmetId: predmetId, godina: droppedPredmet?.godina, profesorId: droppedPredmet?.profesor_id,
-              profesorIme: droppedPredmet?.profesorImePrezime, is_ispit: isIspit, dezurni: izabraniSaradnici
+              profesorIme: droppedPredmet?.profesorImePrezime, is_ispit: isIspit, tip_kolokvijuma: tipKolokvijuma, dezurni: izabraniSaradnici
             }
           };
 
@@ -406,13 +407,13 @@ dayCellContent: (arg) => {
       if (info.event.id && !info.event.id.startsWith('temp_')) {
         const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
         const payload = {
-          id: info.event.id, 
-          datum: newDate, 
+          id: info.event.id,
+          datum: newDate,
           vreme: info.event.extendedProps['vreme'],
-          vreme_kraja: info.event.extendedProps['vremeKraja'], 
+          vreme_kraja: info.event.extendedProps['vremeKraja'],
           sala: info.event.extendedProps['sala'],
-          predmet_id: info.event.extendedProps['predmetId'], 
-          is_ispit: info.event.extendedProps['is_ispit'] ?? true, 
+          predmet_id: info.event.extendedProps['predmetId'],
+          is_ispit: info.event.extendedProps['is_ispit'] ?? true,
           tip_kolokvijuma: tipKolokvijuma,
           dezurni_ids: dezurniIds
         };
@@ -436,7 +437,7 @@ dayCellContent: (arg) => {
       setTimeout(() => this.detectConflicts(), 300);
     },
 
-eventContent: (arg) => {
+    eventContent: (arg) => {
       if (arg.event.display === 'background') return null;
 
       const title = arg.event.title ? arg.event.title.split(' (')[0] : '';
@@ -1099,11 +1100,13 @@ eventContent: (arg) => {
   private initDraggable(): void {
     const self = this;
     if (this.draggableContainer && this.draggableContainer.nativeElement) {
-      if (this.draggableInstance) this.draggableInstance.destroy();
+      if (this.draggableInstance) {
+        this.draggableInstance.destroy();
+      }
       this.draggableInstance = new Draggable(this.draggableContainer.nativeElement, {
-        itemSelector: '.fc-event',
+        itemSelector: '.bank-card-item',
         eventData: function (eventEl) {
-          const godina = parseInt(eventEl.getAttribute('data-godina') || '1');
+          const godina = parseInt(eventEl.getAttribute('data-godina') || '1', 10);
           const boja = self.getGodinaColor(godina);
           const id = eventEl.getAttribute('data-id');
           return {
@@ -1280,19 +1283,16 @@ eventContent: (arg) => {
       return;
     }
 
-    // Dodajemo strukturu koja čuva i tekst i boju za svaku ćeliju
     const sedmice = new Map();
 
-    // Definisanje HEX boja po godinama (prilagodi po želji)
     const bojaPoGodini: { [key: number]: string } = {
-      1: 'FF8EA9DB', // Plava
-      2: 'FFF4B083', // Narandžasta
-      3: 'FFFFD965', // Žuta
-      4: 'FFA8D08D', // Zelena
-      5: 'FF00B0F0'  // Svijetlo plava
+      1: 'FFDDEBF7', // Blue, Accent 5, Lighter 80%[cite: 27]
+      2: 'FFFCE4D6', // Orange, Accent 2, Lighter 80%[cite: 26]
+      3: 'FFFFF2CC', // Gold, Accent 4, Lighter 80%[cite: 28]
+      4: 'FFE2EFDA', // Green, Accent 6, Lighter 80%[cite: 24]
+      5: 'FFDDEBF7'  // Master
     };
 
-    // Stil za ivice
     const tankiOkvir = {
       top: { style: 'thin', color: { rgb: 'FF000000' } },
       bottom: { style: 'thin', color: { rgb: 'FF000000' } },
@@ -1303,7 +1303,7 @@ eventContent: (arg) => {
     ispitiUPeriodu.forEach((ispit: any) => {
       const d = new Date(ispit.start.split('T')[0]);
       const day = d.getDay();
-      const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1);
       const ponedeljak = new Date(d.setDate(diff));
       const ponedeljakStr = ponedeljak.toISOString().split('T')[0];
 
@@ -1325,25 +1325,54 @@ eventContent: (arg) => {
       if (danIndex === -1) danIndex = 6;
 
       const nazivPredmeta = ispit.title.split(' (')[0];
-      
-      // --- PRIPREMA ZA NOVO POLJE ---
-      // Čita vrijednost 'tip_kolokvijuma' iz događaja. Ako još ne postoji, stavlja 'I'
-      const tipKolokvijuma = ispit.extendedProps.tip_kolokvijuma || 'I';
-      const tipString = ispit.extendedProps.is_ispit ? 'испит' : tipKolokvijuma + ' колоквијум';
-      
-      let vreme = ispit.extendedProps.vreme || '';
-      if (vreme.endsWith(':00')) {
-        vreme = vreme.substring(0, 2);
-      } else if (vreme) {
-        vreme = vreme.replace(':', '.');
+      const tipKolokvijuma = String(ispit.extendedProps.tip_kolokvijuma || 'I').trim();
+      const tipLower = tipKolokvijuma.toLowerCase();
+
+      // 1. Određivanje tipa provjere
+      let tipString = '';
+      if (ispit.extendedProps.is_ispit) {
+        tipString = 'испит';
+      } else if (tipLower === 'тест' || tipLower === 'test') {
+        tipString = 'тест';
+      } else if (tipLower.includes('тест') || tipLower.includes('test')) {
+        tipString = 'поправни тест';
+      } else if (tipLower.includes('поправни') || tipLower.includes('popravni')) {
+        tipString = 'поправни колоквијум';
+      } else {
+        tipString = tipKolokvijuma + ' колоквијум';
       }
-      
-      const tekst = nazivPredmeta + '\n - ' + tipString + ' - ' + vreme + 'h';
+
+      // 2. Formatiranje vremena (npr. "08:00" -> "8h", "07:15" -> "7.15h", "14:00" -> "14h")
+      let vremeRaw = String(ispit.extendedProps.vreme || '').trim();
+      let formatiranoVreme = '';
+
+      if (vremeRaw) {
+        // Ako sadrži ISO datum "T", uzmi samo sate i minute
+        if (vremeRaw.includes('T')) {
+          vremeRaw = vremeRaw.substring(11, 16);
+        }
+
+        const delovi = vremeRaw.split(':');
+        const sati = parseInt(delovi[0], 10); // Uklanja vodeću nulu (08 -> 8, 09 -> 9)
+        const minuti = delovi.length > 1 ? delovi[1] : '00';
+
+        if (minuti === '00' || !minuti) {
+          formatiranoVreme = sati + 'h';
+        } else {
+          formatiranoVreme = sati + '.' + minuti + 'h';
+        }
+      }
+
+      // 3. Spajanje u konačan tekst (ako nema vremena, ne ostavlja praznu crticu na kraju)
+      let tekst = nazivPredmeta + '\n - ' + tipString + ' -';
+      if (formatiranoVreme) {
+        tekst += ' ' + formatiranoVreme;
+      }
       const godina = ispit.extendedProps.godina || 1;
 
       sedmice.get(ponedeljakStr)!.dogadjaji[danIndex].push({
         tekst: tekst,
-        boja: bojaPoGodini[godina as number] || 'FFFFFFFF' // Bijela ako godina nije prepoznata
+        boja: bojaPoGodini[godina as number] || 'FFFFFFFF'
       });
     });
 
@@ -1352,16 +1381,19 @@ eventContent: (arg) => {
     const rowHeights: any[] = [];
     let rowIndex = 1;
 
-    wsData.push(['Распоред колоквијума на ОАС Информатика \nлетњи семестар 2025/26', null, null, null, null, null, null]);
-    const merges = [{ s: { r: rowIndex - 1, c: 0 }, e: { r: rowIndex - 1, c: 6 } }]; 
-    cellStyles['A' + rowIndex] = { 
-        alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, 
-        font: { bold: true, sz: 12 },
-        border: tankiOkvir
+    // Glavni naslov
+    // Glavni naslov koji si sam uneo u modal
+    const naslovZaPrikaz = this.izvozPodaci.naslovRasporeda || 'Распоред';
+    wsData.push([naslovZaPrikaz, null, null, null, null, null, null]);
+    const merges = [{ s: { r: rowIndex - 1, c: 0 }, e: { r: rowIndex - 1, c: 6 } }];
+    cellStyles['A' + rowIndex] = {
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      font: { bold: true, sz: 16, name: 'Calibri' }
     };
-    rowHeights.push({ hpt: 40 }); 
+    rowHeights.push({ hpt: 45 });
     rowIndex++;
 
+    // Prazan red
     wsData.push([null, null, null, null, null, null, null]);
     rowHeights.push({ hpt: 15 });
     rowIndex++;
@@ -1369,96 +1401,111 @@ eventContent: (arg) => {
     const sortiraneNedelje = Array.from(sedmice.keys()).sort();
 
     sortiraneNedelje.forEach((ponedeljakStr: string) => {
-        const podaci = sedmice.get(ponedeljakStr)!;
+      const podaci = sedmice.get(ponedeljakStr)!;
 
-        wsData.push(['понедељак', 'уторак', 'среда', 'четвртак', 'петак', 'субота', 'недеља']);
-        const daniRowIndex = rowIndex;
-        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string) => {
-            cellStyles[col + daniRowIndex] = { 
-                alignment: { horizontal: 'center', vertical: 'center' }, 
-                font: { bold: true, name: 'Calibri', sz: 11 },
-                border: tankiOkvir
-            };
-        });
-        rowHeights.push({ hpt: 20 });
-        rowIndex++;
+      // Red sa danima: center + center (middle)
+      wsData.push(['понедељак', 'уторак', 'среда', 'четвртак', 'петак', 'субота', 'недеља']);
+      const daniRowIndex = rowIndex;
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string) => {
+        cellStyles[col + daniRowIndex] = {
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          font: { name: 'Calibri', sz: 11, bold: false },
+          border: tankiOkvir
+        };
+      });
+      rowHeights.push({ hpt: 20 });
+      rowIndex++;
 
-        const datumiPrikaz = podaci.datumi.map((d: Date) => {
-            const y = d.getFullYear();
-            const m = String(d.getMonth() + 1).padStart(2, '0');
-            const day = String(d.getDate()).padStart(2, '0');
-            return y + '-' + m + '-' + day;
-        });
-        wsData.push(datumiPrikaz);
-        const datumiRowIndex = rowIndex;
-        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string) => {
-            cellStyles[col + datumiRowIndex] = { 
-                alignment: { horizontal: 'center', vertical: 'center' },
-                font: { name: 'Calibri', sz: 11 },
-                border: tankiOkvir
-            };
-        });
-        rowHeights.push({ hpt: 20 });
-        rowIndex++;
+      // Red sa datumima: center + center (middle)
+      // Red sa datumima: 26.09.2026.
+      // Red sa datumima: format 26.09.2026.
+      const datumiPrikaz = podaci.datumi.map((d: Date) => {
+        const y = String(d.getFullYear());
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return day + '.' + m + '.' + y + '.';
+      });
+      wsData.push(datumiPrikaz);
+      const datumiRowIndex = rowIndex;
+      ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string) => {
+        cellStyles[col + datumiRowIndex] = {
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          font: { name: 'Calibri', sz: 11, bold: false },
+          border: tankiOkvir
+        };
+      });
+      rowHeights.push({ hpt: 20 });
+      rowIndex++;
 
-        const maxIspitaUDanu = Math.max(...podaci.dogadjaji.map((dan: any[]) => dan.length), 1);
+      // Redovi sa ispitima: center + center (middle) i wrapText
+      const maxIspitaUDanu = Math.max(...podaci.dogadjaji.map((dan: any[]) => dan.length), 1);
 
-        for (let i = 0; i < maxIspitaUDanu; i++) {
-            const redIspita: string[] = [];
-            let imaSadrzaja = false;
-            
-            for (let j = 0; j < 7; j++) {
-                const dogadjaj = podaci.dogadjaji[j][i];
-                if (dogadjaj) {
-                    imaSadrzaja = true;
-                    redIspita.push(dogadjaj.tekst);
-                } else {
-                    redIspita.push('');
-                }
-            }
-            wsData.push(redIspita);
-            
-            ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string, index: number) => {
-                const dogadjaj = podaci.dogadjaji[index][i];
-                let bgColor = 'FFFFFFFF';
-                if (dogadjaj && dogadjaj.boja) {
-                    bgColor = dogadjaj.boja;
-                }
+      for (let i = 0; i < maxIspitaUDanu; i++) {
+        const redIspita: string[] = [];
+        let imaSadrzaja = false;
 
-                cellStyles[col + rowIndex] = { 
-                    alignment: { horizontal: 'center', vertical: 'top', wrapText: true },
-                    font: { name: 'Calibri', sz: 11 },
-                    border: tankiOkvir
-                };
-                if (bgColor !== 'FFFFFFFF') {
-                    cellStyles[col + rowIndex].fill = { fgColor: { rgb: bgColor } };
-                }
-            });
-            rowHeights.push({ hpt: imaSadrzaja ? 50 : 20 });
-            rowIndex++;
+        for (let j = 0; j < 7; j++) {
+          const dogadjaj = podaci.dogadjaji[j][i];
+          if (dogadjaj) {
+            imaSadrzaja = true;
+            redIspita.push(dogadjaj.tekst);
+          } else {
+            redIspita.push('');
+          }
         }
+        wsData.push(redIspita);
 
-        wsData.push([null, null, null, null, null, null, null]);
-        rowHeights.push({ hpt: 15 });
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string, index: number) => {
+          const dogadjaj = podaci.dogadjaji[index][i];
+          let bgColor = 'FFFFFFFF';
+          if (dogadjaj && dogadjaj.boja) {
+            bgColor = dogadjaj.boja;
+          }
+
+          cellStyles[col + rowIndex] = {
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, // <--- CENTER I MIDDLE!
+            font: { name: 'Calibri', sz: 11, bold: false },
+            border: tankiOkvir
+          };
+          if (bgColor !== 'FFFFFFFF') {
+            cellStyles[col + rowIndex].fill = { fgColor: { rgb: bgColor } };
+          }
+        });
+        rowHeights.push({ hpt: imaSadrzaja ? 55 : 20 });
         rowIndex++;
+      }
+
+      // Prazan red između tjedana
+      wsData.push([null, null, null, null, null, null, null]);
+      rowHeights.push({ hpt: 15 });
+      rowIndex++;
     });
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
     ws['!merges'] = merges;
     ws['!rows'] = rowHeights;
-    
+
     for (const key in cellStyles) {
       if (ws[key]) ws[key].s = cellStyles[key];
     }
 
     ws['!cols'] = [
-      { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, 
+      { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 },
       { wch: 25 }, { wch: 25 }, { wch: 25 }
     ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Raspored');
-    XLSX.writeFile(wb, 'Raspored_' + tip + '_' + datumOd + '.xlsx');
+    let cistoImeFajla = (this.izvozPodaci.naslovRasporeda || ('Raspored_' + tip))
+      .replace(/[\r\n]+/g, ' ')               // zamijeni prelom reda razmakom
+      .replace(/[\\/:*?"<>|]/g, '')           // ukloni znakove koje operativni sistem ne dozvoljava u imenima fajlova
+      .trim();
+
+    if (!cistoImeFajla) {
+      cistoImeFajla = 'Raspored_' + tip;
+    }
+
+    XLSX.writeFile(wb, cistoImeFajla + '.xlsx');
 
     this.prikaziIzvozModal = false;
     this.toastService.show('Excel fajl je uspešno generisan!', 'success');
@@ -1514,7 +1561,7 @@ eventContent: (arg) => {
         }
       } else {
         const mIdx = this.modifiedEvents.findIndex(e => e.id === modIspit.id);
-        
+
         const payload = {
           id: modIspit.id, datum: this.selektovanDan, vreme: modIspit.extendedProps.vreme,
           vreme_kraja: modIspit.extendedProps.vremeKraja, sala: modIspit.extendedProps.sala,

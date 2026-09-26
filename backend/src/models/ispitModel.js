@@ -22,14 +22,14 @@ const getIspitById = async (id) => {
     });
 };
 
-const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true, sala_id = null, dezurni_ids = [],tip_kolokvijuma = 'I') => {
+const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true,tip_kolokvijuma = 'I' ,sala_id = null, dezurni_ids = []) => {
     return await prisma.ispit.create({
         data: {
             datum: new Date(datum),
             vreme: new Date(`${datum}T${vreme}Z`),
             vreme_kraja: vreme_kraja ? new Date(`${datum}T${vreme_kraja}Z`) : null,
             is_ispit: Boolean(is_ispit),
-            tip_kolokvijuma: tip_kolokvijuma, // <--- DODATO
+            tip_kolokvijuma: tip_kolokvijuma || 'I', // <--- DODATO
             predmet: predmet_id ? { connect: { id: Number(predmet_id) } } : undefined,
             sala: sala_id ? { connect: { id: Number(sala_id) } } : undefined,
             // KREIRAMO DEŽURSTVA ODMAH PRI PRVOM UNOSU:
@@ -40,7 +40,7 @@ const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = tru
     });
 };
 
-const updateIspit = async (id, predmet_id, datum, vreme, vreme_kraja, is_ispit, sala_id, dezurni_ids = [],tip_kolokvijuma = "I") => {
+const updateIspit = async (id, predmet_id, datum, vreme, vreme_kraja, is_ispit, sala_id,tip_kolokvijuma = "I", dezurni_ids = []) => {
     // Provera ID-ja
     const dateStr = new Date(datum).toISOString().split('T')[0];
     const numericId = Number(id);

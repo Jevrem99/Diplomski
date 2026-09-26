@@ -88,6 +88,7 @@ aside > div:first-child p {
 }
 
 /* Kartice predmeta u banci */
+/* Kartice predmeta u banci - oslobođen drag preview */
 .bank-card-item,
 aside .fc-event {
   position: relative !important;
@@ -99,8 +100,15 @@ aside .fc-event {
   box-sizing: border-box !important;
   cursor: grab !important;
   user-select: none !important;
+  -webkit-user-select: none !important;
+  touch-action: none !important; /* <--- OVO sprečava browser da blokira FullCalendar pointer */
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
   margin-bottom: 0 !important;
+}
+
+.bank-card-item:active {
+  cursor: grabbing !important;
+  opacity: 0.6 !important; /* Kartica u listi vizualno posvijetli dok je vučeš */
 }
 
 .bank-card-item ::ng-deep .fc-event-main,
@@ -883,4 +891,51 @@ aside .fc-event ::ng-deep .fc-event-main {
 
 :host ::ng-deep .day-select-circle:hover {
   transform: scale(1.1) !important;
+}
+/* ========================================================= */
+/* POPRAVKA: DRAG & DROP ANIMACIJA I PREVIEW                 */
+/* ========================================================= */
+
+/* 1. Omogućava elementu da "ispliva" iz levog panela dok se vuče */
+aside.left-bank-aside {
+  overflow: visible !important;
+}
+
+/* 2. FullCalendar klon / preview element koji prati kursor */
+:host ::ng-deep body > .fc-event-dragging,
+:host ::ng-deep .fc-event-dragging,
+:host ::ng-deep .fc-event-mirror {
+  opacity: 0.92 !important;
+  z-index: 999999 !important;
+  pointer-events: none !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28) !important;
+  transform: scale(1.04) rotate(1.5deg) !important;
+  transition: transform 0.1s ease !important;
+}
+
+/* 3. Vraćanje vidljive pozadine klonu u slučaju da je nasleđen transparent */
+:host ::ng-deep .fc-event-dragging .bank-card-item,
+:host ::ng-deep .fc-event-mirror .bank-card-item {
+  background-color: #ffffff !important;
+  border: 1.5px solid #1F63A0 !important;
+}
+
+/* 4. Senka i stil na ćeliji kalendara preko koje se trenutno prelazi */
+:host ::ng-deep .fc-daygrid-day.fc-day-over {
+  background-color: rgba(31, 99, 160, 0.12) !important;
+  outline: 2px dashed #1F63A0 !important;
+  outline-offset: -2px !important;
+}
+/* FullCalendar klon koji se kreće po ekranu dok držiš klik */
+.fc-event-dragging,
+.fc-event-mirror,
+div[class*="fc-event-dragging"] {
+  display: block !important;
+  opacity: 0.9 !important;
+  z-index: 99999999 !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  background: #ffffff !important;
+  border: 2px solid #1F63A0 !important;
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25) !important;
 }

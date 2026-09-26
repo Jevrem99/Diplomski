@@ -242,9 +242,9 @@ const createIspit = async (req, res) => {
             finalDatum, 
             finalVreme, 
             finalVremeKraja,
-            finalTipKolokvijuma,
             is_ispit ?? true, 
-            finalSala,
+            finalTipKolokvijuma,
+            salaId,
             finalDezurni // Prosleđujemo konačan niz
         );
         await logAction(

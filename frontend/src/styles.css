@@ -84,3 +84,73 @@ html, body {
   background-color: #cbd5e1;
   border-radius: 4px;
 }
+/* ========================================================= */
+/* FULLCALENDAR DRAGGABLE PREVIEW & MIRROR                   */
+/* ========================================================= */
+
+/* Element koji FullCalendar lepi direktno na body tokom prevlačenja */
+.fc-event-dragging,
+.fc-unthemed .fc-event-dragging,
+body > .fc-event-dragging,
+body > .bank-card-item {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 0.95 !important;
+  z-index: 99999999 !important;
+  pointer-events: none !important;
+  background-color: #ffffff !important;
+  border: 1.5px solid #1F63A0 !important;
+  border-radius: 12px !important;
+  padding: 12px 14px 12px 24px !important;
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.25) !important;
+  transform: scale(1.04) rotate(1.5deg) !important;
+  width: 260px !important;
+  box-sizing: border-box !important;
+}
+
+/* Osiguraj da su naslov i tekst unutar prevučene kartice vidljivi */
+.fc-event-dragging .bank-card-content,
+body > .fc-event-dragging .bank-card-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+  visibility: visible !important;
+}
+
+.fc-event-dragging .bank-card-title,
+body > .fc-event-dragging .bank-card-title,
+body > .fc-event-dragging h3 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: 0.88rem !important;
+  visibility: visible !important;
+}
+
+.fc-event-dragging .bank-card-prof,
+body > .fc-event-dragging .bank-card-prof,
+body > .fc-event-dragging p {
+  color: #64748b !important;
+  font-weight: 600 !important;
+  font-size: 0.76rem !important;
+  visibility: visible !important;
+}
+
+/* Plava vertikalna linija na levoj strani kartice */
+.fc-event-dragging .bank-card-color-bar,
+body > .fc-event-dragging .bank-card-color-bar {
+  position: absolute !important;
+  left: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  width: 6px !important;
+  background-color: #1F63A0 !important;
+  border-top-left-radius: 12px !important;
+  border-bottom-left-radius: 12px !important;
+}
+
+/* Indikator dana preko kojeg se prelazi u kalendaru */
+.fc-daygrid-day.fc-day-over {
+  background-color: rgba(31, 99, 160, 0.12) !important;
+  outline: 2px dashed #1F63A0 !important;
+  outline-offset: -2px !important;
+}
