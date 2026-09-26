@@ -67,7 +67,7 @@ model Ispit {
   vreme       DateTime  @db.Time(6)
   vreme_kraja DateTime? @db.Time(6)
   sala_id    Int?
-  
+  tip_kolokvijuma String?
   is_ispit   Boolean     @default(true)
   is_izmenjen  Boolean     @default(false)
   predmet    Predmet?    @relation(fields: [predmet_id], references: [id])

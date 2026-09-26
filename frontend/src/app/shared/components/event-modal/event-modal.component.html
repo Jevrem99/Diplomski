@@ -30,7 +30,17 @@
           </label>
         </div>
       </div>
-
+      <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full mt-2" *ngIf="!formData.is_ispit" >
+  <mat-label >Koji kolokvijum?</mat-label >
+  <mat-select [(ngModel)]="formData.tip_kolokvijuma" >
+    <mat-option value="I" >I</mat-option >
+    <mat-option value="II" >II</mat-option >
+    <mat-option value="III" >III</mat-option >
+    <mat-option value="Поправни I" >Поправни I</mat-option >
+    <mat-option value="Поправни II" >Поправни II</mat-option >
+    <mat-option value="Поправни III" >Поправни III</mat-option >
+  </mat-select >
+</mat-form-field >
       <!-- Vreme početka i kraja -->
 <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-2">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full sm:w-1/2">

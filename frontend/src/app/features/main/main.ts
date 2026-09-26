@@ -242,6 +242,7 @@ dayCellContent: (arg) => {
           title: cistNaslov, date: eventDate,
           startTime: info.event.extendedProps['vreme'], endTime: info.event.extendedProps['vremeKraja'],
           room: info.event.extendedProps['sala'], predmetId: info.event.extendedProps['predmetId'],
+          tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
           is_ispit: info.event.extendedProps['is_ispit'] ?? true, dezurni: info.event.extendedProps['dezurni'] || [],
           zauzeteSaleNaDan: zauzecaNaDan
         },
@@ -274,17 +275,29 @@ dayCellContent: (arg) => {
           const dezurniIds = result.dezurni_ids || result.formData?.dezurni_ids || [];
           const izabraniSaradnici = result.izabraniSaradnici || [];
           const isIspit = result.is_ispit ?? true;
+          const tipKolokvijuma = result.tip_kolokvijuma || 'I';
 
           if (info.event.id && info.event.id.startsWith('temp_')) {
             const draftEvt = this.unsavedEvents.find(e => e.tempId === info.event.id);
             if (draftEvt) {
-              draftEvt.vreme = result.startTime; draftEvt.vreme_kraja = result.endTime;
-              draftEvt.sala = result.room; draftEvt.is_ispit = isIspit; draftEvt.dezurni_ids = dezurniIds;
+              draftEvt.vreme = result.startTime; 
+              draftEvt.vreme_kraja = result.endTime;
+              draftEvt.sala = result.room; 
+              draftEvt.is_ispit = isIspit; 
+              draftEvt.tip_kolokvijuma = tipKolokvijuma;
+              draftEvt.dezurni_ids = dezurniIds;
             }
           } else {
             const payload = {
-              id: info.event.id, datum: eventDate, vreme: result.startTime, vreme_kraja: result.endTime,
-              sala: result.room, predmet_id: info.event.extendedProps['predmetId'], is_ispit: isIspit, dezurni_ids: dezurniIds
+              id: info.event.id, 
+              datum: eventDate, 
+              vreme: result.startTime, 
+              vreme_kraja: result.endTime,
+              sala: result.room, 
+              predmet_id: info.event.extendedProps['predmetId'], 
+              is_ispit: isIspit, 
+              tip_kolokvijuma: tipKolokvijuma,
+              dezurni_ids: dezurniIds
             };
             const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
             if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload; else this.modifiedEvents.push(payload);
@@ -332,7 +345,8 @@ dayCellContent: (arg) => {
         maxWidth: '95vw', width: '1100px', maxHeight: '120vh',
         data: {
           title: originalEvent.title, date: eventDate, predmetId: predmetId,
-          dezurni: droppedPredmet?.saradnici || [], is_ispit: true, zauzeteSaleNaDan: zauzecaNaDan
+          dezurni: droppedPredmet?.saradnici || [], is_ispit: true, zauzeteSaleNaDan: zauzecaNaDan,
+          tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
         },
         disableClose: true
       });
@@ -343,12 +357,21 @@ dayCellContent: (arg) => {
           const dezurniIds = result.dezurni_ids || result.formData?.dezurni_ids || [];
           const izabraniSaradnici = result.izabraniSaradnici || [];
           const isIspit = result.is_ispit ?? true;
+          const tipKolokvijuma = result.tip_kolokvijuma || 'I';
 
           this.unsavedEvents.push({
-            tempId: tempId, predmet_id: predmetId, title: result.title,
-            datum: eventDate, vreme: result.startTime, vreme_kraja: result.endTime,
-            sala: result.room, is_ispit: isIspit, dezurni_ids: dezurniIds,
-            backgroundColor: originalEvent.backgroundColor, borderColor: originalEvent.borderColor
+            tempId: tempId, 
+            predmet_id: predmetId, 
+            title: result.title,
+            datum: eventDate, 
+            vreme: result.startTime, 
+            vreme_kraja: result.endTime,
+            sala: result.room, 
+            is_ispit: isIspit, 
+            tip_kolokvijuma: tipKolokvijuma,
+            dezurni_ids: dezurniIds,
+            backgroundColor: originalEvent.backgroundColor, 
+            borderColor: originalEvent.borderColor
           });
 
           const noviEvent = {
@@ -378,25 +401,35 @@ dayCellContent: (arg) => {
       const newDate = info.event.startStr.split('T')[0];
       const dezurniLica = info.event.extendedProps['dezurni'] || [];
       const dezurniIds = dezurniLica.map((d: any) => d.id || d);
+      const tipKolokvijuma = info.event.extendedProps['tip_kolokvijuma'] || 'I';
 
       if (info.event.id && !info.event.id.startsWith('temp_')) {
         const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
         const payload = {
-          id: info.event.id, datum: newDate, vreme: info.event.extendedProps['vreme'],
-          vreme_kraja: info.event.extendedProps['vremeKraja'], sala: info.event.extendedProps['sala'],
-          predmet_id: info.event.extendedProps['predmetId'], is_ispit: info.event.extendedProps['is_ispit'] ?? true, dezurni_ids: dezurniIds
+          id: info.event.id, 
+          datum: newDate, 
+          vreme: info.event.extendedProps['vreme'],
+          vreme_kraja: info.event.extendedProps['vremeKraja'], 
+          sala: info.event.extendedProps['sala'],
+          predmet_id: info.event.extendedProps['predmetId'], 
+          is_ispit: info.event.extendedProps['is_ispit'] ?? true, 
+          tip_kolokvijuma: tipKolokvijuma,
+          dezurni_ids: dezurniIds
         };
         if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload; else this.modifiedEvents.push(payload);
       } else {
         const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
-        if (unsavedEvent) unsavedEvent.datum = newDate;
+        if (unsavedEvent) {
+          unsavedEvent.datum = newDate;
+          unsavedEvent.tip_kolokvijuma = tipKolokvijuma;
+        }
       }
 
       const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
       if (evtIndex > -1) {
-        this.allLoadedEvents[evtIndex].start = `${newDate}T${info.event.extendedProps['vreme']}:00`;
+        this.allLoadedEvents[evtIndex].start = `\({newDate}T\){info.event.extendedProps['vreme']}:00`;
         if (info.event.extendedProps['vremeKraja']) {
-          this.allLoadedEvents[evtIndex].end = `${newDate}T${info.event.extendedProps['vremeKraja']}:00`;
+          this.allLoadedEvents[evtIndex].end = `\({newDate}T\){info.event.extendedProps['vremeKraja']}:00`;
         }
       }
       this.applyFilters();
@@ -1018,6 +1051,7 @@ eventContent: (arg) => {
               sala: salaNaziv,
               predmetId: i.predmet_id,
               godina: godina,
+              tip_kolokvijuma: i.tip_kolokvijuma || 'I',
               is_ispit: isIspit,
               dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : []
             }
@@ -1219,6 +1253,7 @@ eventContent: (arg) => {
     this.izvozPodaci.datumDo = sledeciMesec.toISOString().split('T')[0];
   }
 
+
   generisiExcel(): void {
     const { tip, datumOd, datumDo, nazivRoka } = this.izvozPodaci;
     if (!datumOd || !datumDo) {
@@ -1229,7 +1264,7 @@ eventContent: (arg) => {
     const dOd = new Date(datumOd).getTime();
     const dDo = new Date(datumDo).getTime();
 
-    const ispitiUPeriodu = this.allLoadedEvents.filter(e => {
+    const ispitiUPeriodu = this.allLoadedEvents.filter((e: any) => {
       const isIspitEvent = e.extendedProps?.is_ispit ?? true;
       if (tip === 'ispiti' && !isIspitEvent) return false;
       if (tip === 'kolokvijumi' && isIspitEvent) return false;
@@ -1245,33 +1280,19 @@ eventContent: (arg) => {
       return;
     }
 
-    ispitiUPeriodu.sort((a, b) => {
-      const godA = a.extendedProps.godina || 99;
-      const godB = b.extendedProps.godina || 99;
-      if (godA !== godB) return godA - godB;
-      const datumA = new Date(a.start.split('T')[0]).getTime();
-      const datumB = new Date(b.start.split('T')[0]).getTime();
-      if (datumA !== datumB) return datumA - datumB;
-      return a.title.localeCompare(b.title);
-    });
+    // Dodajemo strukturu koja čuva i tekst i boju za svaku ćeliju
+    const sedmice = new Map();
 
-    const wsData: any[][] = [];
-    const cellStyles: any = {};
-    let rowIndex = 1;
-
-    wsData.push(['ОАС и МАС', 'Информатике', null, null]);
-    cellStyles[`A${rowIndex}`] = { font: { sz: 12, name: 'Calibri' } };
-    cellStyles[`B${rowIndex}`] = { font: { sz: 12, name: 'Calibri' } };
-    rowIndex++;
-
-    const bojaPoGodini: any = {
-      1: 'FF8EA9DB',
-      2: 'FFF4B083',
-      3: 'FFFFD965',
-      4: 'FFA8D08D',
-      5: 'FF00B0F0'
+    // Definisanje HEX boja po godinama (prilagodi po želji)
+    const bojaPoGodini: { [key: number]: string } = {
+      1: 'FF8EA9DB', // Plava
+      2: 'FFF4B083', // Narandžasta
+      3: 'FFFFD965', // Žuta
+      4: 'FFA8D08D', // Zelena
+      5: 'FF00B0F0'  // Svijetlo plava
     };
 
+    // Stil za ivice
     const tankiOkvir = {
       top: { style: 'thin', color: { rgb: 'FF000000' } },
       bottom: { style: 'thin', color: { rgb: 'FF000000' } },
@@ -1279,58 +1300,169 @@ eventContent: (arg) => {
       right: { style: 'thin', color: { rgb: 'FF000000' } }
     };
 
-    let trenutnaGodina = -1;
-    let redniBroj = 1;
+    ispitiUPeriodu.forEach((ispit: any) => {
+      const d = new Date(ispit.start.split('T')[0]);
+      const day = d.getDay();
+      const diff = d.getDate() - day + (day === 0 ? -6 : 1); 
+      const ponedeljak = new Date(d.setDate(diff));
+      const ponedeljakStr = ponedeljak.toISOString().split('T')[0];
 
-    ispitiUPeriodu.forEach(ispit => {
-      const ispitGodina = ispit.extendedProps.godina || 1;
-      if (ispitGodina !== trenutnaGodina) {
-        trenutnaGodina = ispitGodina;
-        redniBroj = 1;
-        const rimska = ['I', 'II', 'III', 'IV', 'Мастер'][trenutnaGodina - 1] || trenutnaGodina;
-
-        wsData.push([`${rimska} година`, null, null, null]);
-        cellStyles[`A${rowIndex}`] = { font: { bold: true, sz: 12, name: 'Calibri' } };
-        rowIndex++;
-
-        wsData.push([null, 'Предмет', nazivRoka, null]);
-        cellStyles[`B${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
-        cellStyles[`C${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
-        rowIndex++;
+      if (!sedmice.has(ponedeljakStr)) {
+        const datumi: Date[] = [];
+        for (let i = 0; i < 7; i++) {
+          const tekuci = new Date(ponedeljak);
+          tekuci.setDate(ponedeljak.getDate() + i);
+          datumi.push(tekuci);
+        }
+        sedmice.set(ponedeljakStr, {
+          datumi: datumi,
+          dogadjaji: [[], [], [], [], [], [], []]
+        });
       }
 
+      const originalDate = new Date(ispit.start.split('T')[0]);
+      let danIndex = originalDate.getDay() - 1;
+      if (danIndex === -1) danIndex = 6;
+
       const nazivPredmeta = ispit.title.split(' (')[0];
-      const datumSirovo = ispit.start.split('T')[0].split('-');
-      const datumPrikaz = `${datumSirovo[2]}.${datumSirovo[1]}.`;
-      const vremePrikaz = ispit.extendedProps.vreme + 'h';
+      
+      // --- PRIPREMA ZA NOVO POLJE ---
+      // Čita vrijednost 'tip_kolokvijuma' iz događaja. Ako još ne postoji, stavlja 'I'
+      const tipKolokvijuma = ispit.extendedProps.tip_kolokvijuma || 'I';
+      const tipString = ispit.extendedProps.is_ispit ? 'испит' : tipKolokvijuma + ' колоквијум';
+      
+      let vreme = ispit.extendedProps.vreme || '';
+      if (vreme.endsWith(':00')) {
+        vreme = vreme.substring(0, 2);
+      } else if (vreme) {
+        vreme = vreme.replace(':', '.');
+      }
+      
+      const tekst = nazivPredmeta + '\n - ' + tipString + ' - ' + vreme + 'h';
+      const godina = ispit.extendedProps.godina || 1;
 
-      wsData.push([redniBroj, nazivPredmeta, datumPrikaz, vremePrikaz]);
-      const bgColor = bojaPoGodini[trenutnaGodina] || 'FFFFFFFF';
+      sedmice.get(ponedeljakStr)!.dogadjaji[danIndex].push({
+        tekst: tekst,
+        boja: bojaPoGodini[godina as number] || 'FFFFFFFF' // Bijela ako godina nije prepoznata
+      });
+    });
 
-      cellStyles[`A${rowIndex}`] = { border: tankiOkvir, alignment: { horizontal: 'right' }, font: { name: 'Calibri', sz: 11 } };
-      cellStyles[`B${rowIndex}`] = { fill: { fgColor: { rgb: bgColor } }, border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
-      cellStyles[`C${rowIndex}`] = { border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
-      cellStyles[`D${rowIndex}`] = { border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
+    const wsData: any[][] = [];
+    const cellStyles: any = {};
+    const rowHeights: any[] = [];
+    let rowIndex = 1;
 
-      rowIndex++;
-      redniBroj++;
+    wsData.push(['Распоред колоквијума на ОАС Информатика \nлетњи семестар 2025/26', null, null, null, null, null, null]);
+    const merges = [{ s: { r: rowIndex - 1, c: 0 }, e: { r: rowIndex - 1, c: 6 } }]; 
+    cellStyles['A' + rowIndex] = { 
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, 
+        font: { bold: true, sz: 12 },
+        border: tankiOkvir
+    };
+    rowHeights.push({ hpt: 40 }); 
+    rowIndex++;
+
+    wsData.push([null, null, null, null, null, null, null]);
+    rowHeights.push({ hpt: 15 });
+    rowIndex++;
+
+    const sortiraneNedelje = Array.from(sedmice.keys()).sort();
+
+    sortiraneNedelje.forEach((ponedeljakStr: string) => {
+        const podaci = sedmice.get(ponedeljakStr)!;
+
+        wsData.push(['понедељак', 'уторак', 'среда', 'четвртак', 'петак', 'субота', 'недеља']);
+        const daniRowIndex = rowIndex;
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string) => {
+            cellStyles[col + daniRowIndex] = { 
+                alignment: { horizontal: 'center', vertical: 'center' }, 
+                font: { bold: true, name: 'Calibri', sz: 11 },
+                border: tankiOkvir
+            };
+        });
+        rowHeights.push({ hpt: 20 });
+        rowIndex++;
+
+        const datumiPrikaz = podaci.datumi.map((d: Date) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + day;
+        });
+        wsData.push(datumiPrikaz);
+        const datumiRowIndex = rowIndex;
+        ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string) => {
+            cellStyles[col + datumiRowIndex] = { 
+                alignment: { horizontal: 'center', vertical: 'center' },
+                font: { name: 'Calibri', sz: 11 },
+                border: tankiOkvir
+            };
+        });
+        rowHeights.push({ hpt: 20 });
+        rowIndex++;
+
+        const maxIspitaUDanu = Math.max(...podaci.dogadjaji.map((dan: any[]) => dan.length), 1);
+
+        for (let i = 0; i < maxIspitaUDanu; i++) {
+            const redIspita: string[] = [];
+            let imaSadrzaja = false;
+            
+            for (let j = 0; j < 7; j++) {
+                const dogadjaj = podaci.dogadjaji[j][i];
+                if (dogadjaj) {
+                    imaSadrzaja = true;
+                    redIspita.push(dogadjaj.tekst);
+                } else {
+                    redIspita.push('');
+                }
+            }
+            wsData.push(redIspita);
+            
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach((col: string, index: number) => {
+                const dogadjaj = podaci.dogadjaji[index][i];
+                let bgColor = 'FFFFFFFF';
+                if (dogadjaj && dogadjaj.boja) {
+                    bgColor = dogadjaj.boja;
+                }
+
+                cellStyles[col + rowIndex] = { 
+                    alignment: { horizontal: 'center', vertical: 'top', wrapText: true },
+                    font: { name: 'Calibri', sz: 11 },
+                    border: tankiOkvir
+                };
+                if (bgColor !== 'FFFFFFFF') {
+                    cellStyles[col + rowIndex].fill = { fgColor: { rgb: bgColor } };
+                }
+            });
+            rowHeights.push({ hpt: imaSadrzaja ? 50 : 20 });
+            rowIndex++;
+        }
+
+        wsData.push([null, null, null, null, null, null, null]);
+        rowHeights.push({ hpt: 15 });
+        rowIndex++;
     });
 
     const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!merges'] = merges;
+    ws['!rows'] = rowHeights;
+    
     for (const key in cellStyles) {
       if (ws[key]) ws[key].s = cellStyles[key];
     }
 
-    ws['!cols'] = [{ wch: 15 }, { wch: 45 }, { wch: 15 }, { wch: 10 }];
+    ws['!cols'] = [
+      { wch: 25 }, { wch: 25 }, { wch: 25 }, { wch: 25 }, 
+      { wch: 25 }, { wch: 25 }, { wch: 25 }
+    ];
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Raspored');
-    XLSX.writeFile(wb, `Raspored_${tip}_${datumOd}.xlsx`);
+    XLSX.writeFile(wb, 'Raspored_' + tip + '_' + datumOd + '.xlsx');
 
     this.prikaziIzvozModal = false;
     this.toastService.show('Excel fajl je uspešno generisan!', 'success');
   }
-
   // ============================================
   // POJEDINAČNO PREUREĐIVANJE DANA (MODAL)
   // ============================================
@@ -1382,6 +1514,7 @@ eventContent: (arg) => {
         }
       } else {
         const mIdx = this.modifiedEvents.findIndex(e => e.id === modIspit.id);
+        
         const payload = {
           id: modIspit.id, datum: this.selektovanDan, vreme: modIspit.extendedProps.vreme,
           vreme_kraja: modIspit.extendedProps.vremeKraja, sala: modIspit.extendedProps.sala,

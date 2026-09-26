@@ -17,5 +17,4 @@ router.post('/',protect, ispitController.createIspit);
 router.get('/:id', ispitController.getIspitById);
 router.put('/:id', protect,ispitController.updateIspit);
 router.delete('/:id', protect,ispitController.deleteIspit);
-
 module.exports = router;

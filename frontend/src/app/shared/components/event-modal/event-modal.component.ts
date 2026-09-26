@@ -28,6 +28,7 @@ export class EventModal implements OnInit {
   formData = {
     startTime: '',
     endTime: '',
+    tip_kolokvijuma: 'I',
     room: '',
     is_ispit: true,
     dezurni_ids: [] as number[]
@@ -43,13 +44,13 @@ export class EventModal implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean } 
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean,tip_kolokvijuma?: string } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
     if (this.data.room) this.formData.room = this.data.room;
     if (this.data.is_ispit !== undefined) this.formData.is_ispit = this.data.is_ispit;
-    
+    if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma; // <--- DODANO OVDJ
     if (this.data.dezurni) {
       this.izabraniSaradnici = [...this.data.dezurni];
       this.formData.dezurni_ids = this.izabraniSaradnici.map(s => s.id);
@@ -170,7 +171,12 @@ export class EventModal implements OnInit {
     if (this.formData.startTime && this.formData.endTime && this.formData.room) {
       this.showError = false;
       this.odsustvoErrorPoruka = '';
-      this.dialogRef.close({ ...this.data, ...this.formData, izabraniSaradnici: this.izabraniSaradnici });
+      this.dialogRef.close({ 
+        ...this.data, 
+        ...this.formData, 
+        tip_kolokvijuma: this.formData.tip_kolokvijuma || 'I', // <--- EKSPLICITNO PROSLEDITI
+        izabraniSaradnici: this.izabraniSaradnici 
+      });
     } else {
       this.showError = true;
     }
