@@ -939,3 +939,28 @@ div[class*="fc-event-dragging"] {
   border: 2px solid #1F63A0 !important;
   box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25) !important;
 }
+/* Booking.com stil opsega datuma */
+.fc-day-range-edge {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  transition: all 0.15s ease-in-out;
+}
+.fc-day-range-edge .fc-daygrid-day-number {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fc-day-in-range {
+  background-color: rgba(31, 99, 160, 0.16) !important;
+  transition: all 0.15s ease-in-out;
+}
+.fc-day-in-range:hover {
+  background-color: rgba(31, 99, 160, 0.26) !important;
+}

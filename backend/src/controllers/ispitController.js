@@ -236,7 +236,24 @@ const createIspit = async (req, res) => {
             });
         }
 
-        // Kreiranje ispita i dežurstava preko modela
+        let salaId = null;
+        const salaNaziv = typeof finalSala === 'object' && finalSala !== null 
+             ? finalSala.naziv 
+             : finalSala;
+
+        if (salaNaziv && salaNaziv !== 'Bez sale') {
+            let postojecaSala = await prisma.sala.findUnique({
+                where: { naziv: salaNaziv }
+            });
+             
+            if (!postojecaSala) {
+                postojecaSala = await prisma.sala.create({
+                    data: { naziv: salaNaziv }
+                });
+            }
+            salaId = postojecaSala.id;
+        }
+
         const newIspit = await ispitModel.createIspit(
             predmet_id, 
             finalDatum, 
@@ -245,7 +262,7 @@ const createIspit = async (req, res) => {
             is_ispit ?? true, 
             finalTipKolokvijuma,
             salaId,
-            finalDezurni // Prosleđujemo konačan niz
+            finalDezurni
         );
         await logAction(
             req.user?.username || 'Korisnik',
@@ -262,7 +279,7 @@ const createIspit = async (req, res) => {
 
 const updateIspit = async (req, res) => {
     const { id } = req.params;
-    const { predmet_id, datum, vreme, vreme_kraja, is_ispit,tip_kolokvijuma, sala, room, dezurni_ids } = req.body;
+    const { predmet_id, datum, vreme, vreme_kraja, is_ispit, tip_kolokvijuma, sala, room, dezurni_ids } = req.body;
     try {
         const izabranaSala = sala || room;
         let salaId = null;
@@ -283,23 +300,24 @@ const updateIspit = async (req, res) => {
             salaId = postojecaSala.id;
         }
 
-        // Pozivamo model funkciju umesto direktnog prisma.ispit.update
+        // Poziv model funkcije sa točno usklađenim redoslijedom:
         const updatedIspit = await ispitModel.updateIspit(
             id,
             predmet_id,
             datum,
             vreme,
             vreme_kraja,
-            tip_kolokvijuma || 'I',
-            is_ispit ?? true,
-            salaId,
-            dezurni_ids || []
+            is_ispit ?? true,           // 6. is_ispit (Boolean)
+            tip_kolokvijuma || 'I',     // 7. tip_kolokvijuma (String)
+            salaId,                     // 8. salaId (Number ili null)
+            dezurni_ids || []           // 9. dezurni_ids (Array)
         );
+
         await logAction(
             req.user?.username || 'Korisnik',
             'UPDATE',
             'Ispit',
-            `Izmenjen termin ID ${id} (${datum} u ${vreme}h, sala: ${salaNaziv || 'Bez sale'})`
+            `Izmenjen termin ID \({id} (\){datum} u \({vreme}h, sala:\){salaNaziv || 'Bez sale'})`
         );
         res.status(200).json(updatedIspit);
     } catch (err) {

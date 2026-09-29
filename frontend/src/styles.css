@@ -154,3 +154,29 @@ body > .fc-event-dragging .bank-card-color-bar {
   outline: 2px dashed #1F63A0 !important;
   outline-offset: -2px !important;
 }
+/* U src/styles.css ili ::ng-deep u main.css */
+
+/* Početni i krajnji dan opsega */
+.fc .fc-daygrid-day.fc-day-range-edge {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  cursor: pointer !important;
+}
+
+.fc .fc-daygrid-day.fc-day-range-edge * {
+  color: #ffffff !important;
+}
+
+.fc .fc-daygrid-day.fc-day-range-edge .fc-daygrid-day-top {
+  opacity: 1 !important;
+}
+
+/* Dani između (svetlija plava) */
+.fc .fc-daygrid-day.fc-day-in-range {
+  background-color: #dbeafe !important; /* Tailwind blue-100 */
+  cursor: pointer !important;
+}
+
+.fc .fc-daygrid-day.fc-day-in-range:hover {
+  background-color: #bfdbfe !important; /* Tailwind blue-200 */
+}

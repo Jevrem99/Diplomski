@@ -1,0 +1,120 @@
+<div class="dialog-card-box rounded-3xl shadow-2xl w-full flex flex-col overflow-hidden font-montserrat">
+  
+  <!-- ZAGLAVLJE -->
+  <div class="bg-[#1F63A0] px-8 py-6 sm:px-10 sm:py-7 flex items-center justify-between border-b border-[#164f82]">
+    <div class="flex flex-col gap-1">
+      <h2 class="text-2xl sm:text-3xl font-extrabold text-white m-0 tracking-tight">Izvoz rasporeda u Excel</h2>
+      <span class="text-sm sm:text-base font-semibold text-blue-100/90">Generisanje zvanične Excel tabele sa šablonom</span>
+    </div>
+    <button (click)="onCancel()" class="text-white/80 hover:text-white text-3xl font-bold bg-transparent border-none cursor-pointer leading-none p-2 rounded-xl transition-colors">✕</button>
+  </div>
+
+  <!-- TELO MODALA -->
+  <div class="p-8 sm:p-10 flex flex-col gap-7 max-h-[82vh] overflow-y-auto">
+    
+    <!-- TIP TERMINA I APSOLVENTSKI CHECKBOX -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200">
+      <div class="flex items-center gap-4">
+        <label class="text-sm font-black uppercase tracking-wider text-slate-600 whitespace-nowrap">Tip rasporeda:</label>
+        <select [(ngModel)]="izvozPodaci.tip" (change)="promeniTip()"
+          class="dialog-input h-14 px-5 rounded-2xl text-base font-bold outline-none border-2 border-slate-300 bg-white text-slate-800 shadow-xs cursor-pointer focus:border-[#1F63A0]">
+          <option value="ispiti">Raspored ispita</option>
+          <option value="kolokvijumi">Raspored kolokvijuma</option>
+        </select>
+      </div>
+
+      <div *ngIf="izvozPodaci.tip === 'ispiti'" class="flex items-center">
+        <label class="inline-flex items-center gap-3 text-sm font-extrabold text-slate-700 cursor-pointer bg-slate-100 hover:bg-slate-200/80 px-4 py-3 rounded-2xl transition-colors border border-slate-200 shadow-2xs">
+          <input type="checkbox" [(ngModel)]="izvozPodaci.isApsolventski" class="w-5 h-5 text-[#1F63A0] rounded cursor-pointer">
+          <span>Apsolventski raspored</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- NASLOV / IME FAJLA -->
+    <div class="flex flex-col gap-2">
+      <label class="text-sm font-black uppercase tracking-wider text-slate-600">Naslov tabele / Naziv fajla</label>
+      <input type="text" [(ngModel)]="izvozPodaci.naslovRasporeda" placeholder="Ostavite prazno za podrazumevani naslov..."
+        class="dialog-input w-full h-14 px-5 rounded-2xl text-base font-bold outline-none border-2 border-slate-300 bg-white text-slate-800 focus:border-[#1F63A0] shadow-xs">
+    </div>
+
+    <!-- ISPITI: ISPITNI ROKOVI -->
+    <div *ngIf="izvozPodaci.tip === 'ispiti'" class="flex flex-col gap-3 mt-1">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <span class="text-sm font-black uppercase tracking-wider text-slate-600">
+          Ispitni rokovi (kliknite na datum za izbor na kalendaru)
+        </span>
+        <button (click)="dodajRok()" class="text-sm font-black text-[#1F63A0] hover:underline cursor-pointer bg-transparent border-none p-0 flex items-center gap-1.5">
+          + Dodaj sledeći rok
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3.5">
+        <div *ngFor="let rok of izvozPodaci.rokovi; let i = index" 
+             class="p-4 rounded-2xl border-2 border-slate-200 bg-slate-50/80 flex flex-wrap sm:flex-nowrap items-center gap-3.5 shadow-xs">
+          
+          <!-- Naziv roka -->
+          <div class="flex-1 min-w-[180px]">
+            <input type="text" [(ngModel)]="rok.naziv" placeholder="Naziv roka (npr. I ispitni rok)"
+              class="w-full h-14 px-5 rounded-xl text-base font-bold outline-none border-2 border-slate-300 bg-white text-slate-800 focus:border-[#1F63A0] shadow-2xs">
+          </div>
+          
+          <!-- Datum OD -->
+          <div class="relative w-44 cursor-pointer group shrink-0" (click)="izaberiNaKalendaru(i)">
+            <input type="text" readonly [value]="rok.datumOd ? formatirajDatumPrikaz(rok.datumOd) : 'Početak'"
+              class="w-full h-14 pl-4 pr-10 rounded-xl text-sm sm:text-base font-black border-2 border-blue-200 hover:border-[#1F63A0] bg-white text-[#1F63A0] cursor-pointer shadow-2xs transition-all select-none text-center">
+            <svg class="w-5 h-5 text-[#1F63A0] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+
+          <!-- Datum DO -->
+          <div class="relative w-44 cursor-pointer group shrink-0" (click)="izaberiNaKalendaru(i)">
+            <input type="text" readonly [value]="rok.datumDo ? formatirajDatumPrikaz(rok.datumDo) : 'Kraj'"
+              class="w-full h-14 pl-4 pr-10 rounded-xl text-sm sm:text-base font-black border-2 border-blue-200 hover:border-[#1F63A0] bg-white text-[#1F63A0] cursor-pointer shadow-2xs transition-all select-none text-center">
+            <svg class="w-5 h-5 text-[#1F63A0] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+
+          <button *ngIf="izvozPodaci.rokovi!.length > 1" (click)="obrisiRok(i)" 
+            class="text-rose-500 hover:text-rose-700 bg-transparent border-none cursor-pointer p-2 text-2xl font-bold shrink-0 leading-none">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KOLOKVIJUMI: RASPORED DATUMA -->
+    <div *ngIf="izvozPodaci.tip === 'kolokvijumi'" class="flex flex-col gap-3 mt-1">
+      <span class="text-sm font-black uppercase tracking-wider text-slate-600">Period kolokvijuma (kliknite za izbor na kalendaru)</span>
+      <div class="flex items-center gap-4">
+        <div class="relative w-52 cursor-pointer" (click)="izaberiNaKalendaru('kolokvijumi')">
+          <input type="text" readonly [value]="izvozPodaci.datumOd ? formatirajDatumPrikaz(izvozPodaci.datumOd) : 'Od datuma'"
+            class="w-full h-14 pl-4 pr-10 rounded-xl text-base font-black border-2 border-blue-200 hover:border-[#1F63A0] bg-white text-[#1F63A0] cursor-pointer shadow-2xs transition-all text-center select-none">
+          <svg class="w-5 h-5 text-[#1F63A0] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+
+        <span class="text-base font-extrabold text-slate-400">do</span>
+
+        <div class="relative w-52 cursor-pointer" (click)="izaberiNaKalendaru('kolokvijumi')">
+          <input type="text" readonly [value]="izvozPodaci.datumDo ? formatirajDatumPrikaz(izvozPodaci.datumDo) : 'Do datuma'"
+            class="w-full h-14 pl-4 pr-10 rounded-xl text-base font-black border-2 border-blue-200 hover:border-[#1F63A0] bg-white text-[#1F63A0] cursor-pointer shadow-2xs transition-all text-center select-none">
+          <svg class="w-5 h-5 text-[#1F63A0] absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- DUGMAD AKCIJA -->
+    <div class="flex gap-4 pt-5 mt-2 border-t border-slate-200">
+      <button (click)="onCancel()" class="dialog-cancel-btn flex-1 h-14 font-extrabold rounded-2xl text-base cursor-pointer border-2 border-slate-300 transition-colors">
+        Odustani
+      </button>
+      <button (click)="onSave()" class="flex-1 h-14 bg-[#27AE60] hover:bg-[#219653] text-white font-extrabold rounded-2xl text-base cursor-pointer border-none shadow-md transition-colors">
+        Generiši Excel tabelu
+      </button>
+    </div>
+  </div>
+</div>

@@ -15,7 +15,7 @@ import { EventModal } from '../../shared/components/event-modal/event-modal.comp
 import { ToastService } from '../../core/services/toast.service';
 import { FormsModule } from '@angular/forms';
 import * as XLSX from 'xlsx-js-style';
-
+import { ExportModalComponent, ExportDataResult } from '../../shared/components/export-modal/export-modal.component';
 interface Profesor {
   id?: number;
   ime: string;
@@ -133,7 +133,11 @@ export class Main implements OnInit, AfterViewInit {
     nazivRoka: '',
     naslovRasporeda: ''
   };
-
+  rezimBiranjaOpsegaIzvoza: boolean = false;
+  tempExportData: any = null;
+  tempPickingTarget: any = null;
+  exportStartPickedDate: string | null = null;
+  exportHoveredDate: string | null = null;
   // --- PODACI SA SERVERA ---
   dostupneSale: any[] = [];
   allLoadedEvents: any[] = [];
@@ -159,7 +163,40 @@ export class Main implements OnInit, AfterViewInit {
     dragRevertDuration: 0,
     droppable: true,
     editable: true,
+    dayCellClassNames: (arg) => {
+  const classes: string[] = [];
+  if (!this.rezimBiranjaOpsegaIzvoza) return classes;
 
+  const d = arg.date;
+  const currentStr = d.getFullYear() + '-' + 
+    String(d.getMonth() + 1).padStart(2, '0') + '-' + 
+    String(d.getDate()).padStart(2, '0');
+
+  const start = this.exportStartPickedDate;
+  const hover = this.exportHoveredDate;
+
+  if (start) {
+    if (currentStr === start) {
+      classes.push('fc-day-range-edge');
+      return classes;
+    }
+
+    if (hover) {
+      let d1 = start;
+      let d2 = hover;
+      if (d1 > d2) {
+        const tmp = d1; d1 = d2; d2 = tmp;
+      }
+
+      if (currentStr === d2) {
+        classes.push('fc-day-range-edge');
+      } else if (currentStr > d1 && currentStr < d2) {
+        classes.push('fc-day-in-range');
+      }
+    }
+  }
+  return classes;
+},
     dayCellContent: (arg) => {
       const d = arg.date;
       const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -210,6 +247,13 @@ export class Main implements OnInit, AfterViewInit {
     },
 
     dateClick: (info) => {
+      if (this.rezimBiranjaOpsegaIzvoza) {
+        this.ngZone.run(() => {
+          this.obradiIzborDatumaZaIzvoz(info.dateStr);
+        });
+        return;
+      }
+
       if (this.rezimUredjivanjaDana) {
         this.ngZone.run(() => {
           this.toggleSelektovanDan(info.dateStr);
@@ -399,42 +443,103 @@ export class Main implements OnInit, AfterViewInit {
 
     eventDrop: (info) => {
       this.hasUnsavedChanges = true;
-      const newDate = info.event.startStr.split('T')[0];
-      const dezurniLica = info.event.extendedProps['dezurni'] || [];
-      const dezurniIds = dezurniLica.map((d: any) => d.id || d);
-      const tipKolokvijuma = info.event.extendedProps['tip_kolokvijuma'] || 'I';
 
-      if (info.event.id && !info.event.id.startsWith('temp_')) {
-        const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
+      const d = info.event.start;
+      if (!d) return;
+
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      // Obično spajanje stringova da baza nikad ne pukne
+      const newDate = year + '-' + month + '-' + day;
+
+      const eventIdStr = String(info.event.id);
+
+      const postojeci = this.allLoadedEvents.find(e => String(e.id) === eventIdStr);
+
+      let vreme = postojeci?.extendedProps?.vreme || info.oldEvent?.extendedProps?.['vreme'] || info.event.extendedProps?.['vreme'];
+
+      // Normalizacija vremena (ako fali nula, npr "9:00" -> "09:00")
+      if (vreme && vreme.length === 4 && vreme.indexOf(':') === 1) {
+        vreme = '0' + vreme;
+      }
+
+      // ZABRANA za 00:00 - Forsiramo 09:00 ako se vreme izgubilo
+      if (!vreme || vreme === '00:00' || vreme === '0:00' || vreme.includes('undefined')) {
+        vreme = '09:00';
+      }
+
+      let vremeKraja = postojeci?.extendedProps?.vremeKraja || info.oldEvent?.extendedProps?.['vremeKraja'] || info.event.extendedProps?.['vremeKraja'] || '';
+
+      if (vremeKraja && vremeKraja.length === 4 && vremeKraja.indexOf(':') === 1) {
+        vremeKraja = '0' + vremeKraja;
+      }
+
+      const isIspit = postojeci?.extendedProps?.is_ispit ?? (info.event.extendedProps?.['is_ispit'] ?? true);
+      const sala = postojeci?.extendedProps?.sala || info.event.extendedProps?.['sala'] || 'Bez sale';
+      const predmetId = postojeci?.extendedProps?.predmetId || info.event.extendedProps?.['predmetId'];
+      const tipKolokvijuma = postojeci?.extendedProps?.tip_kolokvijuma || info.event.extendedProps?.['tip_kolokvijuma'] || 'I';
+
+      const dezurniLica = postojeci?.extendedProps?.dezurni || info.event.extendedProps?.['dezurni'] || [];
+      const dezurniIds = dezurniLica.map((dez: any) => dez.id || dez);
+
+      // Spremanje u memoriju za slanje na server
+      if (!eventIdStr.startsWith('temp_')) {
+        const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === eventIdStr);
         const payload = {
           id: info.event.id,
           datum: newDate,
-          vreme: info.event.extendedProps['vreme'],
-          vreme_kraja: info.event.extendedProps['vremeKraja'],
-          sala: info.event.extendedProps['sala'],
-          predmet_id: info.event.extendedProps['predmetId'],
-          is_ispit: info.event.extendedProps['is_ispit'] ?? true,
+          vreme: vreme,
+          vreme_kraja: vremeKraja,
+          sala: sala,
+          predmet_id: predmetId,
+          is_ispit: isIspit,
           tip_kolokvijuma: tipKolokvijuma,
           dezurni_ids: dezurniIds
         };
-        if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload; else this.modifiedEvents.push(payload);
+        if (existingIndex > -1) {
+          this.modifiedEvents[existingIndex] = payload;
+        } else {
+          this.modifiedEvents.push(payload);
+        }
       } else {
-        const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
+        const unsavedEvent = this.unsavedEvents.find(e => String(e.tempId) === eventIdStr);
         if (unsavedEvent) {
           unsavedEvent.datum = newDate;
-          unsavedEvent.tip_kolokvijuma = tipKolokvijuma;
+          unsavedEvent.vreme = vreme;
+          unsavedEvent.vreme_kraja = vremeKraja;
         }
       }
 
-      const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
+      // Ažuriranje glavne memorije (da ga kalendar uvek vidi pravilno)
+      const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === eventIdStr);
       if (evtIndex > -1) {
-        this.allLoadedEvents[evtIndex].start = `\({newDate}T\){info.event.extendedProps['vreme']}:00`;
-        if (info.event.extendedProps['vremeKraja']) {
-          this.allLoadedEvents[evtIndex].end = `\({newDate}T\){info.event.extendedProps['vremeKraja']}:00`;
-        }
+        this.allLoadedEvents[evtIndex] = {
+          ...this.allLoadedEvents[evtIndex],
+          start: newDate + 'T' + vreme + ':00',
+          end: vremeKraja ? (newDate + 'T' + vremeKraja + ':00') : undefined,
+          extendedProps: {
+            ...this.allLoadedEvents[evtIndex].extendedProps,
+            vreme: vreme,
+            vremeKraja: vremeKraja
+          }
+        };
       }
-      this.applyFilters();
-      setTimeout(() => this.detectConflicts(), 300);
+
+      // Gašenje celodnevnog režima i fiksiranje svojstava
+      info.event.setAllDay(false);
+      info.event.setExtendedProp('vreme', vreme);
+      info.event.setExtendedProp('vremeKraja', vremeKraja);
+
+      setTimeout(() => {
+        info.event.setDates(
+          newDate + 'T' + vreme + ':00',
+          vremeKraja ? (newDate + 'T' + vremeKraja + ':00') : null,
+          { allDay: false }
+        );
+        this.detectConflicts();
+        this.cdr.detectChanges();
+      }, 10);
     },
 
     eventContent: (arg) => {
@@ -823,6 +928,24 @@ export class Main implements OnInit, AfterViewInit {
 
   ngAfterViewInit(): void {
     this.initDraggable();
+
+    // Dohvatamo root element kalendara preko getApi().el ili selektora
+    setTimeout(() => {
+      const calEl = this.calendarComponent?.getApi()?.el || document.querySelector('full-calendar');
+      if (calEl) {
+        calEl.addEventListener('mouseover', (e: Event) => {
+          if (!this.rezimBiranjaOpsegaIzvoza || !this.exportStartPickedDate) return;
+          const cell = (e.target as HTMLElement).closest('.fc-daygrid-day') as HTMLElement;
+          if (cell) {
+            const dateStr = cell.getAttribute('data-date');
+            if (dateStr && dateStr !== this.exportHoveredDate) {
+              this.exportHoveredDate = dateStr;
+              this.calendarComponent.getApi().render();
+            }
+          }
+        });
+      }
+    }, 100);
   }
 
   trackById(index: number, item: any): any {
@@ -862,7 +985,11 @@ export class Main implements OnInit, AfterViewInit {
   toggleSveGodine(): void {
     this.izabraneGodine = [];
   }
-
+  formatirajDatumPrikaz(datumStr: string): string {
+    if (!datumStr) return '';
+    const [y, m, d] = datumStr.split('-');
+    return `\({d}.\){m}.${y}.`;
+  }
   toggleGodina(godina: number): void {
     const index = this.izabraneGodine.indexOf(godina);
     if (index > -1) {
@@ -961,9 +1088,7 @@ export class Main implements OnInit, AfterViewInit {
     }
 
     this.calendarOptions.events = [...filtered, ...backgroundEvents];
-    if (this.calendarComponent && this.calendarComponent.getApi()) {
-      this.calendarComponent.getApi().refetchEvents();
-    }
+
     this.cdr.detectChanges();
   }
 
@@ -1022,26 +1147,49 @@ export class Main implements OnInit, AfterViewInit {
 
   fetchIspiti(): void {
     forkJoin({
-      ispiti: this.http.get<any[]>(`${this.API_URL}/ispit`),
-      redovnaNastava: this.http.get<any[]>(`${this.API_URL}/ispit/zauzeti-termini`)
+      ispiti: this.http.get(this.API_URL + '/ispit'),
+      redovnaNastava: this.http.get(this.API_URL + '/ispit/zauzeti-termini')
     }).subscribe({
-      next: ({ ispiti, redovnaNastava }) => {
-        const ispitEvents = ispiti.map(i => {
+      next: (podaci) => {
+        // Ako backend vrati { data: [...] } ili { ispiti: [...] }, izvlači niz; ako je već niz, ostavlja ga
+        const siroviIspiti: any = podaci.ispiti;
+        const ispitiNiz: any[] = Array.isArray(siroviIspiti)
+          ? siroviIspiti
+          : (siroviIspiti?.data || siroviIspiti?.ispiti || siroviIspiti?.result || []);
+
+        const redovnaNastava = podaci.redovnaNastava;
+
+        const ispitEvents = ispitiNiz.map(i => {
           const pronadjeniPredmet = this.predmeti.find(p => p.id === (i.predmet_id || i.predmet?.id));
           const godina = i.predmet?.godina || pronadjeniPredmet?.godina || i.godina || 1;
           const boja = this.getGodinaColor(godina);
 
           const isIspit = i.is_ispit ?? true;
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
-          const formatiranoVreme = i.vreme ? (i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5)) : '00:00';
-          const formatiranoVremeKraja = i.vreme_kraja ? (i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5)) : '';
+
+          // 1. ČIŠĆENJE DATUMA KOJI STIGNE IZ BAZE
+          const cistDatum = (i.datum && i.datum.includes('T')) ? i.datum.split('T')[0] : i.datum;
+
+          let formatiranoVreme = '09:00';
+          if (i.vreme) {
+            formatiranoVreme = i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5);
+          }
+          if (formatiranoVreme === '00:00' || formatiranoVreme === '0:00') {
+            formatiranoVreme = '09:00';
+          }
+
+          let formatiranoVremeKraja = '';
+          if (i.vreme_kraja) {
+            formatiranoVremeKraja = i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5);
+          }
+
           const nazivPredmeta = i.predmet?.naziv || pronadjeniPredmet?.naziv || 'Ispit';
 
           return {
             id: i.id.toString(),
-            title: `${nazivPredmeta} (${salaNaziv})`,
-            start: `${i.datum}T${formatiranoVreme}`,
-            end: formatiranoVremeKraja ? `${i.datum}T${formatiranoVremeKraja}` : undefined,
+            title: nazivPredmeta + ' (' + salaNaziv + ')',
+            start: cistDatum + 'T' + formatiranoVreme + ':00',
+            end: formatiranoVremeKraja ? (cistDatum + 'T' + formatiranoVremeKraja + ':00') : undefined,
             display: 'block',
             backgroundColor: isIspit ? boja : '#ffffff',
             textColor: isIspit ? '#ffffff' : boja,
@@ -1058,6 +1206,7 @@ export class Main implements OnInit, AfterViewInit {
             }
           };
         });
+        // ostatak metode ostaje isti...
 
         const nastavaEvents: any[] = [];
         if (Array.isArray(redovnaNastava)) {
@@ -1065,10 +1214,10 @@ export class Main implements OnInit, AfterViewInit {
             const dStr = cas.datum ? cas.datum.split('T')[0] : null;
             if (!dStr) return;
             nastavaEvents.push({
-              id: `nastava_${cas.id}`,
-              title: `Nastava: ${cas.predmet} (${cas.sala?.naziv || 'Sala'})`,
-              start: `${dStr}T${cas.vreme_pocetka}:00`,
-              end: `${dStr}T${cas.vreme_kraja}:00`,
+              id: 'nastava_' + cas.id,
+              title: 'Nastava: ' + cas.predmet + ' (' + (cas.sala?.naziv || 'Sala') + ')',
+              start: dStr + 'T' + cas.vreme_pocetka + ':00',
+              end: dStr + 'T' + cas.vreme_kraja + ':00',
               display: 'block',
               backgroundColor: '#f3f4f6',
               borderColor: '#ef4444',
@@ -1247,30 +1396,395 @@ export class Main implements OnInit, AfterViewInit {
   // IZVOZ U EXCEL I ŠTAMPA
   // ============================================
 
-  otvoriIzvozModal(): void {
-    this.prikaziIzvozModal = true;
-    const danas = new Date();
-    this.izvozPodaci.datumOd = danas.toISOString().split('T')[0];
-    const sledeciMesec = new Date();
-    sledeciMesec.setMonth(sledeciMesec.getMonth() + 1);
-    this.izvozPodaci.datumDo = sledeciMesec.toISOString().split('T')[0];
+  otvoriIzvozModal(savedState?: ExportDataResult): void {
+    const dialogRef = this.dialog.open(ExportModalComponent, {
+      maxWidth: '95vw',
+      width: '920px',
+      maxHeight: '92vh',
+      panelClass: 'custom-export-dialog-panel',
+      data: savedState || null,
+      disableClose: true
+    });
+
+    dialogRef.afterClosed().subscribe((rezultat: ExportDataResult & { action?: string; pickingTarget?: any }) => {
+      if (!rezultat) return;
+
+      if (rezultat.action === 'pick_range') {
+        // Sakrivamo modal i ulazimo u mod biranja na kalendaru
+        this.tempExportData = rezultat;
+        this.tempPickingTarget = rezultat.pickingTarget;
+        this.rezimBiranjaOpsegaIzvoza = true;
+        this.exportStartPickedDate = null;
+        this.selektovaniDani.clear();
+
+        this.toastService.show('Kliknite prvi datum opsega na kalendaru.', 'success');
+        this.osveziPrikazKalendara();
+        return;
+      }
+
+      if (rezultat.action === 'export' || !rezultat.action) {
+        if (rezultat.tip === 'kolokvijumi') {
+          this.generisiExcelKolokvijumi(rezultat);
+        } else if (rezultat.tip === 'ispiti') {
+          this.generisiExcelIspiti(rezultat);
+        }
+      }
+    });
   }
 
+  obradiIzborDatumaZaIzvoz(kliknutiDatum: string): void {
+  if (!this.exportStartPickedDate) {
+    this.exportStartPickedDate = kliknutiDatum;
+    this.exportHoveredDate = kliknutiDatum;
+    this.calendarComponent.getApi().render();
+    this.toastService.show(`Početni datum: ${kliknutiDatum}. Sada kliknite krajnji datum.`, 'success');
+  } else {
+    let dOd = this.exportStartPickedDate;
+    let dDo = kliknutiDatum;
+    if (new Date(dOd) > new Date(dDo)) {
+      const temp = dOd;
+      dOd = dDo;
+      dDo = temp;
+    }
 
-  generisiExcel(): void {
-    const { tip, datumOd, datumDo, nazivRoka } = this.izvozPodaci;
-    if (!datumOd || !datumDo) {
-      this.toastService.show('Izaberite oba datuma!', 'error');
+    if (this.tempExportData) {
+      if (this.tempPickingTarget === 'kolokvijumi') {
+        this.tempExportData.datumOd = dOd;
+        this.tempExportData.datumDo = dDo;
+      } else if (typeof this.tempPickingTarget === 'number' && this.tempExportData.rokovi) {
+        if (this.tempExportData.rokovi[this.tempPickingTarget]) {
+          this.tempExportData.rokovi[this.tempPickingTarget].datumOd = dOd;
+          this.tempExportData.rokovi[this.tempPickingTarget].datumDo = dDo;
+        }
+      }
+    }
+
+    this.toastService.show(`Izabran opseg: \({dOd} do\){dDo}! Vraćam tabelu...`, 'success');
+
+    this.rezimBiranjaOpsegaIzvoza = false;
+    this.exportStartPickedDate = null;
+    this.exportHoveredDate = null;
+    this.calendarComponent.getApi().render();
+
+    const stateToRestore = this.tempExportData;
+    this.tempExportData = null;
+    this.tempPickingTarget = null;
+    
+    setTimeout(() => {
+      this.otvoriIzvozModal(stateToRestore || undefined);
+    }, 200);
+  }
+}
+  generisiExcelIspiti(podaci: ExportDataResult): void {
+    const rokovi = podaci.rokovi || [];
+    if (rokovi.length === 0) {
+      this.toastService.show('Niste uneli nijedan ispitni rok!', 'error');
       return;
     }
 
-    const dOd = new Date(datumOd).getTime();
-    const dDo = new Date(datumDo).getTime();
+    const tankaLinija = { style: 'thin', color: { rgb: 'FF000000' } };
+    const srednjaLinija = { style: 'medium', color: { rgb: 'FF000000' } };
+
+    const punOkvir = {
+      top: tankaLinija,
+      bottom: tankaLinija,
+      left: tankaLinija,
+      right: tankaLinija
+    };
+
+    const datumOkvir = {
+      top: tankaLinija,
+      bottom: tankaLinija,
+      left: tankaLinija,
+      right: undefined
+    };
+
+    const vremeOkvir = {
+      top: tankaLinija,
+      bottom: tankaLinija,
+      left: undefined,
+      right: tankaLinija
+    };
+
+    let bojePoGodini: { [key: number]: string };
+    if (podaci.isApsolventski) {
+      bojePoGodini = {
+        1: 'FFB4C6E7',
+        2: 'FFFCE4D6',
+        3: 'FFEAE2ED',
+        4: 'FFF8CBAD',
+        5: 'FF00B0F0'
+      };
+    } else {
+      bojePoGodini = {
+        1: 'FF8EA9DB', // Plava I godina
+        2: 'FFF4B183', // Narandžasto-breskva II godina
+        3: 'FFFFD966', // Toplo žuta III godina
+        4: 'FFA9D18E', // Zelena IV godina
+        5: 'FF00B0F0'  // Turquoise Master
+      };
+    }
+
+    const ispitiDogadjaji = this.allLoadedEvents.filter((e: any) => {
+      const isIspit = e.extendedProps?.is_ispit ?? true;
+      return isIspit && !e.extendedProps?.isNastava;
+    });
+
+    const godineLabele: { [key: number]: string } = {
+      1: 'I година',
+      2: 'II година',
+      3: 'III година',
+      4: 'IV година',
+      5: 'Мастер'
+    };
+
+    const predmetiPoGodinama: { [godina: number]: any[] } = { 1: [], 2: [], 3: [], 4: [], 5: [] };
+    this.predmeti.forEach(predmet => {
+      let g = Number(predmet.godina) || 1;
+      if (g > 5) g = 5;
+      if (!predmetiPoGodinama[g]) predmetiPoGodinama[g] = [];
+      predmetiPoGodinama[g].push(predmet);
+    });
+
+    const formatirajSat = (vremeRaw: string): string => {
+      if (!vremeRaw) return '';
+      if (vremeRaw.includes('T')) vremeRaw = vremeRaw.substring(11, 16);
+      const delovi = vremeRaw.split(':');
+      const sati = parseInt(delovi[0], 10);
+      const minuti = delovi.length > 1 ? delovi[1] : '00';
+      return minuti === '00' || !minuti ? sati + 'h' : sati + '.' + minuti + 'h';
+    };
+
+    const formatirajDanMesec = (datumStr: string): string => {
+      if (!datumStr) return '';
+      const d = new Date(datumStr);
+      const dan = String(d.getDate()).padStart(2, '0');
+      const mesec = String(d.getMonth() + 1).padStart(2, '0');
+      return dan + '.' + mesec + '.';
+    };
+
+    const wsData: any[][] = [];
+    const cellStyles: any = {};
+    const rowHeights: any[] = [];
+    const merges: any[] = [];
+    let rowIndex = 1;
+
+    const ukupanBrojKolona = 2 + (rokovi.length * 2);
+
+    // --- GLAVNI NASLOV DOKUMENTA ("ОАС и МАС Информатике") ---
+    const glavniNaslov = podaci.naslovRasporeda || 'ОАС и МАС Информатике';
+    const redGlavniNaslov = new Array(ukupanBrojKolona).fill('');
+    redGlavniNaslov[0] = glavniNaslov;
+    wsData.push(redGlavniNaslov);
+    merges.push({ s: { r: rowIndex - 1, c: 0 }, e: { r: rowIndex - 1, c: ukupanBrojKolona - 1 } });
+    cellStyles['A' + rowIndex] = {
+      alignment: { horizontal: 'center', vertical: 'center' },
+      font: { bold: true, sz: 14, name: 'Calibri' }
+    };
+    rowHeights.push({ hpt: 28 });
+    rowIndex++;
+
+    // Prazan red pre prve tabele
+    wsData.push(new Array(ukupanBrojKolona).fill(''));
+    rowHeights.push({ hpt: 12 });
+    rowIndex++;
+
+    [1, 2, 3, 4, 5].forEach(godina => {
+      const predmetiUGodini = predmetiPoGodinama[godina] || [];
+      if (predmetiUGodini.length === 0) return;
+
+      // 1. NASLOV GODINE: Calibri 14pt Bold, Centered (sa tvoje slike 1)
+      const redGodina = new Array(ukupanBrojKolona).fill('');
+      redGodina[0] = godineLabele[godina];
+      wsData.push(redGodina);
+
+      merges.push({ s: { r: rowIndex - 1, c: 0 }, e: { r: rowIndex - 1, c: ukupanBrojKolona - 1 } });
+
+      for (let c = 0; c < ukupanBrojKolona; c++) {
+        const colLetter = String.fromCharCode(65 + c);
+        cellStyles[colLetter + rowIndex] = {
+          alignment: { horizontal: 'center', vertical: 'center' },
+          font: { bold: true, sz: 14, name: 'Calibri' },
+          border: punOkvir
+        };
+      }
+      rowHeights.push({ hpt: 26 });
+      rowIndex++;
+
+      // 2. PODHEDER: "Предмет" (Calibri 11pt, Regular, Centrirano kao na slici 2) i Rokovi (11pt Regular)
+      const hederTabela = ['', 'Предмет'];
+      rokovi.forEach(rok => {
+        let nazivRoka = rok.naziv || '';
+        if (nazivRoka.includes(' ') && !nazivRoka.includes('\n')) {
+          const parts = nazivRoka.split(' ');
+          nazivRoka = parts[0] + '\n' + parts.slice(1).join(' ');
+        }
+        hederTabela.push(nazivRoka, '');
+      });
+      wsData.push(hederTabela);
+
+      // Spajanje za svaki rok
+      let colOffset = 2;
+      rokovi.forEach(() => {
+        merges.push({ s: { r: rowIndex - 1, c: colOffset }, e: { r: rowIndex - 1, c: colOffset + 1 } });
+        colOffset += 2;
+      });
+
+      for (let c = 0; c < ukupanBrojKolona; c++) {
+        const colLetter = String.fromCharCode(65 + c);
+        cellStyles[colLetter + rowIndex] = {
+          alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+          font: { bold: false, sz: 11, name: 'Calibri' }, // <--- TAČNO 11pt REGULAR
+          border: punOkvir
+        };
+      }
+      rowHeights.push({ hpt: 28 });
+      rowIndex++;
+
+      // 3. PREDMETI I TERMINI
+      let redniBroj = 1;
+
+      predmetiUGodini.forEach(predmet => {
+        const terminiPredmeta = ispitiDogadjaji.filter((ispit: any) => {
+          const pId = ispit.extendedProps?.predmetId;
+          const naslov = ispit.title.split(' (')[0].trim();
+          return (pId && pId === predmet.id) || naslov.toLowerCase() === predmet.naziv.toLowerCase();
+        });
+
+        const terminiPoRokovima: { [rokIdx: number]: any[] } = {};
+        rokovi.forEach((rok, idx) => {
+          terminiPoRokovima[idx] = [];
+          const rOd = new Date(rok.datumOd).getTime();
+          const rDo = new Date(rok.datumDo).getTime();
+
+          terminiPredmeta.forEach(t => {
+            const datumTermina = new Date(t.start.split('T')[0]).getTime();
+            if (datumTermina >= rOd && datumTermina <= rDo) {
+              terminiPoRokovima[idx].push(t);
+            }
+          });
+        });
+
+        const maxTermina = Math.max(...Object.values(terminiPoRokovima).map(arr => arr.length), 1);
+        const startRowIndex = rowIndex;
+
+        for (let subRow = 0; subRow < maxTermina; subRow++) {
+          const redPredmeta: any[] = [];
+
+          redPredmeta.push(subRow === 0 ? redniBroj : '');
+          redPredmeta.push(subRow === 0 ? predmet.naziv : '');
+
+          rokovi.forEach((rok, idx) => {
+            const termin = terminiPoRokovima[idx][subRow];
+            if (termin) {
+              redPredmeta.push(formatirajDanMesec(termin.start.split('T')[0]));
+              redPredmeta.push(formatirajSat(termin.extendedProps?.vreme || ''));
+            } else {
+              redPredmeta.push('', '');
+            }
+          });
+
+          wsData.push(redPredmeta);
+
+          // Kolona A: Redni broj
+          cellStyles['A' + rowIndex] = {
+            alignment: { horizontal: 'right', vertical: 'center' },
+            font: { name: 'Calibri', sz: 11 },
+            border: punOkvir
+          };
+
+          // Kolona B: Predmet
+          cellStyles['B' + rowIndex] = {
+            alignment: { horizontal: 'left', vertical: 'center' },
+            font: { name: 'Calibri', sz: 11 },
+            fill: { fgColor: { rgb: bojePoGodini[godina] || 'FFFFFFFF' } },
+            border: punOkvir
+          };
+
+          // Kolone po rokovima (bez unutrašnjeg vertikalnog bordera)
+          let cIdx = 2;
+          rokovi.forEach(() => {
+            const colDatum = String.fromCharCode(65 + cIdx);
+            const colVreme = String.fromCharCode(65 + cIdx + 1);
+
+            cellStyles[colDatum + rowIndex] = {
+              alignment: { horizontal: 'center', vertical: 'center' },
+              font: { name: 'Calibri', sz: 11 },
+              border: datumOkvir
+            };
+
+            cellStyles[colVreme + rowIndex] = {
+              alignment: { horizontal: 'center', vertical: 'center' },
+              font: { name: 'Calibri', sz: 11 },
+              border: vremeOkvir
+            };
+
+            cIdx += 2;
+          });
+
+          rowHeights.push({ hpt: 15 });
+          rowIndex++;
+        }
+
+        if (maxTermina > 1) {
+          merges.push({ s: { r: startRowIndex - 1, c: 0 }, e: { r: rowIndex - 2, c: 0 } });
+          merges.push({ s: { r: startRowIndex - 1, c: 1 }, e: { r: rowIndex - 2, c: 1 } });
+        }
+
+        redniBroj++;
+      });
+
+      // Prazan red između tabela
+      wsData.push(new Array(ukupanBrojKolona).fill(''));
+      rowHeights.push({ hpt: 15 });
+      rowIndex++;
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!merges'] = merges;
+    ws['!rows'] = rowHeights;
+
+    for (const key in cellStyles) {
+      if (ws[key]) ws[key].s = cellStyles[key];
+    }
+
+    const cols = [
+      { wch: 3.5 },
+      { wch: 44 }
+    ];
+    rokovi.forEach(() => {
+      cols.push({ wch: 7.5 });
+      cols.push({ wch: 5.5 });
+    });
+    ws['!cols'] = cols;
+
+    const wb = XLSX.utils.book_new();
+    const sheetIme = podaci.isApsolventski ? 'Apsolventski' : 'Jun-Septembar';
+    XLSX.utils.book_append_sheet(wb, ws, sheetIme);
+
+    let imeFajla = (podaci.naslovRasporeda || (podaci.isApsolventski ? 'Apsolventski_rok' : 'Raspored_ispita_Jun_Septembar'))
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/[\\/:*?"<>|]/g, '')
+      .trim();
+
+    XLSX.writeFile(wb, (imeFajla || 'Raspored_ispita') + '.xlsx');
+    this.toastService.show('Excel tabela ispita je uspešno generisana!', 'success');
+  }
+
+  generisiExcelKolokvijumi(podaci: ExportDataResult): void {
+
+    if (!podaci.datumOd || !podaci.datumDo) {
+      this.toastService.show('Izaberite oba datuma!', 'error');
+      return;
+    }
+    const tip = podaci.tip;
+    const dOd = new Date(podaci.datumOd).getTime();
+    const dDo = new Date(podaci.datumDo).getTime();
 
     const ispitiUPeriodu = this.allLoadedEvents.filter((e: any) => {
       const isIspitEvent = e.extendedProps?.is_ispit ?? true;
-      if (tip === 'ispiti' && !isIspitEvent) return false;
-      if (tip === 'kolokvijumi' && isIspitEvent) return false;
+      if (podaci.tip === 'ispiti' && !isIspitEvent) return false;
+      if (podaci.tip === 'kolokvijumi' && isIspitEvent) return false;
       if (e.extendedProps?.isNastava) return false;
 
       const evtStartStr = e.start.split('T')[0];
@@ -1496,9 +2010,9 @@ export class Main implements OnInit, AfterViewInit {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Raspored');
-    let cistoImeFajla = (this.izvozPodaci.naslovRasporeda || ('Raspored_' + tip))
-      .replace(/[\r\n]+/g, ' ')               // zamijeni prelom reda razmakom
-      .replace(/[\\/:*?"<>|]/g, '')           // ukloni znakove koje operativni sistem ne dozvoljava u imenima fajlova
+    let cistoImeFajla = (podaci.naslovRasporeda || ('Raspored_' + tip))
+      .replace(/[\r\n]+/g, ' ')
+      .replace(/[\\/:*?"<>|]/g, '')
       .trim();
 
     if (!cistoImeFajla) {
@@ -1506,8 +2020,6 @@ export class Main implements OnInit, AfterViewInit {
     }
 
     XLSX.writeFile(wb, cistoImeFajla + '.xlsx');
-
-    this.prikaziIzvozModal = false;
     this.toastService.show('Excel fajl je uspešno generisan!', 'success');
   }
   // ============================================
