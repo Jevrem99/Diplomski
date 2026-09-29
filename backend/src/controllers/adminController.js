@@ -11,31 +11,26 @@ const runImiSync = async (req, res) => {
         res.status(500).json({ message: 'Greška pri obradi IMI podataka', error: error.message });
     }
 };
-
 const resetDatabase = async (req, res) => {
   try {
+    const tables = await prisma['$queryRawUnsafe'](
+      "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != '_prisma_migrations';"
+    );
 
-    const tables = ['Predmet', 'Ispit','Profesor','Dezurstva']; 
+    if (tables && tables.length > 0) {
+      const tableNames = tables.map(t => '"' + t.tablename + '"').join(', ');
+      await prisma['$executeRawUnsafe']('TRUNCATE TABLE ' + tableNames + ' RESTART IDENTITY CASCADE;');
+    }
 
-    const tableNames = tables.map(t => `"${t}"`).join(', ');
-
-    const query = `TRUNCATE TABLE ${tableNames} RESTART IDENTITY CASCADE;`;
-
-    console.log('Executing query:', query);
-
-    return res.status(200).json({ 
-      message: 'Baza je uspešno obrisana' 
-    });
-
+    return res.status(200).json({ message: 'Baza podataka je uspešno i potpuno obrisana!' });
   } catch (error) {
-    console.error('Greška pri pražnjenju Postgres baze:', error);
+    console.error('Greška pri resetovanju baze:', error);
     return res.status(500).json({ 
-      message: 'Greška na serveru prilikom pražnjenja baze.',
+      message: 'Greška pri brisanju baze podataka.', 
       error: error.message 
     });
   }
 };
-
 module.exports = {
   resetDatabase,
   runImiSync

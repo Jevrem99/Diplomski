@@ -164,39 +164,39 @@ export class Main implements OnInit, AfterViewInit {
     droppable: true,
     editable: true,
     dayCellClassNames: (arg) => {
-  const classes: string[] = [];
-  if (!this.rezimBiranjaOpsegaIzvoza) return classes;
+      const classes: string[] = [];
+      if (!this.rezimBiranjaOpsegaIzvoza) return classes;
 
-  const d = arg.date;
-  const currentStr = d.getFullYear() + '-' + 
-    String(d.getMonth() + 1).padStart(2, '0') + '-' + 
-    String(d.getDate()).padStart(2, '0');
+      const d = arg.date;
+      const currentStr = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
 
-  const start = this.exportStartPickedDate;
-  const hover = this.exportHoveredDate;
+      const start = this.exportStartPickedDate;
+      const hover = this.exportHoveredDate;
 
-  if (start) {
-    if (currentStr === start) {
-      classes.push('fc-day-range-edge');
+      if (start) {
+        if (currentStr === start) {
+          classes.push('fc-day-range-edge');
+          return classes;
+        }
+
+        if (hover) {
+          let d1 = start;
+          let d2 = hover;
+          if (d1 > d2) {
+            const tmp = d1; d1 = d2; d2 = tmp;
+          }
+
+          if (currentStr === d2) {
+            classes.push('fc-day-range-edge');
+          } else if (currentStr > d1 && currentStr < d2) {
+            classes.push('fc-day-in-range');
+          }
+        }
+      }
       return classes;
-    }
-
-    if (hover) {
-      let d1 = start;
-      let d2 = hover;
-      if (d1 > d2) {
-        const tmp = d1; d1 = d2; d2 = tmp;
-      }
-
-      if (currentStr === d2) {
-        classes.push('fc-day-range-edge');
-      } else if (currentStr > d1 && currentStr < d2) {
-        classes.push('fc-day-in-range');
-      }
-    }
-  }
-  return classes;
-},
+    },
     dayCellContent: (arg) => {
       const d = arg.date;
       const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -442,105 +442,115 @@ export class Main implements OnInit, AfterViewInit {
     },
 
     eventDrop: (info) => {
-      this.hasUnsavedChanges = true;
+  this.hasUnsavedChanges = true;
 
-      const d = info.event.start;
-      if (!d) return;
+  const d = info.event.start;
+  if (!d) return;
 
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      // Obično spajanje stringova da baza nikad ne pukne
-      const newDate = year + '-' + month + '-' + day;
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  const newDate = `\({year}-\){month}-${day}`;
 
-      const eventIdStr = String(info.event.id);
+  const eventIdStr = String(info.event.id);
+  const postojeci = this.allLoadedEvents.find(e => String(e.id) === eventIdStr);
 
-      const postojeci = this.allLoadedEvents.find(e => String(e.id) === eventIdStr);
+  // 1. Čitanje i normalizacija vremena početka
+  let vreme = postojeci?.extendedProps?.vreme || 
+              info.oldEvent?.extendedProps?.['vreme'] || 
+              info.event.extendedProps?.['vreme'] || '09:00';
 
-      let vreme = postojeci?.extendedProps?.vreme || info.oldEvent?.extendedProps?.['vreme'] || info.event.extendedProps?.['vreme'];
+  if (vreme && vreme.length === 4 && vreme.indexOf(':') === 1) {
+    vreme = '0' + vreme;
+  }
+  if (!vreme || vreme === '00:00' || vreme === '0:00' || vreme.includes('undefined')) {
+    vreme = '09:00';
+  }
 
-      // Normalizacija vremena (ako fali nula, npr "9:00" -> "09:00")
-      if (vreme && vreme.length === 4 && vreme.indexOf(':') === 1) {
-        vreme = '0' + vreme;
+  // 2. Čitanje i normalizacija vremena kraja (stroga provera protiv 00:00)
+  let rawKraj = postojeci?.extendedProps?.vremeKraja || 
+                postojeci?.extendedProps?.vreme_kraja || 
+                info.oldEvent?.extendedProps?.['vremeKraja'] || 
+                info.oldEvent?.extendedProps?.['vreme_kraja'] || 
+                info.event.extendedProps?.['vremeKraja'] || 
+                info.event.extendedProps?.['vreme_kraja'] || '';
+
+  let vremeKraja = '';
+  if (rawKraj && rawKraj !== '00:00' && rawKraj !== '0:00' && !rawKraj.includes('undefined')) {
+    vremeKraja = rawKraj;
+    if (vremeKraja.length === 4 && vremeKraja.indexOf(':') === 1) {
+      vremeKraja = '0' + vremeKraja;
+    }
+  }
+
+  const isIspit = postojeci?.extendedProps?.is_ispit ?? (info.event.extendedProps?.['is_ispit'] ?? true);
+  const sala = postojeci?.extendedProps?.sala || info.event.extendedProps?.['sala'] || 'Bez sale';
+  const predmetId = postojeci?.extendedProps?.predmetId || info.event.extendedProps?.['predmetId'];
+  const tipKolokvijuma = postojeci?.extendedProps?.tip_kolokvijuma || info.event.extendedProps?.['tip_kolokvijuma'] || 'I';
+
+  const dezurniLica = postojeci?.extendedProps?.dezurni || info.event.extendedProps?.['dezurni'] || [];
+  const dezurniIds = dezurniLica.map((dez: any) => (typeof dez === 'object' ? dez.id : dez));
+
+  // 3. Upis u modifiedEvents ili unsavedEvents za server
+  if (!eventIdStr.startsWith('temp_')) {
+    const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === eventIdStr);
+    const payload = {
+      id: info.event.id,
+      datum: newDate,
+      vreme: vreme,
+      vreme_kraja: vremeKraja,
+      vremeKraja: vremeKraja,
+      sala: sala,
+      predmet_id: predmetId,
+      is_ispit: isIspit,
+      tip_kolokvijuma: tipKolokvijuma,
+      dezurni_ids: dezurniIds
+    };
+    if (existingIndex > -1) {
+      this.modifiedEvents[existingIndex] = payload;
+    } else {
+      this.modifiedEvents.push(payload);
+    }
+  } else {
+    const unsavedEvent = this.unsavedEvents.find(e => String(e.tempId) === eventIdStr);
+    if (unsavedEvent) {
+      unsavedEvent.datum = newDate;
+      unsavedEvent.vreme = vreme;
+      unsavedEvent.vreme_kraja = vremeKraja;
+      unsavedEvent.vremeKraja = vremeKraja;
+    }
+  }
+
+  // 4. Ažuriranje allLoadedEvents memorije
+  const startIso = `\({newDate}T\){vreme}:00`;
+  const endIso = vremeKraja ? `\({newDate}T\){vremeKraja}:00` : undefined;
+
+  const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === eventIdStr);
+  if (evtIndex > -1) {
+    this.allLoadedEvents[evtIndex] = {
+      ...this.allLoadedEvents[evtIndex],
+      start: startIso,
+      end: endIso,
+      extendedProps: {
+        ...this.allLoadedEvents[evtIndex].extendedProps,
+        vreme: vreme,
+        vremeKraja: vremeKraja,
+        vreme_kraja: vremeKraja
       }
+    };
+  }
 
-      // ZABRANA za 00:00 - Forsiramo 09:00 ako se vreme izgubilo
-      if (!vreme || vreme === '00:00' || vreme === '0:00' || vreme.includes('undefined')) {
-        vreme = '09:00';
-      }
+  // 5. Sinhronizacija samog FullCalendar event objekta
+  info.event.setAllDay(false);
+  info.event.setExtendedProp('vreme', vreme);
+  info.event.setExtendedProp('vremeKraja', vremeKraja);
+  info.event.setExtendedProp('vreme_kraja', vremeKraja);
 
-      let vremeKraja = postojeci?.extendedProps?.vremeKraja || info.oldEvent?.extendedProps?.['vremeKraja'] || info.event.extendedProps?.['vremeKraja'] || '';
+  info.event.setDates(startIso, endIso || null, { allDay: false });
 
-      if (vremeKraja && vremeKraja.length === 4 && vremeKraja.indexOf(':') === 1) {
-        vremeKraja = '0' + vremeKraja;
-      }
-
-      const isIspit = postojeci?.extendedProps?.is_ispit ?? (info.event.extendedProps?.['is_ispit'] ?? true);
-      const sala = postojeci?.extendedProps?.sala || info.event.extendedProps?.['sala'] || 'Bez sale';
-      const predmetId = postojeci?.extendedProps?.predmetId || info.event.extendedProps?.['predmetId'];
-      const tipKolokvijuma = postojeci?.extendedProps?.tip_kolokvijuma || info.event.extendedProps?.['tip_kolokvijuma'] || 'I';
-
-      const dezurniLica = postojeci?.extendedProps?.dezurni || info.event.extendedProps?.['dezurni'] || [];
-      const dezurniIds = dezurniLica.map((dez: any) => dez.id || dez);
-
-      // Spremanje u memoriju za slanje na server
-      if (!eventIdStr.startsWith('temp_')) {
-        const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === eventIdStr);
-        const payload = {
-          id: info.event.id,
-          datum: newDate,
-          vreme: vreme,
-          vreme_kraja: vremeKraja,
-          sala: sala,
-          predmet_id: predmetId,
-          is_ispit: isIspit,
-          tip_kolokvijuma: tipKolokvijuma,
-          dezurni_ids: dezurniIds
-        };
-        if (existingIndex > -1) {
-          this.modifiedEvents[existingIndex] = payload;
-        } else {
-          this.modifiedEvents.push(payload);
-        }
-      } else {
-        const unsavedEvent = this.unsavedEvents.find(e => String(e.tempId) === eventIdStr);
-        if (unsavedEvent) {
-          unsavedEvent.datum = newDate;
-          unsavedEvent.vreme = vreme;
-          unsavedEvent.vreme_kraja = vremeKraja;
-        }
-      }
-
-      // Ažuriranje glavne memorije (da ga kalendar uvek vidi pravilno)
-      const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === eventIdStr);
-      if (evtIndex > -1) {
-        this.allLoadedEvents[evtIndex] = {
-          ...this.allLoadedEvents[evtIndex],
-          start: newDate + 'T' + vreme + ':00',
-          end: vremeKraja ? (newDate + 'T' + vremeKraja + ':00') : undefined,
-          extendedProps: {
-            ...this.allLoadedEvents[evtIndex].extendedProps,
-            vreme: vreme,
-            vremeKraja: vremeKraja
-          }
-        };
-      }
-
-      // Gašenje celodnevnog režima i fiksiranje svojstava
-      info.event.setAllDay(false);
-      info.event.setExtendedProp('vreme', vreme);
-      info.event.setExtendedProp('vremeKraja', vremeKraja);
-
-      setTimeout(() => {
-        info.event.setDates(
-          newDate + 'T' + vreme + ':00',
-          vremeKraja ? (newDate + 'T' + vremeKraja + ':00') : null,
-          { allDay: false }
-        );
-        this.detectConflicts();
-        this.cdr.detectChanges();
-      }, 10);
-    },
+  this.detectConflicts();
+  this.cdr.detectChanges();
+},
 
     eventContent: (arg) => {
       if (arg.event.display === 'background') return null;
@@ -581,9 +591,10 @@ export class Main implements OnInit, AfterViewInit {
       if (postojeci) postojeci.remove();
 
       const props = info.event.extendedProps;
-      const tip = props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit';
-      const vremeKraja = props['vremeKraja'] ? ` - ${props['vremeKraja']}h` : 'h';
-      const vremePocetka = props['vreme'] || '00:00';
+const tip = props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit';
+const k = props['vremeKraja'] || props['vreme_kraja'];
+const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
+const vremePocetka = props['vreme'] || '09:00';
       const sala = props['sala'] || 'Bez sale';
       const naslov = info.event.title.split(' (')[0];
       const dezurniImena = (props['dezurni'] || []).map((d: any) => `${d.ime} ${d.prezime}`).join(', ') || 'Nema dodeljenih';
@@ -1433,48 +1444,48 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   obradiIzborDatumaZaIzvoz(kliknutiDatum: string): void {
-  if (!this.exportStartPickedDate) {
-    this.exportStartPickedDate = kliknutiDatum;
-    this.exportHoveredDate = kliknutiDatum;
-    this.calendarComponent.getApi().render();
-    this.toastService.show(`Početni datum: ${kliknutiDatum}. Sada kliknite krajnji datum.`, 'success');
-  } else {
-    let dOd = this.exportStartPickedDate;
-    let dDo = kliknutiDatum;
-    if (new Date(dOd) > new Date(dDo)) {
-      const temp = dOd;
-      dOd = dDo;
-      dDo = temp;
-    }
+    if (!this.exportStartPickedDate) {
+      this.exportStartPickedDate = kliknutiDatum;
+      this.exportHoveredDate = kliknutiDatum;
+      this.calendarComponent.getApi().render();
+      this.toastService.show(`Početni datum: ${kliknutiDatum}. Sada kliknite krajnji datum.`, 'success');
+    } else {
+      let dOd = this.exportStartPickedDate;
+      let dDo = kliknutiDatum;
+      if (new Date(dOd) > new Date(dDo)) {
+        const temp = dOd;
+        dOd = dDo;
+        dDo = temp;
+      }
 
-    if (this.tempExportData) {
-      if (this.tempPickingTarget === 'kolokvijumi') {
-        this.tempExportData.datumOd = dOd;
-        this.tempExportData.datumDo = dDo;
-      } else if (typeof this.tempPickingTarget === 'number' && this.tempExportData.rokovi) {
-        if (this.tempExportData.rokovi[this.tempPickingTarget]) {
-          this.tempExportData.rokovi[this.tempPickingTarget].datumOd = dOd;
-          this.tempExportData.rokovi[this.tempPickingTarget].datumDo = dDo;
+      if (this.tempExportData) {
+        if (this.tempPickingTarget === 'kolokvijumi') {
+          this.tempExportData.datumOd = dOd;
+          this.tempExportData.datumDo = dDo;
+        } else if (typeof this.tempPickingTarget === 'number' && this.tempExportData.rokovi) {
+          if (this.tempExportData.rokovi[this.tempPickingTarget]) {
+            this.tempExportData.rokovi[this.tempPickingTarget].datumOd = dOd;
+            this.tempExportData.rokovi[this.tempPickingTarget].datumDo = dDo;
+          }
         }
       }
+
+      this.toastService.show(`Izabran opseg: \({dOd} do\){dDo}! Vraćam tabelu...`, 'success');
+
+      this.rezimBiranjaOpsegaIzvoza = false;
+      this.exportStartPickedDate = null;
+      this.exportHoveredDate = null;
+      this.calendarComponent.getApi().render();
+
+      const stateToRestore = this.tempExportData;
+      this.tempExportData = null;
+      this.tempPickingTarget = null;
+
+      setTimeout(() => {
+        this.otvoriIzvozModal(stateToRestore || undefined);
+      }, 200);
     }
-
-    this.toastService.show(`Izabran opseg: \({dOd} do\){dDo}! Vraćam tabelu...`, 'success');
-
-    this.rezimBiranjaOpsegaIzvoza = false;
-    this.exportStartPickedDate = null;
-    this.exportHoveredDate = null;
-    this.calendarComponent.getApi().render();
-
-    const stateToRestore = this.tempExportData;
-    this.tempExportData = null;
-    this.tempPickingTarget = null;
-    
-    setTimeout(() => {
-      this.otvoriIzvozModal(stateToRestore || undefined);
-    }, 200);
   }
-}
   generisiExcelIspiti(podaci: ExportDataResult): void {
     const rokovi = podaci.rokovi || [];
     if (rokovi.length === 0) {
