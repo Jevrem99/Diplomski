@@ -48,6 +48,10 @@ export class SidebarMenu {
     this.drawer.close();
     this.router.navigate(['/zaduzenja']);
   }
+  navigateToTerminiKolokvijuma() {
+    this.drawer.close();
+    this.router.navigate(['/termini-kolokvijuma']);
+  }
   logout() {
     localStorage.clear(); // Briše sve ključeve odjednom
     this.router.navigate(['/login']);

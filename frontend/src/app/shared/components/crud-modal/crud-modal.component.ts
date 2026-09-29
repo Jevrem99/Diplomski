@@ -10,7 +10,7 @@ import { MatSelectModule } from '@angular/material/select';
 @Component({
   selector: 'app-crud-modal',
   standalone: true,
-  imports: [CommonModule, FormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule,MatSelectModule],
+  imports: [CommonModule, FormsModule, MatDialogModule, MatButtonModule, MatFormFieldModule, MatInputModule, MatSelectModule],
   templateUrl: './crud-modal.component.html',
   styleUrl: './crud-modal.component.css'
 })
@@ -18,32 +18,57 @@ export class CrudModal {
   formData: any = {};
   searchQuery: string = '';
   showError: boolean = false;
+
   constructor(
     public dialogRef: MatDialogRef<CrudModal>,
-    // OBAVEZNO DODATI profesoriList i predmetiList ispod
-    @Inject(MAT_DIALOG_DATA) public data: { title: string, columns: any[], rowData?: any, saradniciList?: any[], profesoriList?: any[], predmetiList?: any[],rolesList?: any[] }
+    @Inject(MAT_DIALOG_DATA) public data: { title: string, columns: any[], rowData?: any, saradniciList?: any[], profesoriList?: any[], predmetiList?: any[], rolesList?: any[] }
   ) {
-    if (this.data.rowData) {
-      this.formData = { ...this.data.rowData };
-      if ('password' in this.formData) {
-        this.formData.password = '********';
+      if (this.data.rowData) {
+        this.formData = { ...this.data.rowData };
+
+        if ('password' in this.formData) {
+          this.formData.password = '********';
+        }
+
+        if (this.formData.datum && this.formData.datum.includes('T')) {
+          this.formData.datum = this.formData.datum.split('T')[0];
+        }
+
+        // ⬇️ PROVJERAVAMO I 'angazovanja' (kako Prisma vraća) I 'predmeti' ⬇️
+        const predmetiNiz = this.formData.angazovanja || this.formData.predmeti;
+
+        if (predmetiNiz && Array.isArray(predmetiNiz)) {
+          this.formData.predmeti_ids = predmetiNiz.map((p: any) => Number(p.id));
+        } else if (Array.isArray(this.formData.predmeti_ids)) {
+          this.formData.predmeti_ids = this.formData.predmeti_ids.map((id: any) => Number(id));
+        } else {
+          this.formData.predmeti_ids = [];
+        }
+      } else {
+        this.formData.predmeti_ids = [];
       }
-      // Ako formatiramo datum iz baze (YYYY-MM-DDTHH:mm:ss -> YYYY-MM-DD)
-      if (this.formData.datum && this.formData.datum.includes('T')) {
-        this.formData.datum = this.formData.datum.split('T')[0];
+
+      if (this.hasSaradniciColumn && !this.formData.saradnici_ids) {
+        this.formData.saradnici_ids = [];
       }
     }
-    if (this.hasSaradniciColumn && !this.formData.saradnici_ids) {
-      this.formData.saradnici_ids = [];
-    }
-  }
-  
-  // Proverava da li trenutna tabela ima kolonu za saradnike
+
   get hasSaradniciColumn(): boolean {
     return this.data.columns.some(c => c.key === 'saradnici_ids');
   }
 
-  // GORNJA LISTA: Filtrira po pretrazi i sklanja one koji su već izabrani
+  getPredmetById(id: number): any {
+    if (!this.data.predmetiList) return null;
+    return this.data.predmetiList.find((p: any) => p.id === Number(id));
+  }
+
+  // ⬇️ DODATO: Uklanjanje predmeta direktno klikom na 'x' na bedžu ⬇️
+  ukloniPredmet(predmetId: number): void {
+    if (this.formData.predmeti_ids) {
+      this.formData.predmeti_ids = this.formData.predmeti_ids.filter((id: number) => Number(id) !== Number(predmetId));
+    }
+  }
+
   get dostupniSaradnici() {
     if (!this.data.saradniciList) return [];
     return this.data.saradniciList.filter(s => 
@@ -52,7 +77,6 @@ export class CrudModal {
     );
   }
 
-  // DONJA LISTA (Spakovani): Nalazi cele objekte na osnovu ID-jeva iz formData
   get izabraniSaradniciObjekti() {
     if (!this.data.saradniciList || !this.formData.saradnici_ids) return [];
     return this.data.saradniciList.filter(s => this.formData.saradnici_ids.includes(s.id));
@@ -73,9 +97,8 @@ export class CrudModal {
   }
 
   onSave(): void {
-    // 1. Nalazimo sve kolone koje korisnik mora da popuni (preskačemo ID i saradnici_ids)
     const requiredCols = this.data.columns.filter(c => {
-      if (c.key === 'id' || c.key === 'saradnici_ids') return false;
+      if (c.key === 'id' || c.key === 'saradnici_ids' || c.key === 'predmeti_ids') return false;
       if (c.key === 'password' && this.formData.id) return false; 
       return true;
     });
@@ -93,7 +116,6 @@ export class CrudModal {
 
     const sanitizedData = { ...this.formData };
     
-    // Ako lozinka nije menjana (ostala je zvezdica ili prazna), brišemo je iz objekta da se ne upiše preko stare
     if (sanitizedData.password === '********' || !sanitizedData.password) {
       delete sanitizedData.password;
     }

@@ -8,7 +8,7 @@ router.post('/change-password', protect, userController.changePassword);
 router.get('/roles', protect, userController.getRoles);
 
 router.post('/', protect, restrictToAdmin, userController.registerUser);
-router.get('/', protect, restrictToAdmin, userController.getAllUsers);
+router.get('/', userController.getAllUsers);
 router.get('/:id', protect, restrictToAdmin, userController.getUserById);
 router.put('/:id', protect, restrictToAdmin, userController.updateUser);
 router.delete('/:id', protect, restrictToAdmin, userController.deleteUser);

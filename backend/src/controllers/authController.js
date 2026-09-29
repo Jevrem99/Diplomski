@@ -100,8 +100,52 @@ const resetPassword = async (req, res) => {
     }
 };
 
+const adminResetPassword = async (req, res) => {
+    const { email, newPassword, role, username } = req.body;
+
+    if (!email || !newPassword) {
+        return res.status(400).json({ error: 'Email i nova lozinka su obavezni.' });
+    }
+
+    const cleanEmail = email.trim().toLowerCase();
+    // Ako username nije posebno prosleđen sa frontenda, koristimo email kao username
+    const userUsername = username || cleanEmail;
+
+    try {
+        // 1. Proveravamo da li korisnik već postoji
+        const existingUser = await userModel.getUserByUsername(cleanEmail);
+
+        if (!existingUser) {
+            // 2. Prosleđujemo 4 argumenta tačno onim redom kako očekuje registerUser:
+            // (username, email, password, uloga)
+            await userModel.registerUser(
+                userUsername,
+                cleanEmail,
+                newPassword,
+                role || 'asistent'
+            );
+
+            return res.status(201).json({ 
+                message: `Korisnički nalog za ${cleanEmail} je uspešno kreiran i lozinka je postavljena!` 
+            });
+        }
+
+        // 3. Ako nalog već postoji, samo mu ažuriramo lozinku
+        await userModel.resetPasswordWithEmail(existingUser.email, newPassword);
+
+        return res.status(200).json({ 
+            message: `Lozinka za ${cleanEmail} je uspešno izmenjena!` 
+        });
+
+    } catch (error) {
+        console.error('Greška u adminResetPassword:', error);
+        return res.status(500).json({ error: 'Interna greška servera pri obradi naloga.' });
+    }
+};
+
 module.exports = {
     loginUser,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    adminResetPassword
 };
