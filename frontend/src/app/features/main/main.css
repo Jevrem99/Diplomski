@@ -964,3 +964,15 @@ div[class*="fc-event-dragging"] {
 .fc-day-in-range:hover {
   background-color: rgba(31, 99, 160, 0.26) !important;
 }
+.year-tag-btn {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.year-tag-btn.aktivna-godina {
+  background-color: #0b3558 !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  border: 1.5px solid #38bdf8 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.35) !important;
+  transform: scale(0.97);
+}

@@ -14,24 +14,23 @@ function jeZaglavljeIliPrazno(tekst) {
 function ocistiNazivPredmeta(rawNaziv) {
     if (!rawNaziv) return '';
 
+    // 1. Čistimo prelome redova, tabove i duple razmake
     let naziv = String(rawNaziv).replace(/[\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim();
 
-    // 1. Ako ima novi red koji je prešao u tekst napomene (npr. "drži se u letnjem...")
+    // 2. Sečemo napomene u zagradama poput (реализује се...) ili "држи се у..."
     naziv = naziv.replace(/држи се у.*$/i, '').trim();
     naziv = naziv.replace(/\(реализује се.*$/i, '').trim();
 
-    // 2. Sečemo sve što počinje sa '+'
+    // 3. Čim naiđe na '+', odmah sečemo sve iza
     if (naziv.includes('+')) {
         naziv = naziv.split('+')[0].trim();
     }
 
-    // 3. Sečemo sve što počinje sa '-' iza koga sledi smer (OAS Fizika, OAS Matematika...)
-    if (naziv.includes('-')) {
-        const delovi = naziv.split('-');
-        const posleCrte = delovi.slice(1).join('-').toLowerCase();
-        if (posleCrte.includes('оас') || posleCrte.includes('физик') || posleCrte.includes('математ')) {
-            naziv = delovi[0].trim();
-        }
+    // 4. Čim naiđe na crticu sa razmakom ispred (' - ', ' – ', ' — '), odmah sečemo sve iza
+    // (Ovo čisti " - OAS Matematika", a čuva reči poput "čovek-računar")
+    const deloviSaCrticom = naziv.split(/\s+[-–—]/);
+    if (deloviSaCrticom.length > 1) {
+        naziv = deloviSaCrticom[0].trim();
     }
 
     return naziv;

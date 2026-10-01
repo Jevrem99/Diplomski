@@ -1,11 +1,12 @@
-<div class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full p-3 sm:p-4 md:p-6 gap-4 md:gap-6 font-montserrat">
+<div
+  class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full p-3 sm:p-4 md:p-6 gap-4 md:gap-6 font-montserrat">
 
   <!-- ========================================================= -->
   <!-- LIJEVI PANEL: BANKA PREDMETA I FILTERI                     -->
   <!-- ========================================================= -->
   <aside
     class="left-bank-aside w-full lg:w-[380px] flex flex-col rounded-2xl shadow-sm overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
-    
+
     <!-- Zaglavlje banke predmeta: Plava podloga i bijeli tekst -->
     <div class="bank-header-box text-white">
       <h2 class="text-base font-extrabold text-white m-0">Banka predmeta</h2>
@@ -16,15 +17,19 @@
         <div class="relative flex-1 flex items-center">
           <input type="text" [(ngModel)]="searchPredmet" placeholder="Pretraži predmete..."
             class="bank-search-input w-full pl-9 pr-3 h-[42px] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F63A0]/50 transition-all">
-          <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none"
+            stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
         <button (click)="prikaziLevoFiltere = !prikaziLevoFiltere"
           class="bank-filter-btn px-3 h-[42px] rounded-xl transition-colors shadow-xs outline-none cursor-pointer flex items-center justify-center"
           title="Dodatni filteri">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
+            </path>
           </svg>
         </button>
       </div>
@@ -37,9 +42,9 @@
             <mat-select [(ngModel)]="filterLevoProfesor" placeholder="Izaberi profesora">
               <mat-option value="svi">Svi profesori</mat-option>
               @for (prof of jedinstveniProfesori; track prof.id) {
-                <mat-option [value]="prof.id.toString()">
-                  {{ prof.ime }} {{ prof.prezime }}
-                </mat-option>
+              <mat-option [value]="prof.id.toString()">
+                {{ prof.ime }} {{ prof.prezime }}
+              </mat-option>
               }
             </mat-select>
           </mat-form-field>
@@ -48,21 +53,19 @@
             <div class="flex items-center justify-between px-0.5">
               <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/90">Godine</span>
               @if (izabraneGodine.length > 0) {
-                <button type="button" (click)="toggleSveGodine()"
-                  class="text-[11px] font-bold text-amber-300 hover:underline bg-transparent border-none cursor-pointer p-0">
-                  Prikaži sve
-                </button>
+              <button type="button" (click)="toggleSveGodine()"
+                class="text-[11px] font-bold text-amber-300 hover:underline bg-transparent border-none cursor-pointer p-0">
+                Prikaži sve
+              </button>
               }
             </div>
-            <div class="godine-grid grid grid-cols-4 gap-1 p-1 rounded-xl">
+            <div class="godine-grid grid grid-cols-4 gap-1.5 p-1 rounded-xl bg-black/25">
               @for (god of godineOpcije; track god.id) {
-                <button type="button" (click)="toggleGodina(god.id)"
-                  [class.bg-[#1F63A0]]="izabraneGodine.includes(god.id)"
-                  [class.text-white]="izabraneGodine.includes(god.id)"
-                  [class.font-extrabold]="izabraneGodine.includes(god.id)"
-                  class="year-tag-btn py-1.5 text-xs font-semibold rounded-lg text-center cursor-pointer border-none bg-transparent transition-colors">
-                  {{ god.id }}. God
-                </button>
+              <button type="button" (click)="toggleGodina(god.id)"
+                [class.aktivna-godina]="izabraneGodine.includes(god.id)"
+                class="year-tag-btn py-1.5 text-xs font-extrabold rounded-lg text-center cursor-pointer transition-all duration-150 select-none text-white/70 hover:text-white hover:bg-white/10">
+                {{ god.id }}. God
+              </button>
               }
             </div>
           </div>
@@ -74,37 +77,35 @@
     <!-- LISTA PREDMETA ZA PREVLAČENJE -->
     <div class="bank-items-scroll flex-1 overflow-y-auto p-4 flex flex-col gap-3" #draggableContainer>
       @for (predmet of filtriraniPredmeti; track predmet.id) {
-        <div
-          class="fc-event bank-card-item group"
-          [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
-          <!-- Obojena vertikalna traka -->
-          <div class="bank-card-color-bar" [style.background-color]="getGodinaColor(predmet.godina)"></div>
-          
-          <div class="bank-card-content">
-            <h3 class="bank-card-title">
-              {{ predmet.naziv }}
-            </h3>
-            <p class="bank-card-prof">
-              {{ predmet.profesorImePrezime }}
-            </p>
-            <div class="mt-1.5">
-              <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold"
-                [style.color]="getGodinaColor(predmet.godina)"
-                [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
-                {{ predmet.godina }}. Godina
-              </span>
-            </div>
+      <div class="fc-event bank-card-item group" [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
+        <!-- Obojena vertikalna traka -->
+        <div class="bank-card-color-bar" [style.background-color]="getGodinaColor(predmet.godina)"></div>
+
+        <div class="bank-card-content">
+          <h3 class="bank-card-title">
+            {{ predmet.naziv }}
+          </h3>
+          <p class="bank-card-prof">
+            {{ predmet.profesorImePrezime }}
+          </p>
+          <div class="mt-1.5">
+            <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold"
+              [style.color]="getGodinaColor(predmet.godina)"
+              [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
+              {{ predmet.godina }}. Godina
+            </span>
           </div>
         </div>
+      </div>
       } @empty {
-        <p class="text-xs text-gray-400 text-center py-4">Nema predmeta za izabrane kriterijume.</p>
+      <p class="text-xs text-gray-400 text-center py-4">Nema predmeta za izabrane kriterijume.</p>
       }
 
       @if (predmeti.length > prikazaniBrojPredmeta) {
-        <button (click)="vidiVisePredmeta()"
-          class="load-more-btn w-full py-2.5 mt-2 text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer border-none">
-          Vidi više predmeta
-        </button>
+      <button (click)="vidiVisePredmeta()"
+        class="load-more-btn w-full py-2.5 mt-2 text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer border-none">
+        Vidi više predmeta
+      </button>
       }
     </div>
   </aside>
@@ -113,94 +114,104 @@
   <!-- GLAVNI KALENDAR DIO                                       -->
   <!-- ========================================================= -->
   <main class="flex-1 flex flex-col min-w-0 w-full">
-    
+
     <!-- ZAGLAVLJE S KONTROLAMA -->
-    <header class="top-ctrl-header mb-4 p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between shadow-xs gap-3">
+    <header
+      class="top-ctrl-header mb-4 p-3 sm:p-4 flex flex-col xl:flex-row items-stretch xl:items-center justify-between shadow-xs gap-3">
       <div class="flex items-center gap-3 shrink-0">
         <h1 class="top-title-text text-lg sm:text-xl font-extrabold tracking-tight whitespace-nowrap m-0">
           Raspored Kolokvijuma
         </h1>
         @if (hasUnsavedChanges) {
-          <span class="unsaved-badge px-2.5 py-1 text-[11px] font-bold rounded-full flex items-center gap-1.5 whitespace-nowrap">
-            <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
-            Nesačuvane izmene
-          </span>
+        <span
+          class="unsaved-badge px-2.5 py-1 text-[11px] font-bold rounded-full flex items-center gap-1.5 whitespace-nowrap">
+          <span class="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse"></span>
+          Nesačuvane izmene
+        </span>
         }
       </div>
 
       <div class="flex flex-row items-center gap-2 shrink-0 justify-end flex-wrap">
         <!-- Uredi dane -->
-        <button (click)="toggleRezimUredjivanja()"
-          [class.active-mode-btn]="rezimUredjivanjaDana"
-          class="header-btn">
+        <button (click)="toggleRezimUredjivanja()" [class.active-mode-btn]="rezimUredjivanjaDana" class="header-btn">
           <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+            </path>
           </svg>
           <span class="whitespace-nowrap">{{ rezimUredjivanjaDana ? 'Završi uređivanje' : 'Uredi dane' }}</span>
           @if (selektovaniDani.size > 0) {
-            <span class="w-5 h-5 min-w-[20px] rounded-full bg-[#F39C12] text-white text-[11px] font-black flex items-center justify-center shrink-0">
-              {{ selektovaniDani.size }}
-            </span>
+          <span
+            class="w-5 h-5 min-w-[20px] rounded-full bg-[#F39C12] text-white text-[11px] font-black flex items-center justify-center shrink-0">
+            {{ selektovaniDani.size }}
+          </span>
           }
         </button>
 
         @if (rezimUredjivanjaDana && selektovaniDani.size > 0) {
-          <!-- Kopiraj dane -->
-          <button (click)="toggleKopiranje()"
-            [class.active-mode-btn]="kopiranjeAktivno"
-            class="header-btn">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
-            </svg>
-            <span class="whitespace-nowrap">{{ kopiranjeAktivno ? 'Kliknite ciljni datum...' : 'Kopiraj dane' }}</span>
-          </button>
+        <!-- Kopiraj dane -->
+        <button (click)="toggleKopiranje()" [class.active-mode-btn]="kopiranjeAktivno" class="header-btn">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2">
+            </path>
+          </svg>
+          <span class="whitespace-nowrap">{{ kopiranjeAktivno ? 'Kliknite ciljni datum...' : 'Kopiraj dane' }}</span>
+        </button>
 
-          <!-- Obriši -->
-          <button (click)="otvoriObrisiModal()"
-            class="header-btn btn-danger-action">
-            <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-            </svg>
-            <span class="whitespace-nowrap">Obriši ({{ selektovaniDani.size }})</span>
-          </button>
+        <!-- Obriši -->
+        <button (click)="otvoriObrisiModal()" class="header-btn btn-danger-action">
+          <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+            </path>
+          </svg>
+          <span class="whitespace-nowrap">Obriši ({{ selektovaniDani.size }})</span>
+        </button>
         }
 
         <!-- Statistika -->
         <div class="relative">
           <button (click)="isDashboardOpen = !isDashboardOpen" class="header-btn">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+              </path>
             </svg>
             <span>Statistika</span>
-            <svg class="w-3.5 h-3.5 transition-transform duration-200" [class.rotate-180]="isDashboardOpen" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-3.5 h-3.5 transition-transform duration-200" [class.rotate-180]="isDashboardOpen" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
             </svg>
           </button>
 
           @if (isDashboardOpen) {
-            <div class="statistika-dropdown-card absolute top-full mt-2 right-0 w-80 rounded-2xl shadow-xl z-[100] p-3.5 grid grid-cols-2 gap-2.5 animate-fadeIn">
-              <div class="stat-box stat-blue p-2.5 rounded-xl border flex flex-col justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-wide">Zakazano termina</span>
-                <span class="text-xl font-black mt-0.5">{{ stats.totalIspiti }}</span>
-              </div>
-              <div class="stat-box stat-green p-2.5 rounded-xl border flex flex-col justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-wide">Aktivni saradnici</span>
-                <span class="text-xl font-black mt-0.5">{{ stats.totalSaradnici }}</span>
-              </div>
-              <div class="stat-box stat-slate p-2.5 rounded-xl border flex flex-col justify-between">
-                <span class="text-[10px] font-bold uppercase tracking-wide">Najviše dežurstava</span>
-                <span class="text-xs font-black mt-0.5 leading-tight">{{ stats.topDezurni }}</span>
-              </div>
-              <div (click)="otvoriListuKonflikata()" class="stat-box stat-amber p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-colors shadow-xs">
-                <div class="flex items-center justify-between">
-                  <span class="text-[10px] font-bold uppercase tracking-wide">Konflikti</span>
-                  <span class="text-[10px] font-bold">➔</span>
-                </div>
-                <span class="text-xl font-black mt-0.5" [ngClass]="stats.konflikti > 0 ? 'text-amber-500' : 'text-slate-400'">
-                  {{ stats.konflikti }}
-                </span>
-              </div>
+          <div
+            class="statistika-dropdown-card absolute top-full mt-2 right-0 w-80 rounded-2xl shadow-xl z-[100] p-3.5 grid grid-cols-2 gap-2.5 animate-fadeIn">
+            <div class="stat-box stat-blue p-2.5 rounded-xl border flex flex-col justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wide">Zakazano termina</span>
+              <span class="text-xl font-black mt-0.5">{{ stats.totalIspiti }}</span>
             </div>
+            <div class="stat-box stat-green p-2.5 rounded-xl border flex flex-col justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wide">Aktivni saradnici</span>
+              <span class="text-xl font-black mt-0.5">{{ stats.totalSaradnici }}</span>
+            </div>
+            <div class="stat-box stat-slate p-2.5 rounded-xl border flex flex-col justify-between">
+              <span class="text-[10px] font-bold uppercase tracking-wide">Najviše dežurstava</span>
+              <span class="text-xs font-black mt-0.5 leading-tight">{{ stats.topDezurni }}</span>
+            </div>
+            <div (click)="otvoriListuKonflikata()"
+              class="stat-box stat-amber p-2.5 rounded-xl border flex flex-col justify-between cursor-pointer transition-colors shadow-xs">
+              <div class="flex items-center justify-between">
+                <span class="text-[10px] font-bold uppercase tracking-wide">Konflikti</span>
+                <span class="text-[10px] font-bold">➔</span>
+              </div>
+              <span class="text-xl font-black mt-0.5"
+                [ngClass]="stats.konflikti > 0 ? 'text-amber-500' : 'text-slate-400'">
+                {{ stats.konflikti }}
+              </span>
+            </div>
+          </div>
           }
         </div>
 
@@ -208,79 +219,87 @@
         <div class="relative">
           <button (click)="prikaziDesnoFiltere = !prikaziDesnoFiltere" class="header-btn">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z">
+              </path>
             </svg>
             <span>Filteri</span>
           </button>
 
           @if (prikaziDesnoFiltere) {
-            <div class="filteri-dropdown-card absolute top-full mt-2 right-0 w-72 rounded-2xl shadow-xl z-[100] p-4 flex flex-col gap-3 animate-fadeIn">
-              <div class="filter-header flex justify-between items-center border-b pb-2">
-                <span class="filter-title font-extrabold text-xs sm:text-sm">Filteri kalendara</span>
-                <button (click)="prikaziDesnoFiltere = false" class="filter-close-btn font-bold text-sm outline-none cursor-pointer border-none bg-transparent">✕</button>
-              </div>
-
-              <div class="filter-checks flex flex-col gap-2 border-b pb-3">
-                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="prikaziIspite" (change)="applyFilters()" class="w-4 h-4 text-[#1F63A0] rounded">
-                  Prikaži ispite
-                </label>
-                <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
-                  <input type="checkbox" [(ngModel)]="prikaziKolokvijume" (change)="applyFilters()" class="w-4 h-4 text-[#27AE60] rounded">
-                  Prikaži kolokvijume
-                </label>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Sala</span>
-                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
-                  <mat-select [(ngModel)]="filterSala" (selectionChange)="applyFilters()">
-                    <mat-option value="sve">Sve sale</mat-option>
-                    @for (sala of dostupneSale; track sala.id || sala) {
-                      <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Godina</span>
-                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
-                  <mat-select [(ngModel)]="filterGodina" (selectionChange)="applyFilters()">
-                    <mat-option value="sve">Sve godine</mat-option>
-                    <mat-option value="1">1. Godina</mat-option>
-                    <mat-option value="2">2. Godina</mat-option>
-                    <mat-option value="3">3. Godina</mat-option>
-                    <mat-option value="4">4. Godina</mat-option>
-                  </mat-select>
-                </mat-form-field>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Saradnici</span>
-                <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
-                  <mat-select multiple placeholder="Svi saradnici" [(ngModel)]="filterSaradnici" (selectionChange)="applyFilters()">
-                    @for (saradnik of sviSaradnici; track saradnik.id) {
-                      <mat-option [value]="saradnik.id">{{ saradnik.ime }} {{ saradnik.prezime }}</mat-option>
-                    }
-                  </mat-select>
-                </mat-form-field>
-              </div>
+          <div
+            class="filteri-dropdown-card absolute top-full mt-2 right-0 w-72 rounded-2xl shadow-xl z-[100] p-4 flex flex-col gap-3 animate-fadeIn">
+            <div class="filter-header flex justify-between items-center border-b pb-2">
+              <span class="filter-title font-extrabold text-xs sm:text-sm">Filteri kalendara</span>
+              <button (click)="prikaziDesnoFiltere = false"
+                class="filter-close-btn font-bold text-sm outline-none cursor-pointer border-none bg-transparent">✕</button>
             </div>
+
+            <div class="filter-checks flex flex-col gap-2 border-b pb-3">
+              <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                <input type="checkbox" [(ngModel)]="prikaziIspite" (change)="applyFilters()"
+                  class="w-4 h-4 text-[#1F63A0] rounded">
+                Prikaži ispite
+              </label>
+              <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                <input type="checkbox" [(ngModel)]="prikaziKolokvijume" (change)="applyFilters()"
+                  class="w-4 h-4 text-[#27AE60] rounded">
+                Prikaži kolokvijume
+              </label>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Sala</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
+                <mat-select [(ngModel)]="filterSala" (selectionChange)="applyFilters()">
+                  <mat-option value="sve">Sve sale</mat-option>
+                  @for (sala of dostupneSale; track sala.id || sala) {
+                  <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Godina</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
+                <mat-select [(ngModel)]="filterGodina" (selectionChange)="applyFilters()">
+                  <mat-option value="sve">Sve godine</mat-option>
+                  <mat-option value="1">1. Godina</mat-option>
+                  <mat-option value="2">2. Godina</mat-option>
+                  <mat-option value="3">3. Godina</mat-option>
+                  <mat-option value="4">4. Godina</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <div class="flex flex-col gap-1">
+              <span class="filter-label text-[10px] font-extrabold uppercase tracking-wider">Saradnici</span>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="unified-filter-field w-full">
+                <mat-select multiple placeholder="Svi saradnici" [(ngModel)]="filterSaradnici"
+                  (selectionChange)="applyFilters()">
+                  @for (saradnik of sviSaradnici; track saradnik.id) {
+                  <mat-option [value]="saradnik.id">{{ saradnik.ime }} {{ saradnik.prezime }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </div>
+          </div>
           }
         </div>
 
         <!-- Izvezi -->
         <button (click)="otvoriIzvozModal()" class="header-btn">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z">
+            </path>
           </svg>
           <span class="hidden sm:inline">Izvezi</span>
         </button>
 
         <!-- Sačuvaj -->
-        <button (click)="saveDraftSchedule()" [disabled]="!hasUnsavedChanges"
-          [class.opacity-50]="!hasUnsavedChanges"
+        <button (click)="saveDraftSchedule()" [disabled]="!hasUnsavedChanges" [class.opacity-50]="!hasUnsavedChanges"
           class="header-btn btn-save-draft">
           Sačuvaj
         </button>
@@ -296,7 +315,9 @@
         <!-- IMI Sync -->
         <button (click)="sinhronizujIMI()" class="header-btn">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+            </path>
           </svg>
           <span class="hidden sm:inline">IMI Sync</span>
         </button>
@@ -304,7 +325,8 @@
     </header>
 
     <!-- FULLCALENDAR KONTEJNER -->
-    <div class="calendar-container-card flex-1 p-3 sm:p-3.5 flex flex-col h-[520px] lg:h-[calc(100vh-8.5rem)] min-h-[420px] shadow-xs">
+    <div
+      class="calendar-container-card flex-1 p-3 sm:p-3.5 flex flex-col h-[520px] lg:h-[calc(100vh-8.5rem)] min-h-[420px] shadow-xs">
       <full-calendar #calendar [options]="calendarOptions" class="h-full w-full flex-1"></full-calendar>
     </div>
   </main>
@@ -314,76 +336,86 @@
 <!-- MODALI (BRISANJE, IZVOZ, KONFLIKTI)                       -->
 <!-- ========================================================= -->
 @if (prikaziObrisiModal) {
-  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat animate-in fade-in duration-150">
-    <div class="dialog-card-box rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
-      <div class="bg-rose-600 px-6 py-4 flex items-center justify-between text-white border-b border-rose-700">
-        <div class="flex items-center gap-2.5">
-          <svg class="w-5 h-5 text-rose-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-          </svg>
-          <h2 class="text-lg font-extrabold m-0">Brisanje termina</h2>
-        </div>
-        <button (click)="prikaziObrisiModal = false" class="text-white/80 hover:text-white text-2xl font-bold bg-transparent border-none cursor-pointer leading-none">✕</button>
+<div
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat animate-in fade-in duration-150">
+  <div
+    class="dialog-card-box rounded-3xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+    <div class="bg-rose-600 px-6 py-4 flex items-center justify-between text-white border-b border-rose-700">
+      <div class="flex items-center gap-2.5">
+        <svg class="w-5 h-5 text-rose-100" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+          </path>
+        </svg>
+        <h2 class="text-lg font-extrabold m-0">Brisanje termina</h2>
       </div>
-
-      <div class="p-6 flex flex-col gap-4">
-        <p class="dialog-text text-sm font-semibold leading-relaxed m-0">
-          Da li ste sigurni da želite da obrišete sve zakazane termine u <strong class="text-rose-600 font-extrabold">{{ selektovaniDani.size }} selektovanih dana</strong>?
-        </p>
-        <span class="dialog-hint text-xs font-medium p-3 rounded-xl border">
-          Ova akcija će označiti sve ispite i kolokvijume sa izabranih datuma za trajno brisanje.
-        </span>
-
-        <div class="flex gap-2.5 pt-2">
-          <button (click)="prikaziObrisiModal = false"
-            class="dialog-cancel-btn flex-1 h-11 font-extrabold rounded-xl text-xs cursor-pointer border transition-colors">
-            Odustani
-          </button>
-          <button (click)="potvrdiBrisanjeDana()"
-            class="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl border border-rose-700 text-xs shadow-md cursor-pointer transition-colors">
-            Obriši termine
-          </button>
-        </div>
-      </div>
+      <button (click)="prikaziObrisiModal = false"
+        class="text-white/80 hover:text-white text-2xl font-bold bg-transparent border-none cursor-pointer leading-none">✕</button>
     </div>
-  </div>
-}
-@if (prikaziKonfliktiModal) {
-  <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat">
-    <div class="dialog-card-box rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh]">
-      <div class="bg-[#1F63A0] px-6 py-4 flex items-center justify-between text-white border-b border-[#164f82]">
-        <div class="flex items-center gap-2.5">
-          <svg class="w-5 h-5 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-          </svg>
-          <h2 class="text-lg font-extrabold m-0">Detektovani konflikti</h2>
-        </div>
-        <button (click)="prikaziKonfliktiModal = false" class="text-white/80 hover:text-white text-2xl font-bold bg-transparent border-none cursor-pointer leading-none">✕</button>
-      </div>
 
-      <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
-        @for (item of listaSvihKonflikata; track item.datum) {
-          <div class="dialog-hint rounded-xl p-4 flex flex-col gap-2 border">
-            <span class="text-xs font-black text-[#1F63A0] dark:text-sky-400 uppercase tracking-wider border-b pb-1.5">
-              Datum: {{ item.datum }}
-            </span>
-            <ul class="flex flex-col gap-1.5 mt-1 list-disc pl-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
-              @for (razlog of item.razlozi; track razlog) {
-                <li class="leading-relaxed">{{ razlog }}</li>
-              }
-            </ul>
-          </div>
-        } @empty {
-          <div class="text-center py-8 text-slate-400 font-bold text-sm">Nema aktivnih konflikata u rasporedu.</div>
-        }
-      </div>
+    <div class="p-6 flex flex-col gap-4">
+      <p class="dialog-text text-sm font-semibold leading-relaxed m-0">
+        Da li ste sigurni da želite da obrišete sve zakazane termine u <strong class="text-rose-600 font-extrabold">{{
+          selektovaniDani.size }} selektovanih dana</strong>?
+      </p>
+      <span class="dialog-hint text-xs font-medium p-3 rounded-xl border">
+        Ova akcija će označiti sve ispite i kolokvijume sa izabranih datuma za trajno brisanje.
+      </span>
 
-      <div class="dialog-footer border-t px-6 py-3 flex justify-end">
-        <button (click)="prikaziKonfliktiModal = false"
-          class="h-10 px-6 font-extrabold text-sm bg-[#1F63A0] text-white rounded-xl hover:bg-[#164f82] transition-colors cursor-pointer border-none">
-          Zatvori
+      <div class="flex gap-2.5 pt-2">
+        <button (click)="prikaziObrisiModal = false"
+          class="dialog-cancel-btn flex-1 h-11 font-extrabold rounded-xl text-xs cursor-pointer border transition-colors">
+          Odustani
+        </button>
+        <button (click)="potvrdiBrisanjeDana()"
+          class="flex-1 h-11 bg-rose-600 hover:bg-rose-700 text-white font-extrabold rounded-xl border border-rose-700 text-xs shadow-md cursor-pointer transition-colors">
+          Obriši termine
         </button>
       </div>
     </div>
   </div>
+</div>
+}
+@if (prikaziKonfliktiModal) {
+<div
+  class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat">
+  <div class="dialog-card-box rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[85vh]">
+    <div class="bg-[#1F63A0] px-6 py-4 flex items-center justify-between text-white border-b border-[#164f82]">
+      <div class="flex items-center gap-2.5">
+        <svg class="w-5 h-5 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd"
+            d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+            clip-rule="evenodd" />
+        </svg>
+        <h2 class="text-lg font-extrabold m-0">Detektovani konflikti</h2>
+      </div>
+      <button (click)="prikaziKonfliktiModal = false"
+        class="text-white/80 hover:text-white text-2xl font-bold bg-transparent border-none cursor-pointer leading-none">✕</button>
+    </div>
+
+    <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
+      @for (item of listaSvihKonflikata; track item.datum) {
+      <div class="dialog-hint rounded-xl p-4 flex flex-col gap-2 border">
+        <span class="text-xs font-black text-[#1F63A0] dark:text-sky-400 uppercase tracking-wider border-b pb-1.5">
+          Datum: {{ item.datum }}
+        </span>
+        <ul class="flex flex-col gap-1.5 mt-1 list-disc pl-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
+          @for (razlog of item.razlozi; track razlog) {
+          <li class="leading-relaxed">{{ razlog }}</li>
+          }
+        </ul>
+      </div>
+      } @empty {
+      <div class="text-center py-8 text-slate-400 font-bold text-sm">Nema aktivnih konflikata u rasporedu.</div>
+      }
+    </div>
+
+    <div class="dialog-footer border-t px-6 py-3 flex justify-end">
+      <button (click)="prikaziKonfliktiModal = false"
+        class="h-10 px-6 font-extrabold text-sm bg-[#1F63A0] text-white rounded-xl hover:bg-[#164f82] transition-colors cursor-pointer border-none">
+        Zatvori
+      </button>
+    </div>
+  </div>
+</div>
 }

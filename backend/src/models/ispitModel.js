@@ -5,7 +5,6 @@ const getAllIspiti = async () => {
         include: {
             predmet: { include: { profesor: true } },
             sala: true,
-            // OBAVEZNO: Povlačimo dežurstva i podatke o saradniku
             dezurstva: {
                 include: {
                     saradnik: true
@@ -22,21 +21,34 @@ const getIspitById = async (id) => {
     });
 };
 
-const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true,tip_kolokvijuma = 'I' ,sala_id = null, dezurni_ids = []) => {
-    return await prisma.ispit.create({
+const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true, tip_kolokvijuma = 'I', sala_id = null, dezurni_ids = []) => {
+    // 1. Kreiraj samo ispit (bez ugnježdenog dezurstva)
+    const noviIspit = await prisma.ispit.create({
         data: {
             datum: new Date(datum),
-            vreme: new Date(`${datum}T${vreme}Z`),
-            vreme_kraja: vreme_kraja ? new Date(`${datum}T${vreme_kraja}Z`) : null,
+            vreme: new Date(`\({datum}T\){vreme}Z`),
+            vreme_kraja: vreme_kraja ? new Date(`\({datum}T\){vreme_kraja}Z`) : null,
             is_ispit: Boolean(is_ispit),
-            tip_kolokvijuma: tip_kolokvijuma || 'I', // <--- DODATO
+            tip_kolokvijuma: tip_kolokvijuma || 'I',
             predmet: predmet_id ? { connect: { id: Number(predmet_id) } } : undefined,
-            sala: sala_id ? { connect: { id: Number(sala_id) } } : undefined,
-            // KREIRAMO DEŽURSTVA ODMAH PRI PRVOM UNOSU:
-            dezurstva: {
-                create: (dezurni_ids || []).map(s_id => ({ saradnik_id: Number(s_id) }))
-            }
+            sala: sala_id ? { connect: { id: Number(sala_id) } } : undefined
         }
+    });
+
+    // 2. Kreiraj dežurstva kao odvojen upit
+    if (dezurni_ids && dezurni_ids.length > 0) {
+        await prisma.dezurstva.createMany({
+            data: dezurni_ids.map(s_id => ({
+                ispit_id: noviIspit.id,
+                saradnik_id: Number(s_id)
+            }))
+        });
+    }
+
+    // 3. Vrati kompletan ispit da format ostane isti za frontend
+    return await prisma.ispit.findUnique({
+        where: { id: noviIspit.id },
+        include: { predmet: true, sala: true, dezurstva: true }
     });
 };
 
@@ -61,7 +73,6 @@ const updateIspit = async (
     }
     const dateStr = new Date(datum).toISOString().split('T')[0];
 
-    // Formatiranje vremena
     let parsedVreme = null;
     if (vreme) {
         const cistoVreme = vreme.includes('T') ? vreme.substring(11, 16) : vreme.substring(0, 5);
@@ -74,7 +85,13 @@ const updateIspit = async (
         parsedVremeKraja = new Date(`\({dateStr}T\){cistoVremeKraja}:00Z`);
     }
 
-    return await prisma.ispit.update({
+    // 1. Obriši stara dežurstva zasebnim upitom
+    await prisma.dezurstva.deleteMany({
+        where: { ispit_id: numericId }
+    });
+
+    // 2. Ažuriraj ispit bez ugnježdenog dezurstva
+    await prisma.ispit.update({
         where: { id: numericId },
         data: {
             predmet: { connect: { id: Number(predmet_id) } },
@@ -85,17 +102,26 @@ const updateIspit = async (
             tip_kolokvijuma: String(tip_kolokvijuma || 'I'),
             sala: sala_id ? { connect: { id: Number(sala_id) } } : { disconnect: true },
             is_published: false,
-            is_izmenjen: true,
-            dezurstva: {
-                deleteMany: {},
-                create: (dezurni_ids || []).map(dId => ({
-                    saradnik_id: Number(dId)
-                }))
-            }
-        },
+            is_izmenjen: true
+        }
+    });
+
+    // 3. Dodaj nova dežurstva
+    if (dezurni_ids && dezurni_ids.length > 0) {
+        await prisma.dezurstva.createMany({
+            data: dezurni_ids.map(dId => ({
+                ispit_id: numericId,
+                saradnik_id: Number(dId)
+            }))
+        });
+    }
+
+    return await prisma.ispit.findUnique({
+        where: { id: numericId },
         include: { predmet: true, sala: true, dezurstva: true }
     });
 };
+
 const deleteIspit = async (id) => {
   return await prisma.ispit.deleteMany({
     where: {

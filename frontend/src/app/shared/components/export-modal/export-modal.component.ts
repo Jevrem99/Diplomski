@@ -40,7 +40,7 @@ export class ExportModalComponent {
     datumOd: '',
     datumDo: '',
     rokovi: [
-      { naziv: 'I ispitni rok', datumOd: '', datumDo: '' }
+      { naziv: '', datumOd: '', datumDo: '' }
     ]
   };
 

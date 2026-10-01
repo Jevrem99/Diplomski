@@ -1,12 +1,11 @@
 generator client {
-provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
-
-// Mapiranje tabela iz starog SQL-a u Prisma modele (klase)
 
 model User {
   id              Int       @id @default(autoincrement())
@@ -24,11 +23,7 @@ model Profesor {
   prezime     String
   is_saradnik Boolean     @default(false)
   email       String?
-  
-  // Relacija kada je on GLAVNI profesor na predmetu
   predmeti    Predmet[]   @relation("GlavniProfesor")
-  
-  // Relacija kada je on SARADNIK (asistent) na predmetima
   angazovanja Predmet[]   @relation("AngazovaniSaradnici")
   
   dezurstva   Dezurstva[]

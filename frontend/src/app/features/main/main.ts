@@ -265,30 +265,38 @@ export class Main implements OnInit, AfterViewInit {
     eventClick: (info) => {
       if (info.event.display === 'background') return;
 
-      const eventDate = info.event.startStr ? info.event.startStr.split('T')[0] : (info.event.start?.toISOString().split('T')[0] || '');
-
+      const eventDate = info.event.startStr
+        ? info.event.startStr.split('T')[0]
+        : (info.event.start ? info.event.start.toISOString().split('T')[0] : '');
       const cistNaslov = info.event.title.split(' (')[0];
       const sviDogadjaji = this.calendarComponent.getApi().getEvents();
 
       const zauzecaNaDan = sviDogadjaji
         .filter(e => {
-          const dStr = e.startStr.split('T')[0] || (e.start?.toISOString().split('T')[0] || '');
+          const dStr = e.startStr.split('T')[0] || (e.start ? e.start.toISOString().split('T')[0] : '');
           return dStr === eventDate && e.id !== info.event.id;
         })
         .map(e => ({
           sala: e.extendedProps['sala'],
           vreme: e.extendedProps['vreme'],
-          vremeKraja: e.extendedProps['vremeKraja']
+          vremeKraja: e.extendedProps['vreme_kraja'] || e.extendedProps['vremeKraja'] || ''
         }));
 
+      // 2. Otvaranje modala (šaljemo vreme_kraja kao endTime)
       const dialogRef = this.dialog.open(EventModal, {
-        maxWidth: '95vw', width: '1100px', maxHeight: '120vh',
+        maxWidth: '95vw',
+        width: '1100px',
+        maxHeight: '120vh',
         data: {
-          title: cistNaslov, date: eventDate,
-          startTime: info.event.extendedProps['vreme'], endTime: info.event.extendedProps['vremeKraja'],
-          room: info.event.extendedProps['sala'], predmetId: info.event.extendedProps['predmetId'],
+          title: cistNaslov,
+          date: eventDate,
+          startTime: info.event.extendedProps['vreme'],
+          endTime: info.event.extendedProps['vreme_kraja'] || info.event.extendedProps['vremeKraja'] || '', // <-- OVDJE POVLAČI VREME KRAJA
+          room: info.event.extendedProps['sala'],
+          predmetId: info.event.extendedProps['predmetId'],
           tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
-          is_ispit: info.event.extendedProps['is_ispit'] ?? true, dezurni: info.event.extendedProps['dezurni'] || [],
+          is_ispit: info.event.extendedProps['is_ispit'] ?? true,
+          dezurni: info.event.extendedProps['dezurni'] || [],
           zauzeteSaleNaDan: zauzecaNaDan
         },
         disableClose: true
@@ -322,11 +330,13 @@ export class Main implements OnInit, AfterViewInit {
           const isIspit = result.is_ispit ?? true;
           const tipKolokvijuma = result.tip_kolokvijuma || 'I';
 
+          const krajVreme = result.endTime || '';
+
           if (info.event.id && info.event.id.startsWith('temp_')) {
             const draftEvt = this.unsavedEvents.find(e => e.tempId === info.event.id);
             if (draftEvt) {
               draftEvt.vreme = result.startTime;
-              draftEvt.vreme_kraja = result.endTime;
+              draftEvt.vreme_kraja = krajVreme;
               draftEvt.sala = result.room;
               draftEvt.is_ispit = isIspit;
               draftEvt.tip_kolokvijuma = tipKolokvijuma;
@@ -334,31 +344,40 @@ export class Main implements OnInit, AfterViewInit {
             }
           } else {
             const payload = {
-              id: info.event.id,
+              id: Number(info.event.id),
               datum: eventDate,
               vreme: result.startTime,
-              vreme_kraja: result.endTime,
+              vreme_kraja: krajVreme,
               sala: result.room,
               predmet_id: info.event.extendedProps['predmetId'],
               is_ispit: isIspit,
               tip_kolokvijuma: tipKolokvijuma,
               dezurni_ids: dezurniIds
             };
-            const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
-            if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload; else this.modifiedEvents.push(payload);
+            const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === String(info.event.id));
+            if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload;
+            else this.modifiedEvents.push(payload);
           }
 
-          const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
+          const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === String(info.event.id));
           if (evtIndex > -1) {
             const boja = this.getGodinaColor(this.allLoadedEvents[evtIndex].extendedProps.godina);
             this.allLoadedEvents[evtIndex] = {
               ...this.allLoadedEvents[evtIndex],
-              start: `${eventDate}T${result.startTime}:00`, end: result.endTime ? `${eventDate}T${result.endTime}:00` : undefined,
-              title: `${cistNaslov} (${result.room})`,
-              backgroundColor: isIspit ? boja : '#ffffff', textColor: isIspit ? '#ffffff' : boja, borderColor: boja,
+              start: eventDate + 'T' + result.startTime + ':00',
+              end: krajVreme ? (eventDate + 'T' + krajVreme + ':00') : undefined,
+              title: cistNaslov + ' (' + result.room + ')',
+              backgroundColor: isIspit ? boja : '#ffffff',
+              textColor: isIspit ? '#ffffff' : boja,
+              borderColor: boja,
               extendedProps: {
                 ...this.allLoadedEvents[evtIndex].extendedProps,
-                vreme: result.startTime, vremeKraja: result.endTime, tip_kolokvijuma: tipKolokvijuma, sala: result.room, is_ispit: isIspit, dezurni: izabraniSaradnici
+                vreme: result.startTime,
+                vreme_kraja: krajVreme,
+                tip_kolokvijuma: tipKolokvijuma,
+                sala: result.room,
+                is_ispit: isIspit,
+                dezurni: izabraniSaradnici
               }
             };
           }
@@ -442,115 +461,103 @@ export class Main implements OnInit, AfterViewInit {
     },
 
     eventDrop: (info) => {
-  this.hasUnsavedChanges = true;
+      this.hasUnsavedChanges = true;
 
-  const d = info.event.start;
-  if (!d) return;
+      const d = info.event.start;
+      if (!d) return;
 
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  const newDate = `\({year}-\){month}-${day}`;
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const newDate = y + '-' + m + '-' + day;
 
-  const eventIdStr = String(info.event.id);
-  const postojeci = this.allLoadedEvents.find(e => String(e.id) === eventIdStr);
+      const eventIdStr = String(info.event.id);
+      const postojeci = this.allLoadedEvents.find(e => String(e.id) === eventIdStr);
+      const prethodnoIzmenjen = this.modifiedEvents.find(e => String(e.id) === eventIdStr);
 
-  // 1. Čitanje i normalizacija vremena početka
-  let vreme = postojeci?.extendedProps?.vreme || 
-              info.oldEvent?.extendedProps?.['vreme'] || 
-              info.event.extendedProps?.['vreme'] || '09:00';
+      // 1. Čitanje početka
+      let vreme = postojeci?.extendedProps?.vreme ||
+        prethodnoIzmenjen?.vreme ||
+        info.oldEvent?.extendedProps?.['vreme'] || '09:00';
+      if (vreme.length === 4 && vreme.indexOf(':') === 1) vreme = '0' + vreme;
 
-  if (vreme && vreme.length === 4 && vreme.indexOf(':') === 1) {
-    vreme = '0' + vreme;
-  }
-  if (!vreme || vreme === '00:00' || vreme === '0:00' || vreme.includes('undefined')) {
-    vreme = '09:00';
-  }
+      // 2. Čitanje kraja (Gledamo postojeci, pa prethodni modifiedEvents, pa info.oldEvent)
+      let kraj = postojeci?.extendedProps?.vreme_kraja ||
+        prethodnoIzmenjen?.vreme_kraja ||
+        info.oldEvent?.extendedProps?.['vreme_kraja'] || '';
 
-  // 2. Čitanje i normalizacija vremena kraja (stroga provera protiv 00:00)
-  let rawKraj = postojeci?.extendedProps?.vremeKraja || 
-                postojeci?.extendedProps?.vreme_kraja || 
-                info.oldEvent?.extendedProps?.['vremeKraja'] || 
-                info.oldEvent?.extendedProps?.['vreme_kraja'] || 
-                info.event.extendedProps?.['vremeKraja'] || 
-                info.event.extendedProps?.['vreme_kraja'] || '';
-
-  let vremeKraja = '';
-  if (rawKraj && rawKraj !== '00:00' && rawKraj !== '0:00' && !rawKraj.includes('undefined')) {
-    vremeKraja = rawKraj;
-    if (vremeKraja.length === 4 && vremeKraja.indexOf(':') === 1) {
-      vremeKraja = '0' + vremeKraja;
-    }
-  }
-
-  const isIspit = postojeci?.extendedProps?.is_ispit ?? (info.event.extendedProps?.['is_ispit'] ?? true);
-  const sala = postojeci?.extendedProps?.sala || info.event.extendedProps?.['sala'] || 'Bez sale';
-  const predmetId = postojeci?.extendedProps?.predmetId || info.event.extendedProps?.['predmetId'];
-  const tipKolokvijuma = postojeci?.extendedProps?.tip_kolokvijuma || info.event.extendedProps?.['tip_kolokvijuma'] || 'I';
-
-  const dezurniLica = postojeci?.extendedProps?.dezurni || info.event.extendedProps?.['dezurni'] || [];
-  const dezurniIds = dezurniLica.map((dez: any) => (typeof dez === 'object' ? dez.id : dez));
-
-  // 3. Upis u modifiedEvents ili unsavedEvents za server
-  if (!eventIdStr.startsWith('temp_')) {
-    const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === eventIdStr);
-    const payload = {
-      id: info.event.id,
-      datum: newDate,
-      vreme: vreme,
-      vreme_kraja: vremeKraja,
-      vremeKraja: vremeKraja,
-      sala: sala,
-      predmet_id: predmetId,
-      is_ispit: isIspit,
-      tip_kolokvijuma: tipKolokvijuma,
-      dezurni_ids: dezurniIds
-    };
-    if (existingIndex > -1) {
-      this.modifiedEvents[existingIndex] = payload;
-    } else {
-      this.modifiedEvents.push(payload);
-    }
-  } else {
-    const unsavedEvent = this.unsavedEvents.find(e => String(e.tempId) === eventIdStr);
-    if (unsavedEvent) {
-      unsavedEvent.datum = newDate;
-      unsavedEvent.vreme = vreme;
-      unsavedEvent.vreme_kraja = vremeKraja;
-      unsavedEvent.vremeKraja = vremeKraja;
-    }
-  }
-
-  // 4. Ažuriranje allLoadedEvents memorije
-  const startIso = `\({newDate}T\){vreme}:00`;
-  const endIso = vremeKraja ? `\({newDate}T\){vremeKraja}:00` : undefined;
-
-  const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === eventIdStr);
-  if (evtIndex > -1) {
-    this.allLoadedEvents[evtIndex] = {
-      ...this.allLoadedEvents[evtIndex],
-      start: startIso,
-      end: endIso,
-      extendedProps: {
-        ...this.allLoadedEvents[evtIndex].extendedProps,
-        vreme: vreme,
-        vremeKraja: vremeKraja,
-        vreme_kraja: vremeKraja
+      // Rezerva: ako je u postojeci.end stajao puni ISO string (npr. "2026-10-06T09:30:00")
+      if (!kraj && postojeci && postojeci.end && String(postojeci.end).includes('T')) {
+        kraj = String(postojeci.end).substring(11, 16);
       }
-    };
-  }
 
-  // 5. Sinhronizacija samog FullCalendar event objekta
-  info.event.setAllDay(false);
-  info.event.setExtendedProp('vreme', vreme);
-  info.event.setExtendedProp('vremeKraja', vremeKraja);
-  info.event.setExtendedProp('vreme_kraja', vremeKraja);
+      if (kraj === '00:00') kraj = '';
 
-  info.event.setDates(startIso, endIso || null, { allDay: false });
+      const isIspit = postojeci?.extendedProps?.is_ispit ?? true;
+      const sala = postojeci?.extendedProps?.sala || 'Bez sale';
+      const predmetId = postojeci?.extendedProps?.predmetId;
+      const tipKolokvijuma = postojeci?.extendedProps?.tip_kolokvijuma || 'I';
+      const dezurniLica = postojeci?.extendedProps?.dezurni || [];
+      const dezurniIds = dezurniLica.map((dez: any) => (typeof dez === 'object' ? dez.id : dez));
 
-  this.detectConflicts();
-  this.cdr.detectChanges();
-},
+      // 3. Upis u modifiedEvents (isključivo vreme_kraja)
+      if (!eventIdStr.startsWith('temp_')) {
+        const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === eventIdStr);
+        const payload = {
+          id: Number(info.event.id),
+          datum: newDate,
+          vreme: vreme,
+          vreme_kraja: kraj,
+          sala: sala,
+          predmet_id: predmetId,
+          is_ispit: isIspit,
+          tip_kolokvijuma: tipKolokvijuma,
+          dezurni_ids: dezurniIds
+        };
+
+        console.log('📦 Pripremljen PAYLOAD za modifiedEvents:', payload);
+
+        if (existingIndex > -1) {
+          this.modifiedEvents[existingIndex] = payload;
+        } else {
+          this.modifiedEvents.push(payload);
+        }
+      } else {
+        const unsavedEvent = this.unsavedEvents.find(e => String(e.tempId) === eventIdStr);
+        if (unsavedEvent) {
+          unsavedEvent.datum = newDate;
+          unsavedEvent.vreme = vreme;
+          unsavedEvent.vreme_kraja = kraj;
+        }
+      }
+
+      // 4. Ažuriranje allLoadedEvents
+      const startIso = newDate + 'T' + vreme + ':00';
+      const endIso = kraj ? (newDate + 'T' + kraj + ':00') : undefined;
+
+      const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === eventIdStr);
+      if (evtIndex > -1) {
+        this.allLoadedEvents[evtIndex] = {
+          ...this.allLoadedEvents[evtIndex],
+          start: startIso,
+          end: endIso,
+          extendedProps: {
+            ...this.allLoadedEvents[evtIndex].extendedProps,
+            vreme: vreme,
+            vreme_kraja: kraj
+          }
+        };
+      }
+
+      // 5. Ažuriranje FullCalendar prikaza
+      info.event.setAllDay(false);
+      info.event.setExtendedProp('vreme', vreme);
+      info.event.setExtendedProp('vreme_kraja', kraj);
+      info.event.setDates(startIso, endIso || null, { allDay: false });
+
+      this.detectConflicts();
+      this.cdr.detectChanges();
+    },
 
     eventContent: (arg) => {
       if (arg.event.display === 'background') return null;
@@ -591,10 +598,10 @@ export class Main implements OnInit, AfterViewInit {
       if (postojeci) postojeci.remove();
 
       const props = info.event.extendedProps;
-const tip = props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit';
-const k = props['vremeKraja'] || props['vreme_kraja'];
-const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
-const vremePocetka = props['vreme'] || '09:00';
+      const tip = props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit';
+      const k = props['vremeKraja'] || props['vreme_kraja'];
+      const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
+      const vremePocetka = props['vreme'] || '09:00';
       const sala = props['sala'] || 'Bez sale';
       const naslov = info.event.title.split(' (')[0];
       const dezurniImena = (props['dezurni'] || []).map((d: any) => `${d.ime} ${d.prezime}`).join(', ') || 'Nema dodeljenih';
@@ -861,41 +868,60 @@ const vremePocetka = props['vreme'] || '09:00';
     const imaIzmenjenih = this.modifiedEvents && this.modifiedEvents.length > 0;
     const imaObrisanih = this.obrisaniIspitiServerIds && this.obrisaniIspitiServerIds.length > 0;
 
+    console.group('🚀 [KLIKNUTO SAČUVAJ] Slanje rasporeda na server');
+    console.log('📊 Stanje izmena:', { imaNovih, imaIzmenjenih, imaObrisanih });
+
     if (!imaNovih && !imaIzmenjenih && !imaObrisanih) {
+      console.log('⚠️ Nema detektovanih izmena za bazu.');
+      console.groupEnd();
       this.toastService.show('Nema izmena za čuvanje.', 'success');
       return;
     }
 
-    const requests: Observable<any>[] = [];
+    const validniIzmenjeni = (this.modifiedEvents || []).filter(e => e.id && !String(e.id).startsWith('temp_'));
+
+    console.log('📤 NOVI ISPITI (POST /ispit/bulk):', JSON.stringify(this.unsavedEvents, null, 2));
+    console.log('📤 IZMENJENI ISPITI (PUT /ispit/:id):', JSON.stringify(validniIzmenjeni, null, 2));
+    console.log('📤 OBRISANI ID-jevi (DELETE /ispit/:id):', this.obrisaniIspitiServerIds);
+
+    const requests: any[] = [];
 
     if (imaObrisanih) {
       this.obrisaniIspitiServerIds.forEach(id => {
-        requests.push(this.http.delete(`${this.API_URL}/ispit/${id}`));
+        requests.push(this.http.delete(this.API_URL + '/ispit/' + id));
       });
     }
 
     if (imaNovih) {
-      requests.push(this.http.post(`${this.API_URL}/ispit/bulk`, this.unsavedEvents));
+      requests.push(this.http.post(this.API_URL + '/ispit/bulk', this.unsavedEvents));
     }
 
-    if (imaIzmenjenih) {
-      this.modifiedEvents.forEach(evt => {
-        requests.push(this.http.put(`${this.API_URL}/ispit/${evt.id}`, evt));
+    if (validniIzmenjeni.length > 0) {
+      validniIzmenjeni.forEach(evt => {
+        const url = this.API_URL + '/ispit/' + evt.id;
+        console.log('➡️️ Šaljem PUT na ' + url + ' sa payloadom:', evt);
+        requests.push(this.http.put(url, evt));
       });
     }
 
     forkJoin(requests).subscribe({
-      next: () => {
+      next: (odgovori) => {
+        console.log('✅ SERVER JE ODGOVORIO SA USPEHOM:', odgovori);
+        console.groupEnd();
+
         this.toastService.show('Raspored je uspešno sačuvan!', 'success');
         this.unsavedEvents = [];
         this.modifiedEvents = [];
         this.obrisaniIspitiServerIds = [];
         this.hasUnsavedChanges = false;
-        this.fetchIspiti();
+        this.fetchIspiti(); // Ponovno čitanje iz baze
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Greška pri čuvanju rasporeda:', err);
+        console.error('❌ GREŠKA OD STRANE SERVERA PRI ČUVANJU:', err);
+        console.log('🔍 Status kod:', err.status);
+        console.log('🔍 Detalji tela greške:', err.error);
+        console.groupEnd();
         this.toastService.show('Došlo je do greške pri čuvanju.', 'error');
       }
     });
@@ -1179,25 +1205,36 @@ const vremePocetka = props['vreme'] || '09:00';
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
 
           // 1. ČIŠĆENJE DATUMA KOJI STIGNE IZ BAZE
-          const cistDatum = (i.datum && i.datum.includes('T')) ? i.datum.split('T')[0] : i.datum;
+          // 1. ČIŠĆENJE DATUMA
+          const cistDatum = (i.datum && String(i.datum).includes('T'))
+            ? String(i.datum).split('T')[0]
+            : String(i.datum);
 
+          // 2. ČIŠĆENJE VREMENA POČETKA
           let formatiranoVreme = '09:00';
           if (i.vreme) {
-            formatiranoVreme = i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5);
+            const s = String(i.vreme);
+            formatiranoVreme = s.includes('T') ? s.substring(11, 16) : s.substring(0, 5);
           }
-          if (formatiranoVreme === '00:00' || formatiranoVreme === '0:00') {
+          if (!formatiranoVreme || formatiranoVreme === '00:00') {
             formatiranoVreme = '09:00';
           }
 
+          // 3. ČIŠĆENJE VREMENA KRAJA (Rad sa stringom koji šalje JSON sa servera)
           let formatiranoVremeKraja = '';
-          if (i.vreme_kraja) {
-            formatiranoVremeKraja = i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5);
+          const rawKraj = i.vreme_kraja || i.vremeKraja;
+          if (rawKraj) {
+            const s = String(rawKraj);
+            formatiranoVremeKraja = s.includes('T') ? s.substring(11, 16) : s.substring(0, 5);
+          }
+          if (formatiranoVremeKraja === '00:00') {
+            formatiranoVremeKraja = '';
           }
 
           const nazivPredmeta = i.predmet?.naziv || pronadjeniPredmet?.naziv || 'Ispit';
 
           return {
-            id: i.id.toString(),
+            id: String(i.id),
             title: nazivPredmeta + ' (' + salaNaziv + ')',
             start: cistDatum + 'T' + formatiranoVreme + ':00',
             end: formatiranoVremeKraja ? (cistDatum + 'T' + formatiranoVremeKraja + ':00') : undefined,
@@ -1207,9 +1244,9 @@ const vremePocetka = props['vreme'] || '09:00';
             borderColor: boja,
             extendedProps: {
               vreme: formatiranoVreme,
-              vremeKraja: formatiranoVremeKraja,
+              vreme_kraja: formatiranoVremeKraja, // SAMO JEDNO POLJE
               sala: salaNaziv,
-              predmetId: i.predmet_id,
+              predmetId: i.predmet_id || i.predmet?.id,
               godina: godina,
               tip_kolokvijuma: i.tip_kolokvijuma || 'I',
               is_ispit: isIspit,

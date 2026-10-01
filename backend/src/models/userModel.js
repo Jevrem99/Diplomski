@@ -1,14 +1,4 @@
-require('dotenv').config();
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-const { PrismaClient } = require('@prisma/client');
-
-// Kreiramo sirovu konekciju koristeći tvoj .env fajl
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-
-// Ubacujemo tu konekciju u Prisma adapter
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = require('../db/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config/config');
@@ -134,7 +124,6 @@ const generateJwtToken = (user) => {
         exp: parseInt(expire.getTime() / 1000),
     }, config.secret)
 }
-// Dodaj na dno fajla pre module.exports:
 
 const setResetToken = async (email, token, expiryDate) => {
     return await prisma.user.updateMany({
@@ -170,7 +159,6 @@ const updatePasswordByReset = async (id, newPassword) => {
     });
 };
 
-// Obavezno dodaj ove tri funkcije u module.exports:
 module.exports = {
     getAllUsers,
     getUserById,

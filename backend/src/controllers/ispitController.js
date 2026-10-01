@@ -1,11 +1,10 @@
-
 const ExcelJS = require('exceljs');
 const dayjs = require('dayjs');
 const isoWeek = require('dayjs/plugin/isoWeek');
 dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
-const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService'); // <--- DODAJ OVDE
+const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
 exports.exportKalendar = async (req, res) => {
@@ -40,37 +39,37 @@ exports.exportKalendar = async (req, res) => {
 
         // 3. Grupisanje ispita po kalendarskim nedeljama
         const sedmice = {};
-        
+
         ispiti.forEach(ispit => {
             const datum = dayjs(ispit.datum);
             const ponedeljak = datum.startOf('isoWeek').format('YYYY-MM-DD');
-            
+
             if (!sedmice[ponedeljak]) {
                 sedmice[ponedeljak] = {
                     datumi: [], // Sadržaće datume od ponedeljka do nedelje
                     dogadjaji: [[], [], [], [], [], [], []] // Matrica za događaje u danima (0-6)
                 };
-                
+
                 // Generisanje datuma za celu nedelju (Ponedeljak - Nedelja)
-                for(let i = 0; i < 7; i++) {
+                for (let i = 0; i < 7; i++) {
                     sedmice[ponedeljak].datumi.push(datum.startOf('isoWeek').add(i, 'day').toDate());
                 }
             }
 
             const danIndex = datum.isoWeekday() - 1; // 0 = Ponedeljak, 6 = Nedelja
-            
+
             // Formatiranje stringa prema tvom Excel fajlu
             const nazivPredmeta = ispit.predmet ? ispit.predmet.naziv : 'Непознат предмет';
             const tip = ispit.is_ispit ? 'испит' : 'I колоквијум';
-            
+
             // Izvlačenje sati i minuta (npr. 16:00 -> 16h, 18:30 -> 18.30h)
             const satiSirovo = dayjs(ispit.vreme).format('H:mm');
-            const satiFormatirano = satiSirovo.endsWith(':00') 
-                ? dayjs(ispit.vreme).format('H') + 'h' 
+            const satiFormatirano = satiSirovo.endsWith(':00')
+                ? dayjs(ispit.vreme).format('H') + 'h'
                 : satiSirovo.replace(':', '.') + 'h';
-            
-            const tekstCelije = `\({nazivPredmeta}\n -\){tip} - ${satiFormatirano}`;
-            
+
+            const tekstCelije = `(\({nazivPredmeta}\n -)\){tip} - ${satiFormatirano}`;
+
             // Guranje obaveze u taj dan
             sedmice[ponedeljak].dogadjaji[danIndex].push(tekstCelije);
         });
@@ -95,19 +94,17 @@ exports.exportKalendar = async (req, res) => {
             currentRow++;
 
             // C) Redovi sa ispitima/kolokvijumima
-            // Pronalazimo dan sa najviše ispita u ovoj nedelji kako bismo znali koliko redova ispod datuma nam treba
             const maxDogadjajaUDanu = Math.max(...podaci.dogadjaji.map(d => d.length), 1);
-            
+
             for (let i = 0; i < maxDogadjajaUDanu; i++) {
                 const redDogadjaja = [];
                 for (let j = 0; j < 7; j++) {
-                    // Uzimamo i-ti ispit za j-ti dan. Ako ga nema, ide prazna ćelija
                     redDogadjaja.push(podaci.dogadjaji[j][i] || '');
                 }
-                
+
                 const eventRow = worksheet.getRow(currentRow);
                 eventRow.values = redDogadjaja;
-                
+
                 eventRow.eachCell((cell) => {
                     cell.alignment = { wrapText: true, vertical: 'top', horizontal: 'center' };
                 });
@@ -132,7 +129,7 @@ exports.exportKalendar = async (req, res) => {
 
         // Prosleđivanje generisanog fajla na frontend
         await workbook.xlsx.write(res);
-        
+
         res.end();
 
     } catch (error) {
@@ -140,6 +137,7 @@ exports.exportKalendar = async (req, res) => {
         res.status(500).json({ message: 'Greška pri generisanju Excel fajla.' });
     }
 };
+
 const getAllIspiti = async (req, res) => {
     try {
         const ispiti = await ispitModel.getAllIspiti();
@@ -153,7 +151,6 @@ const getAllIspiti = async (req, res) => {
 const getIspitById = async (req, res) => {
     const { id } = req.params;
     try {
-
         const ispit = await ispitModel.getIspitById(id);
         if (!ispit) return res.status(404).json({ error: 'Ispit not found' });
         res.status(200).json(ispit);
@@ -162,20 +159,21 @@ const getIspitById = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
 const proveriKonflikteAsistenata = async (datum, vreme, vreme_kraja, dezurni_ids) => {
     if (!dezurni_ids || dezurni_ids.length === 0) return [];
 
     const konflikti = [];
     const ispitDatum = new Date(datum);
-    const pocetak = new Date(`${datum}T${vreme}Z`);
-    const kraj = vreme_kraja ? new Date(`${datum}T${vreme_kraja}Z`) : new Date(pocetak.getTime() + 2 * 60 * 60 * 1000); // Default 2h ako nema kraja
+    const pocetak = new Date(`\({datum}T\){vreme}Z`);
+    const kraj = vreme_kraja ? new Date(`\({datum}T\){vreme_kraja}Z`) : new Date(pocetak.getTime() + 2 * 60 * 60 * 1000); // Default 2h ako nema kraja
 
     // 1. Provera odsustava / obaveza
     const obaveze = await prisma.obaveza.findMany({
         where: {
             saradnik_id: { in: dezurni_ids.map(Number) },
             datum: ispitDatum,
-            // Logika za preklapanje vremena (pocetak1 < kraj2 && kraj1 > pocetak2)
+            // Logika za preklapanje vremena
             vreme_pocetka: { lt: kraj },
             vreme_kraja: { gt: pocetak }
         },
@@ -183,7 +181,7 @@ const proveriKonflikteAsistenata = async (datum, vreme, vreme_kraja, dezurni_ids
     });
 
     obaveze.forEach(ob => {
-        konflikti.push(`Asistent ${ob.saradnik.ime} ${ob.saradnik.prezime} ima obavezu/odsustvo u tom terminu (${ob.tip_obaveze}).`);
+        konflikti.push(`Asistent \({ob.saradnik.ime}\){ob.saradnik.prezime} ima obavezu/odsustvo u tom terminu (${ob.tip_obaveze}).`);
     });
 
     // 2. Provera drugih dezurstava (ispita) u istom terminu
@@ -200,14 +198,15 @@ const proveriKonflikteAsistenata = async (datum, vreme, vreme_kraja, dezurni_ids
     });
 
     drugaDezurstva.forEach(dez => {
-        konflikti.push(`Asistent ${dez.saradnik.ime} ${dez.saradnik.prezime} vec dezura na predmetu ${dez.ispit.predmet.naziv} u tom terminu.`);
+        konflikti.push(`Asistent \({dez.saradnik.ime}\){dez.saradnik.prezime} vec dezura na predmetu ${dez.ispit.predmet.naziv} u tom terminu.`);
     });
 
     return konflikti;
 };
+
 const createIspit = async (req, res) => {
-    const { predmet_id, datum, vreme, is_ispit,tip_kolokvijuma, sala, date, startTime, room, vreme_kraja, endTime, dezurni_ids } = req.body;
-   
+    const { predmet_id, datum, vreme, is_ispit, tip_kolokvijuma, sala, date, startTime, room, vreme_kraja, endTime, dezurni_ids } = req.body;
+
     const finalDatum = datum || date;
     const finalVreme = vreme || startTime;
     const finalSala = sala || room;
@@ -216,7 +215,7 @@ const createIspit = async (req, res) => {
     try {
         let finalDezurni = dezurni_ids || [];
 
-        // AUTOMATSKA DODELA: Ako nisu prosleđeni dežurni, vučemo ih sa predmeta
+        // AUTOMATSKA DODELA
         if (!dezurni_ids) {
             const predmet = await prisma.predmet.findUnique({
                 where: { id: Number(predmet_id) },
@@ -230,22 +229,22 @@ const createIspit = async (req, res) => {
         // PROVERA KONFLIKATA
         const konflikti = await proveriKonflikteAsistenata(finalDatum, finalVreme, finalVremeKraja, finalDezurni);
         if (konflikti.length > 0) {
-            return res.status(409).json({ 
-                error: 'Konflikt u rasporedu', 
-                poruke: konflikti 
+            return res.status(409).json({
+                error: 'Konflikt u rasporedu',
+                poruke: konflikti
             });
         }
 
         let salaId = null;
-        const salaNaziv = typeof finalSala === 'object' && finalSala !== null 
-             ? finalSala.naziv 
-             : finalSala;
+        const salaNaziv = typeof finalSala === 'object' && finalSala !== null
+            ? finalSala.naziv
+            : finalSala;
 
         if (salaNaziv && salaNaziv !== 'Bez sale') {
             let postojecaSala = await prisma.sala.findUnique({
                 where: { naziv: salaNaziv }
             });
-             
+
             if (!postojecaSala) {
                 postojecaSala = await prisma.sala.create({
                     data: { naziv: salaNaziv }
@@ -255,11 +254,11 @@ const createIspit = async (req, res) => {
         }
 
         const newIspit = await ispitModel.createIspit(
-            predmet_id, 
-            finalDatum, 
-            finalVreme, 
+            predmet_id,
+            finalDatum,
+            finalVreme,
             finalVremeKraja,
-            is_ispit ?? true, 
+            is_ispit ?? true,
             finalTipKolokvijuma,
             salaId,
             finalDezurni
@@ -268,7 +267,7 @@ const createIspit = async (req, res) => {
             req.user?.username || 'Korisnik',
             'CREATE',
             'Ispit',
-            `Zakazan termin za datum ${finalDatum} u ${finalVreme}h`
+            `Zakazan termin za datum \({finalDatum} u\){finalVreme}h`
         );
         res.status(201).json(newIspit);
     } catch (err) {
@@ -277,54 +276,129 @@ const createIspit = async (req, res) => {
     }
 };
 
-const updateIspit = async (req, res) => {
-    const { id } = req.params;
-    const { predmet_id, datum, vreme, vreme_kraja, is_ispit, tip_kolokvijuma, sala, room, dezurni_ids } = req.body;
-    try {
-        const izabranaSala = sala || room;
-        let salaId = null;
-        const salaNaziv = typeof izabranaSala === 'object' && izabranaSala !== null 
-             ? izabranaSala.naziv 
-             : izabranaSala;
-
-        if (salaNaziv && salaNaziv !== 'Bez sale') {
-            let postojecaSala = await prisma.sala.findUnique({
-                where: { naziv: salaNaziv }
-            });
-             
-            if (!postojecaSala) {
-                postojecaSala = await prisma.sala.create({
-                    data: { naziv: salaNaziv }
-                });
-            }
-            salaId = postojecaSala.id;
-        }
-
-        // Poziv model funkcije sa točno usklađenim redoslijedom:
-        const updatedIspit = await ispitModel.updateIspit(
-            id,
-            predmet_id,
-            datum,
-            vreme,
-            vreme_kraja,
-            is_ispit ?? true,           // 6. is_ispit (Boolean)
-            tip_kolokvijuma || 'I',     // 7. tip_kolokvijuma (String)
-            salaId,                     // 8. salaId (Number ili null)
-            dezurni_ids || []           // 9. dezurni_ids (Array)
-        );
-
-        await logAction(
-            req.user?.username || 'Korisnik',
-            'UPDATE',
-            'Ispit',
-            `Izmenjen termin ID \({id} (\){datum} u \({vreme}h, sala:\){salaNaziv || 'Bez sale'})`
-        );
-        res.status(200).json(updatedIspit);
-    } catch (err) {
-        console.error(`Error updating ispit ${id}:`, err);
-        res.status(500).json({ error: 'Internal server error' });
+function formatTimeToDateTime(datumStr, timeStr) {
+    if (!timeStr) return null;
+    if (timeStr.includes('T')) {
+        const d = new Date(timeStr);
+        return isNaN(d.getTime()) ? null : d;
     }
+
+    const baseDate = datumStr ? datumStr.split('T')[0] : '1970-01-01';
+    let t = timeStr.trim();
+    if (t.length === 5) t += ':00'; // "09:45" -> "09:45:00"
+
+    const d = new Date(`\({baseDate}T\){t}.000Z`);
+    return isNaN(d.getTime()) ? null : d;
+}
+
+const updateIspit = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const body = req.body;
+    const numericId = Number(id);
+
+    // Dohvaćamo postojeće stanje iz baze kao rezervu
+    const postojeciIspit = await prisma.ispit.findUnique({
+      where: { id: numericId }
+    });
+
+    if (!postojeciIspit) {
+      return res.status(404).json({ error: 'Ispit nije pronađen' });
+    }
+
+    // 1. Datum
+    let noviDatum = postojeciIspit.datum;
+    if (body.datum) {
+      const dStr = String(body.datum).split('T')[0];
+      const dObj = new Date(dStr + 'T00:00:00.000Z');
+      if (!isNaN(dObj.getTime())) {
+        noviDatum = dObj;
+      }
+    }
+
+    // 2. Vrijeme početka i Vrijeme kraja (PostgreSQL @db.Time(6) zahtijeva 1970-01-01 bazu)
+    const parseTimeToDbTime = (timeVal, fallbackDate) => {
+      if (timeVal === null) return null;
+      if (!timeVal || String(timeVal).trim() === '' || timeVal === '00:00') {
+        return fallbackDate || null;
+      }
+      
+      let str = String(timeVal).trim();
+      if (str.includes('T')) {
+        str = str.substring(11, 16);
+      } else {
+        str = str.substring(0, 5);
+      }
+      
+      return new Date('1970-01-01T' + str + ':00.000Z');
+    };
+
+    const novoVreme = parseTimeToDbTime(body.vreme, postojeciIspit.vreme);
+    const novoVremeKraja = parseTimeToDbTime(
+      body.vreme_kraja !== undefined ? body.vreme_kraja : body.vremeKraja, 
+      postojeciIspit.vreme_kraja
+    );
+
+    // 3. Sala
+    let salaConnect = undefined;
+    if (body.sala_id && Number(body.sala_id)) {
+      salaConnect = { connect: { id: Number(body.sala_id) } };
+    } else if (body.sala && typeof body.sala === 'string' && body.sala !== 'Bez sale') {
+      const pronadjenaSala = await prisma.sala.findFirst({
+        where: { naziv: body.sala.trim() }
+      });
+      if (pronadjenaSala) {
+        salaConnect = { connect: { id: pronadjenaSala.id } };
+      }
+    }
+
+    // 4. Predmet
+    let predmetConnect = undefined;
+    const pId = Number(body.predmet_id || body.predmetId || body.predmet?.id);
+    if (pId) {
+      predmetConnect = { connect: { id: pId } };
+    }
+
+    // 5. Dežurni - Zadržana ispravna varijabla
+    const dezurniIds = (body.dezurni_ids || body.dezurni || [])
+      .map(d => (typeof d === 'object' ? d.id : Number(d)))
+      .filter(Boolean);
+
+    // Prvo obrišemo postojeća dežurstva zasebnim upitom (da sprečimo DeprecationWarning)
+    await prisma.dezurstva.deleteMany({
+      where: { ispit_id: numericId }
+    });
+
+    const updated = await prisma.ispit.update({
+      where: { id: numericId },
+      data: {
+        datum: noviDatum,
+        vreme: novoVreme,
+        vreme_kraja: novoVremeKraja,
+        is_ispit: body.is_ispit ?? true,
+        tip_kolokvijuma: body.tip_kolokvijuma || 'I',
+        ...(predmetConnect ? { predmet: predmetConnect } : {}),
+        ...(salaConnect ? { sala: salaConnect } : {}),
+        dezurstva: {
+          create: dezurniIds.map(dId => ({
+            saradnik_id: Number(dId)
+          }))
+        }
+      },
+      include: {
+        predmet: true,
+        sala: true,
+        dezurstva: { include: { saradnik: true } }
+      }
+    });
+
+    return res.status(200).json(updated);
+  } catch (error) {
+    console.error('Greška pri izmjeni ispita:', error);
+    return res.status(500).json({ error: error.message });
+  }
 };
+
 const deleteIspit = async (req, res) => {
     const { id } = req.params;
     try {
@@ -344,6 +418,7 @@ const deleteIspit = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+
 const saveBulkIspiti = async (req, res) => {
     const ispitiNiz = req.body;
     try {
@@ -351,8 +426,8 @@ const saveBulkIspiti = async (req, res) => {
         for (let ispit of ispitiNiz) {
             const izabranaSala = ispit.sala || ispit.room;
             let salaId = null;
-            const salaNaziv = typeof izabranaSala === 'object' && izabranaSala !== null 
-                ? izabranaSala.naziv 
+            const salaNaziv = typeof izabranaSala === 'object' && izabranaSala !== null
+                ? izabranaSala.naziv
                 : izabranaSala;
 
             if (salaNaziv && salaNaziv !== 'Bez sale') {
@@ -378,8 +453,6 @@ const saveBulkIspiti = async (req, res) => {
                 ispit.dezurni_ids || []
             );
 
-            // NEMA VIŠE SLANJA MEJLOVA OVDE! (Obrisan je ceo blok sa sendGrupniDezurstvoEmail)
-
             sacuvaniIspiti.push(newIspit);
         }
         await logAction(
@@ -394,6 +467,7 @@ const saveBulkIspiti = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
 const publishAll = async (req, res) => {
     try {
         const draftIspiti = await prisma.ispit.findMany({
@@ -409,16 +483,12 @@ const publishAll = async (req, res) => {
             return res.status(200).json({ message: 'Nema novih ispita za objavljivanje.' });
         }
 
-        // Mapiramo dežurstva po saradniku da im pošaljemo jedinstven spisak
         const saradniciMap = new Map();
 
         draftIspiti.forEach(ispit => {
             const datumStr = ispit.datum;
             const vremeStr = ispit.vreme ? (typeof ispit.vreme === 'string' ? ispit.vreme.substring(0, 5) : '00:00') : '00:00';
-            
-            // Dodajemo parsiranje vremena kraja
             const vremeKrajaStr = ispit.vreme_kraja ? (typeof ispit.vreme_kraja === 'string' ? ispit.vreme_kraja.substring(0, 5) : '') : '';
-            
             const salaNaziv = ispit.sala?.naziv || 'Bez sale';
             const predmetNaziv = ispit.predmet?.naziv || 'Ispit';
 
@@ -428,7 +498,7 @@ const publishAll = async (req, res) => {
                     if (!saradniciMap.has(sId)) {
                         saradniciMap.set(sId, {
                             email: d.saradnik.email,
-                            imePrezime: `${d.saradnik.ime} ${d.saradnik.prezime}`,
+                            imePrezime: `\({d.saradnik.ime}\){d.saradnik.prezime}`,
                             dezurstva: []
                         });
                     }
@@ -438,22 +508,20 @@ const publishAll = async (req, res) => {
                         vreme: vremeStr,
                         vremeKraja: vremeKrajaStr,
                         sala: salaNaziv,
-                        isIzmenjen: ispit.is_izmenjen // <--- PROSLEĐUJEMO FLAG
+                        isIzmenjen: ispit.is_izmenjen
                     });
                 }
             });
         });
 
-        // Prebacujemo ispite u objavljeno
         const result = await prisma.ispit.updateMany({
             where: { is_published: false },
-            data: { 
+            data: {
                 is_published: true,
-                is_izmenjen: false // <--- Resetuje se nakon objavljivanja
+                is_izmenjen: false 
             }
         });
 
-        // Šaljemo po JEDAN grupni mejl svakom saradniku
         for (const [sId, data] of saradniciMap.entries()) {
             sendGrupniDezurstvoEmail(data.email, data.imePrezime, data.dezurstva);
         }
@@ -469,7 +537,7 @@ const publishAll = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-// Dohvata redovnu nastavu sa IMI-ja za blokiranje kalendara
+
 const getZauzetiTermini = async (req, res) => {
     try {
         const { sala_id } = req.query;
@@ -486,28 +554,24 @@ const getZauzetiTermini = async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 };
+
 const getDashboardStats = async (req, res) => {
     try {
-        // 1. Ukupan broj zakazanih ispita
         const totalIspiti = await prisma.ispit.count();
-
-        // 2. Ukupan broj aktivnih saradnika
         const totalSaradnici = await prisma.profesor.count();
 
-        // 3. Traženje najopterećenijeg dežurnog
         const profesori = await prisma.profesor.findMany({
             include: { dezurstva: true }
         });
-        
+
         let topDezurni = '-';
         let maxDezurstava = 0;
-        
-       profesori.forEach(prof => {
+
+        profesori.forEach(prof => {
             if (prof.dezurstva.length > maxDezurstava) {
                 maxDezurstava = prof.dezurstva.length;
-                // Ispisuje puno ime i prezime, npr. "Vuksa Vuksanović (8)"
-                const punoIme = `${prof.ime || ''} ${prof.prezime || ''}`.trim();
-                topDezurni = `${punoIme} (${maxDezurstava})`;
+                const punoIme = `\({prof.ime || ''}\){prof.prezime || ''}`.trim();
+                topDezurni = `\({punoIme} (\){maxDezurstava})`;
             }
         });
 
@@ -521,6 +585,7 @@ const getDashboardStats = async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 };
+
 module.exports = {
     getAllIspiti,
     getIspitById,
@@ -531,5 +596,4 @@ module.exports = {
     publishAll,
     getZauzetiTermini,
     getDashboardStats
-
 };

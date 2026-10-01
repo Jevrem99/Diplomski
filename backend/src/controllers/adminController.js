@@ -1,4 +1,3 @@
-const pool = require('../db/connection');
 const prisma = require('../db/prisma');
 const { syncZauzetostSala } = require('../services/imiSyncService');
 
