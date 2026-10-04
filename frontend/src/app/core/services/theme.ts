@@ -36,6 +36,7 @@ export class ThemeService {
     ).subscribe((event: any) => {
       if (event.urlAfterRedirects.includes('/login')) {
         document.body.classList.remove('dark-theme');  //Login nema svetlu temu
+        document.documentElement.style.colorScheme = 'light';
       } else {
         this.applyTheme();
       }
@@ -49,6 +50,8 @@ export class ThemeService {
   }
 
   private applyTheme(): void {
+    // color-scheme mora na <html>: Angular Material boje (light-dark()) se računaju na tom elementu
+    document.documentElement.style.colorScheme = this.isDarkMode() ? 'dark' : 'light';
     if (this.isDarkMode()) {
       document.body.classList.add('dark-theme');
     } else {

@@ -395,15 +395,19 @@
 
     <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
       @for (item of listaSvihKonflikata; track item.datum) {
-      <div class="dialog-hint rounded-xl p-4 flex flex-col gap-2 border">
-        <span class="text-xs font-black text-[#1F63A0] dark:text-sky-400 uppercase tracking-wider border-b pb-1.5">
-          Datum: {{ item.datum }}
+      <div class="dialog-hint rounded-xl p-4 flex flex-col gap-3 border">
+        <span class="text-sm font-extrabold text-[#1F63A0] dark:text-sky-400 border-b pb-2 capitalize">
+          {{ formatDatumKonflikta(item.datum) }}
         </span>
-        <ul class="flex flex-col gap-1.5 mt-1 list-disc pl-4 text-xs font-semibold text-slate-700 dark:text-slate-300">
-          @for (razlog of item.razlozi; track razlog) {
-          <li class="leading-relaxed">{{ razlog }}</li>
-          }
-        </ul>
+        @for (razlog of item.razlozi; track razlog) {
+        <div class="flex gap-3 items-start">
+          <span class="shrink-0 mt-0.5 text-[10px] font-extrabold uppercase tracking-wide rounded-full px-2.5 py-1"
+            [ngClass]="tipKonflikta(razlog) === 'sala' ? 'bg-sky-100 text-sky-800' : tipKonflikta(razlog) === 'odsustvo' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'">
+            {{ tipKonflikta(razlog) === 'sala' ? 'Sala' : tipKonflikta(razlog) === 'odsustvo' ? 'Odsustvo' : 'Dežurstvo' }}
+          </span>
+          <p class="m-0 text-[13px] leading-relaxed font-medium text-slate-700 dark:text-slate-200">{{ razlog }}</p>
+        </div>
+        }
       </div>
       } @empty {
       <div class="text-center py-8 text-slate-400 font-bold text-sm">Nema aktivnih konflikata u rasporedu.</div>
@@ -414,6 +418,52 @@
       <button (click)="prikaziKonfliktiModal = false"
         class="h-10 px-6 font-extrabold text-sm bg-[#1F63A0] text-white rounded-xl hover:bg-[#164f82] transition-colors cursor-pointer border-none">
         Zatvori
+      </button>
+    </div>
+  </div>
+</div>
+}
+
+@if (prikaziKonfliktePriCuvanju) {
+<div class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center z-[999999] p-4 font-montserrat">
+  <div class="dialog-card-box rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[88vh]">
+    <div class="bg-amber-500 px-6 py-4 text-white">
+      <h2 class="text-lg font-extrabold m-0">Pronađeni konflikti pri čuvanju</h2>
+      <p class="m-0 mt-1 text-sm font-medium text-white/90">
+        {{ konfliktiPriCuvanju.length }} termin(a) ima preklapanja. Možete se vratiti na uređivanje ili sačuvati svejedno.
+      </p>
+    </div>
+
+    <div class="p-6 overflow-y-auto flex flex-col gap-4 flex-1">
+      @for (ispit of konfliktiPriCuvanju; track $index) {
+      <div class="dialog-hint rounded-xl p-4 flex flex-col gap-3 border">
+        <div class="flex flex-col border-b pb-2">
+          <span class="text-sm font-extrabold text-[#1F63A0] dark:text-sky-400">{{ ispit.naziv }}</span>
+          <span class="text-xs font-semibold text-slate-500 capitalize">
+            {{ formatDatumKonflikta(ispit.datum) }}, {{ ispit.vreme }}@if (ispit.vreme_kraja) {–{{ ispit.vreme_kraja }}}
+          </span>
+        </div>
+        @for (k of ispit.konflikti; track $index) {
+        <div class="flex gap-3 items-start">
+          <span class="shrink-0 mt-0.5 text-[10px] font-extrabold uppercase tracking-wide rounded-full px-2.5 py-1"
+            [ngClass]="k.tip === 'sala' ? 'bg-sky-100 text-sky-800' : k.tip === 'odsustvo' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'">
+            {{ k.tip === 'sala' ? 'Sala' : k.tip === 'odsustvo' ? 'Odsustvo' : 'Dežurstvo' }}
+          </span>
+          <p class="m-0 text-[13px] leading-relaxed font-medium text-slate-700 dark:text-slate-200">{{ k.tekst }}</p>
+        </div>
+        }
+      </div>
+      }
+    </div>
+
+    <div class="dialog-footer border-t px-6 py-3 flex justify-end gap-3">
+      <button (click)="prikaziKonfliktePriCuvanju = false"
+        class="h-10 px-5 font-extrabold text-sm bg-transparent text-slate-600 dark:text-slate-300 rounded-xl border border-slate-300 hover:bg-slate-100 cursor-pointer">
+        Nazad na uređivanje
+      </button>
+      <button (click)="potvrdiCuvanjeSaKonfliktima()"
+        class="h-10 px-5 font-extrabold text-sm bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-colors cursor-pointer border-none">
+        Sačuvaj ipak
       </button>
     </div>
   </div>

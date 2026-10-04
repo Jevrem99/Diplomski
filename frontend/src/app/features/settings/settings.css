@@ -1,6 +1,6 @@
 .settings-page-wrapper {
   padding: 1.5rem;
-  background-color: #e9f0f8;
+  background-color: var(--bg);
   min-height: calc(100vh - 62px);
   box-sizing: border-box;
   font-family: "Open Sans", Roboto, sans-serif;
@@ -18,8 +18,8 @@
 /* IMI TEGET HEDER STRANICE                                  */
 /* ========================================================= */
 .settings-header {
-  background-color: #1F63A0;
-  border: 1px solid #164f82;
+  background-color: var(--header-bg);
+  border: 1px solid var(--header-border);
   border-radius: 12px;
   padding: 1rem 1.5rem;
   box-shadow: 0 4px 14px rgba(31, 99, 160, 0.15);
@@ -45,8 +45,8 @@
 /* KARTICE                                                   */
 /* ========================================================= */
 .settings-card {
-  background-color: #ffffff;
-  border: 1px solid #cbd5e1;
+  background-color: var(--surface);
+  border: 1px solid var(--border-strong);
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
   box-shadow: 0 4px 14px rgba(31, 99, 160, 0.06);
@@ -62,9 +62,9 @@
   width: 42px;
   height: 42px;
   border-radius: 10px;
-  background-color: #f0f7fc;
-  border: 1px solid #cbd5e1;
-  color: #1F63A0;
+  background-color: var(--primary-soft);
+  border: 1px solid var(--border-strong);
+  color: var(--primary-text);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -74,13 +74,13 @@
   font-family: 'Montserrat', sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
-  color: #1F63A0;
+  color: var(--primary-text);
   margin: 0;
 }
 
 .card-desc {
   font-size: 0.8rem;
-  color: #64748b;
+  color: var(--muted);
   margin: 0;
 }
 
@@ -92,7 +92,7 @@
 .info-label {
   font-size: 0.72rem;
   font-weight: 800;
-  color: #94a3b8;
+  color: var(--faint);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -100,16 +100,16 @@
 .info-val {
   font-size: 0.95rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text);
   margin-top: 2px;
 }
 
 .role-badge {
   display: inline-flex;
   padding: 3px 10px;
-  background-color: #f0f7fc;
-  border: 1px solid #cbd5e1;
-  color: #1F63A0;
+  background-color: var(--primary-soft);
+  border: 1px solid var(--border-strong);
+  color: var(--primary-text);
   font-family: 'Montserrat', sans-serif;
   font-size: 0.8rem;
   font-weight: 800;
@@ -127,14 +127,14 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-  border: 1px solid #cbd5e1;
-  background-color: #f8fafc;
-  color: #334155;
+  border: 1px solid var(--border-strong);
+  background-color: var(--surface-2);
+  color: var(--text-2);
   transition: all 0.15s ease;
 }
 
 .btn-theme-toggle:hover {
-  background-color: #f1f5f9;
+  background-color: var(--surface-3);
 }
 
 /* ========================================================= */
@@ -149,15 +149,15 @@
 .form-label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #475569;
+  color: var(--text-2);
 }
 
 .custom-input-field {
   height: 38px;
   padding: 0 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   border-radius: 7px;
-  background-color: #ffffff;
+  background-color: var(--surface);
   font-size: 0.88rem;
   outline: none;
   font-family: inherit;
@@ -165,15 +165,15 @@
 }
 
 .custom-input-field:focus {
-  border-color: #1F63A0;
+  border-color: var(--primary);
   box-shadow: 0 0 0 2px rgba(31, 99, 160, 0.15);
 }
 
 .btn-update-pass {
   height: 40px;
   border-radius: 7px;
-  border: 1px solid #d68910;
-  background-color: #F39C12;
+  border: 1px solid var(--accent-dark);
+  background-color: var(--accent);
   color: #ffffff;
   font-family: 'Montserrat', sans-serif;
   font-size: 0.88rem;
@@ -184,7 +184,7 @@
 }
 
 .btn-update-pass:hover {
-  background-color: #e67e22;
+  background-color: var(--accent-hover);
 }
 
 /* ========================================================= */
@@ -194,9 +194,9 @@
   height: 34px;
   padding: 0 12px;
   border-radius: 6px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #64748b;
+  border: 1px solid var(--border-strong);
+  background-color: var(--surface);
+  color: var(--muted);
   font-family: 'Montserrat', sans-serif;
   font-size: 0.78rem;
   font-weight: 700;
@@ -204,8 +204,8 @@
 }
 
 .btn-reset-colors:hover {
-  background-color: #fef2f2;
-  border-color: #fecaca;
+  background-color: var(--danger-soft);
+  border-color: var(--danger-border);
   color: #ef4444;
 }
 
@@ -213,8 +213,8 @@
   height: 34px;
   padding: 0 14px;
   border-radius: 6px;
-  border: 1px solid #d68910;
-  background-color: #F39C12;
+  border: 1px solid var(--accent-dark);
+  background-color: var(--accent);
   color: #ffffff;
   font-family: 'Montserrat', sans-serif;
   font-size: 0.8rem;
@@ -223,13 +223,13 @@
 }
 
 .btn-save-colors:hover {
-  background-color: #e67e22;
+  background-color: var(--accent-hover);
 }
 
 .year-color-card {
   padding: 10px 14px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -252,115 +252,4 @@
   cursor: pointer;
   background: transparent;
   padding: 0;
-}
-/* ========================================================= */
-/* KONTRAST ZA TAMNU TEMU (SETTINGS)                         */
-/* ========================================================= */
-
-:host-context(body.dark-theme) .settings-page-wrapper,
-body.dark-theme app-settings .settings-page-wrapper {
-  background-color: #0b1329 !important;
-}
-
-:host-context(body.dark-theme) .settings-card,
-body.dark-theme app-settings .settings-card {
-  background-color: #111c44 !important;
-  border-color: #1e293b !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
-}
-
-:host-context(body.dark-theme) .card-title,
-body.dark-theme app-settings .card-title {
-  color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .card-desc,
-body.dark-theme app-settings .card-desc {
-  color: #94a3b8 !important;
-}
-
-/* 1. Korisničko ime, email i ostali ključni podaci */
-:host-context(body.dark-theme) .info-val,
-body.dark-theme app-settings .info-val,
-:host-context(body.dark-theme) .info-group p,
-body.dark-theme app-settings .info-group p {
-  color: #ffffff !important;
-  font-weight: 700 !important;
-}
-
-/* 2. Labelice iznad polja i podataka */
-:host-context(body.dark-theme) .info-label,
-body.dark-theme app-settings .info-label,
-:host-context(body.dark-theme) .form-label,
-body.dark-theme app-settings .form-label {
-  color: #cbd5e1 !important;
-  font-weight: 700 !important;
-}
-
-/* 3. Input polja unutar forme za promenu lozinke */
-:host-context(body.dark-theme) .custom-input-field,
-body.dark-theme app-settings .custom-input-field {
-  background-color: #0d1533 !important;
-  border-color: #2a3b75 !important;
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) .custom-input-field::placeholder,
-body.dark-theme app-settings .custom-input-field::placeholder {
-  color: #64748b !important;
-}
-
-:host-context(body.dark-theme) .custom-input-field:focus,
-body.dark-theme app-settings .custom-input-field:focus {
-  border-color: #38bdf8 !important;
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25) !important;
-}
-
-/* 4. Značka uloge i ikonica profila */
-:host-context(body.dark-theme) .role-badge,
-body.dark-theme app-settings .role-badge {
-  background-color: #1a2656 !important;
-  border-color: #2a3b75 !important;
-  color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .icon-avatar,
-body.dark-theme app-settings .icon-avatar {
-  background-color: #1a2656 !important;
-  border-color: #2a3b75 !important;
-  color: #38bdf8 !important;
-}
-
-/* 5. Dugme za promenu teme */
-:host-context(body.dark-theme) .btn-theme-toggle,
-body.dark-theme app-settings .btn-theme-toggle {
-  background-color: #1a2656 !important;
-  border-color: #2a3b75 !important;
-  color: #f1f5f9 !important;
-}
-
-:host-context(body.dark-theme) .btn-theme-toggle:hover,
-body.dark-theme app-settings .btn-theme-toggle:hover {
-  background-color: #243475 !important;
-}
-
-/* 6. Kartice za boje predmeta na dnu */
-:host-context(body.dark-theme) .year-color-card,
-body.dark-theme app-settings .year-color-card {
-  background-color: #0d1533 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .btn-reset-colors,
-body.dark-theme app-settings .btn-reset-colors {
-  background-color: #1a2656 !important;
-  border-color: #2a3b75 !important;
-  color: #e2e8f0 !important;
-}
-
-:host-context(body.dark-theme) .btn-reset-colors:hover,
-body.dark-theme app-settings .btn-reset-colors:hover {
-  background-color: #ef4444 !important;
-  border-color: #dc2626 !important;
-  color: #ffffff !important;
 }

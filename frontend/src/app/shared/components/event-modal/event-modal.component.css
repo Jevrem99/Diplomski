@@ -18,7 +18,7 @@
 .event-modal-container {
   display: flex;
   flex-direction: column;
-  background-color: #ffffff;
+  background-color: var(--surface);
   border-radius: 12px;
   overflow: hidden;
   max-height: 88vh;
@@ -28,12 +28,12 @@
 /* IMI TEGET HEDER                                           */
 /* ========================================================= */
 .modal-header {
-  background-color: #1F63A0;
+  background-color: var(--primary);
   padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #164f82;
+  border-bottom: 1px solid var(--primary-dark);
 }
 
 .modal-title-wrapper {
@@ -110,7 +110,7 @@
 .field-label {
   font-size: 0.75rem;
   font-weight: 800;
-  color: #1F63A0;
+  color: var(--primary-text);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -118,10 +118,10 @@
 /* Segmentirani radio izbor Tipa */
 .radio-group-segmented {
   display: inline-flex;
-  background-color: #f1f5f9;
+  background-color: var(--surface-3);
   padding: 3px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   gap: 3px;
   width: fit-content;
 }
@@ -135,7 +135,7 @@
   font-weight: 700;
   border-radius: 6px;
   cursor: pointer;
-  color: #475569;
+  color: var(--text-2);
   transition: all 0.15s ease;
 }
 
@@ -144,7 +144,7 @@
 }
 
 .segmented-option.active {
-  background-color: #1F63A0;
+  background-color: var(--primary);
   color: #ffffff;
   box-shadow: 0 1px 3px rgba(31, 99, 160, 0.25);
 }
@@ -156,8 +156,8 @@
 
 /* Kutija za izabrane saradnike */
 .selected-box {
-  background-color: #f8fafc;
-  border: 1px solid #cbd5e1;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border-strong);
   border-radius: 8px;
   padding: 0.75rem 1rem;
 }
@@ -165,14 +165,14 @@
 .selected-box-title {
   font-size: 0.75rem;
   font-weight: 800;
-  color: #1F63A0;
+  color: var(--primary-text);
   text-transform: uppercase;
   margin-bottom: 0.5rem;
   display: block;
 }
 
 .dezurni-chip {
-  background-color: #1F63A0;
+  background-color: var(--primary);
   color: #ffffff;
   font-size: 0.8rem;
   font-weight: 700;
@@ -200,7 +200,7 @@
 
 .empty-hint {
   font-size: 0.82rem;
-  color: #94a3b8;
+  color: var(--faint);
   font-style: italic;
 }
 
@@ -208,8 +208,8 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  background-color: var(--danger-soft);
+  border: 1px solid var(--danger-border);
   color: #ef4444;
   font-size: 0.82rem;
   font-weight: 700;
@@ -221,7 +221,7 @@
 .modal-side-col {
   width: 290px;
   flex-shrink: 0;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid var(--border);
   padding-left: 1.5rem;
   display: flex;
   flex-direction: column;
@@ -231,7 +231,7 @@
 .side-col-title {
   font-size: 0.95rem;
   font-weight: 800;
-  color: #1e293b;
+  color: var(--text);
   margin: 0;
 }
 
@@ -247,8 +247,8 @@
 
 .saradnik-row {
   padding: 8px 12px;
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background-color: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 6px;
   display: flex;
   align-items: center;
@@ -259,7 +259,7 @@
 .saradnik-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: #334155;
+  color: var(--text-2);
 }
 
 .saradnik-warning {
@@ -269,17 +269,17 @@
 }
 
 .saradnik-row.is-odsutan {
-  background-color: #fef2f2;
-  border-color: #fecaca;
+  background-color: var(--danger-soft);
+  border-color: var(--danger-border);
 }
 
 .btn-add-circle {
   width: 26px;
   height: 26px;
   border-radius: 50%;
-  border: 1px solid #1F63A0;
-  background-color: #ffffff;
-  color: #1F63A0;
+  border: 1px solid var(--primary);
+  background-color: var(--surface);
+  color: var(--primary-text);
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
@@ -290,14 +290,14 @@
 }
 
 .btn-add-circle:hover:not(:disabled) {
-  background-color: #1F63A0;
+  background-color: var(--primary);
   color: #ffffff;
 }
 
 .btn-add-circle:disabled {
   opacity: 0.3;
   cursor: not-allowed;
-  border-color: #cbd5e1;
+  border-color: var(--border-strong);
   color: #cbd5e1;
 }
 
@@ -306,8 +306,8 @@
 /* ========================================================= */
 .modal-footer {
   padding: 0.85rem 1.5rem;
-  background-color: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background-color: var(--surface-2);
+  border-top: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -317,8 +317,8 @@
   height: 38px;
   padding: 0 16px;
   border-radius: 7px;
-  border: 1px solid #fecaca;
-  background-color: #ffffff;
+  border: 1px solid var(--danger-border);
+  background-color: var(--surface);
   color: #ef4444;
   font-family: inherit;
   font-size: 0.85rem;
@@ -327,16 +327,16 @@
 }
 
 .btn-delete:hover {
-  background-color: #fef2f2;
+  background-color: var(--danger-soft);
 }
 
 .btn-cancel {
   height: 38px;
   padding: 0 16px;
   border-radius: 7px;
-  border: 1px solid #cbd5e1;
-  background-color: #ffffff;
-  color: #475569;
+  border: 1px solid var(--border-strong);
+  background-color: var(--surface);
+  color: var(--text-2);
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 700;
@@ -344,15 +344,15 @@
 }
 
 .btn-cancel:hover {
-  background-color: #f1f5f9;
+  background-color: var(--surface-3);
 }
 
 .btn-save {
   height: 38px;
   padding: 0 22px;
   border-radius: 7px;
-  border: 1px solid #d68910;
-  background-color: #F39C12;
+  border: 1px solid var(--accent-dark);
+  background-color: var(--accent);
   color: #ffffff;
   font-family: inherit;
   font-size: 0.88rem;
@@ -362,7 +362,7 @@
 }
 
 .btn-save:hover {
-  background-color: #e67e22;
+  background-color: var(--accent-hover);
 }
 /* ========================================================= */
 /* FINO CENTRIRANI I ZAOBLJENI DROPDOWN-I                    */
@@ -395,7 +395,7 @@
 ::ng-deep .mat-mdc-text-field-wrapper {
   height: 46px !important;
   padding: 0 14px !important;
-  background-color: #f8fafc !important;
+  background-color: var(--surface-2) !important;
   border-radius: 12px !important;
   display: flex !important;
   align-items: center !important;
@@ -428,7 +428,7 @@
   font-size: 0.88rem !important;
   font-weight: 600 !important;
   line-height: 1.2 !important;
-  color: #334155 !important;
+  color: var(--text-2) !important;
 }
 
 /* Pozicija plutajuće labele pri fokusu */
@@ -490,7 +490,7 @@
 
 /* 4. Prirodna visina i vertikalno centriranje celog polja */
 ::ng-deep app-event-modal .mat-mdc-text-field-wrapper {
-  background-color: #f8fafc !important;
+  background-color: var(--surface-2) !important;
   border-radius: 10px !important;
   box-sizing: border-box !important;
 }
@@ -519,7 +519,7 @@
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.9rem !important;
   font-weight: 600 !important;
-  color: #1e293b !important;
+  color: var(--text) !important;
 }
 
 /* 6. Pozicija plutajuće labele kada polje nije popunjeno */
@@ -527,7 +527,7 @@
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.88rem !important;
   font-weight: 600 !important;
-  color: #64748b !important;
+  color: var(--muted) !important;
 }
 
 /* 7. Strelica poravnata u centru */
@@ -562,7 +562,7 @@
 
 /* Pozadina i visina omotača */
 ::ng-deep app-event-modal .mat-mdc-text-field-wrapper {
-  background-color: #f8fafc !important;
+  background-color: var(--surface-2) !important;
   border-radius: 12px !important;
   box-sizing: border-box !important;
 }
@@ -594,7 +594,7 @@
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.88rem !important;
   font-weight: 700 !important;
-  color: #1e293b !important;
+  color: var(--text) !important;
   line-height: 24px !important;
 }
 
@@ -617,14 +617,14 @@
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.95rem !important;
   font-weight: 700 !important;
-  color: #475569 !important;
+  color: var(--text-2) !important;
 }
 
 /* 2. Lebdeća labela na okviru (kada je polje selektovano ili ima vrednost) */
 ::ng-deep app-event-modal .mdc-text-field--outlined .mdc-floating-label--float-above {
   font-size: 0.82rem !important;
   font-weight: 800 !important;
-  color: #1F63A0 !important;
+  color: var(--primary-text) !important;
   transform: translateY(-22px) scale(1) !important;
 }
 /* ========================================================= */

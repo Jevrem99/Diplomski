@@ -1,6 +1,6 @@
 .db-container {
   padding: 1.25rem;
-  background-color: #e9f0f8;
+  background-color: var(--bg);
   min-height: calc(100vh - 62px);
   box-sizing: border-box;
   font-family: "Open Sans", Roboto, sans-serif;
@@ -13,8 +13,8 @@
 /* GLAVNI IMI KONTROLNI HEDER                                */
 /* ========================================================= */
 .db-header {
-  background-color: #1F63A0;
-  border: 1px solid #164f82;
+  background-color: var(--header-bg);
+  border: 1px solid var(--header-border);
   border-radius: 12px;
   padding: 0.85rem 1.25rem;
   display: flex;
@@ -72,14 +72,14 @@
 
 /* Glavno dugme: Dodaj (IMI Zlatno) */
 .btn-action-primary {
-  background-color: #F39C12 !important;
-  border: 1px solid #d68910 !important;
+  background-color: var(--accent) !important;
+  border: 1px solid var(--accent-dark) !important;
   color: #ffffff !important;
   font-weight: 800 !important;
 }
 
 .btn-action-primary:hover {
-  background-color: #e67e22 !important;
+  background-color: var(--accent-hover) !important;
 }
 
 /* Sekundarno: Import Excel (Matirana teget) */
@@ -115,10 +115,10 @@
 
 .tabs-group {
   display: inline-flex;
-  background-color: #ffffff;
+  background-color: var(--surface);
   padding: 4px;
   border-radius: 10px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   box-shadow: 0 2px 6px rgba(31, 99, 160, 0.05);
   gap: 4px;
   flex-wrap: wrap;
@@ -133,18 +133,18 @@
   border-radius: 7px;
   background: transparent;
   border: none;
-  color: #475569;
+  color: var(--text-2);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .tab-btn:hover {
-  background-color: #f1f5f9;
-  color: #1F63A0;
+  background-color: var(--surface-3);
+  color: var(--primary-text);
 }
 
 .tab-btn.active {
-  background-color: #1F63A0;
+  background-color: var(--primary);
   color: #ffffff;
   box-shadow: 0 1px 3px rgba(31, 99, 160, 0.3);
 }
@@ -153,9 +153,9 @@
 /* AKADEMSKA TABELA                                          */
 /* ========================================================= */
 .table-wrapper {
-  background-color: #ffffff;
+  background-color: var(--surface);
   border-radius: 12px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--border-strong);
   overflow: hidden;
   box-shadow: 0 4px 14px rgba(31, 99, 160, 0.08);
   flex: 1;
@@ -169,7 +169,7 @@
 
 /* Zaglavlje tabele u punoj IMI teget boji kao kalendar */
 .styled-table thead th {
-  background-color: #1F63A0;
+  background-color: var(--header-bg);
   color: #ffffff;
   font-family: 'Montserrat', sans-serif;
   font-size: 0.82rem;
@@ -177,7 +177,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   padding: 0.85rem 1rem;
-  border-bottom: 1px solid #164f82;
+  border-bottom: 1px solid var(--header-border);
   border-right: 1px solid rgba(255, 255, 255, 0.15);
 }
 
@@ -187,11 +187,11 @@
 
 .styled-table tbody td {
   padding: 0.85rem 1rem;
-  color: #1e293b;
+  color: var(--text);
   font-size: 0.88rem;
   font-weight: 600;
-  border-bottom: 1px solid #e2e8f0;
-  border-right: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 
 .styled-table tbody td:last-child {
@@ -199,7 +199,7 @@
 }
 
 .styled-table tbody tr:hover td {
-  background-color: #f8fafc;
+  background-color: var(--surface-2);
 }
 
 /* Ikonice za edit i brisanje unutar reda */
@@ -215,20 +215,20 @@
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  border: 1px solid #e2e8f0;
-  background-color: #ffffff;
+  border: 1px solid var(--border);
+  background-color: var(--surface);
   cursor: pointer;
   margin: 0 3px;
   transition: all 0.15s ease;
 }
 
 .action-btn.edit-btn {
-  color: #1F63A0;
+  color: var(--primary-text);
 }
 
 .action-btn.edit-btn:hover {
-  background-color: #f0f7fc;
-  border-color: #1F63A0;
+  background-color: var(--primary-soft);
+  border-color: var(--primary);
 }
 
 .action-btn.delete-btn {
@@ -236,7 +236,7 @@
 }
 
 .action-btn.delete-btn:hover {
-  background-color: #fef2f2;
+  background-color: var(--danger-soft);
   border-color: #ef4444;
 }
 
@@ -246,7 +246,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #64748b;
+  color: var(--muted);
   font-weight: 600;
   font-size: 0.95rem;
 }

@@ -17,8 +17,8 @@
 /* ========================================================= */
 aside.left-bank-aside,
 aside.w-full {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 16px !important;
   overflow: hidden !important; /* Reže unutrašnje elemente da ne vire */
 }
@@ -26,8 +26,8 @@ aside.w-full {
 /* Plavo zaglavlje banke predmeta - popravlja isečeno slovo "B" */
 .bank-header-box,
 aside > div:first-child {
-  background-color: #1F63A0 !important;
-  border-bottom: 1px solid #164f82 !important;
+  background-color: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border) !important;
   padding: 16px 18px 16px 18px !important;
   border-top-left-radius: 15px !important;
   border-top-right-radius: 15px !important;
@@ -54,15 +54,15 @@ aside > div:first-child p {
 }
 
 .bank-search-input {
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #1e293b !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--text) !important;
 }
 
 .bank-filter-btn {
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #1F63A0 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--primary-text) !important;
 }
 
 .bank-filters-panel {
@@ -80,7 +80,7 @@ aside > div:first-child p {
 }
 
 .bank-items-scroll {
-  background-color: #ffffff !important;
+  background-color: var(--surface) !important;
   padding: 16px !important;
   display: flex !important;
   flex-direction: column !important;
@@ -93,8 +93,8 @@ aside > div:first-child p {
 aside .fc-event {
   position: relative !important;
   display: block !important;
-  background-color: #f8fafc !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 12px !important;
   padding: 12px 14px 12px 24px !important;
   box-sizing: border-box !important;
@@ -139,7 +139,7 @@ aside .fc-event ::ng-deep .fc-event-main {
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.88rem !important;
   font-weight: 800 !important;
-  color: #0f172a !important;
+  color: var(--text) !important;
   line-height: 1.35 !important;
   margin: 0 !important;
   word-break: break-word !important;
@@ -149,13 +149,13 @@ aside .fc-event ::ng-deep .fc-event-main {
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.76rem !important;
   font-weight: 600 !important;
-  color: #64748b !important;
+  color: var(--muted) !important;
   margin: 0 !important;
 }
 
 .load-more-btn {
-  background-color: #eff6ff !important;
-  color: #1F63A0 !important;
+  background-color: var(--tint-blue-bg) !important;
+  color: var(--primary-text) !important;
 }
 
 /* ========================================================= */
@@ -174,8 +174,8 @@ aside .fc-event ::ng-deep .fc-event-main {
   max-height: 42px !important;
   padding: 0 12px !important;
   border-radius: 12px !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
   box-sizing: border-box !important;
   display: flex !important;
   align-items: center !important;
@@ -211,7 +211,7 @@ aside .fc-event ::ng-deep .fc-event-main {
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.85rem !important;
   font-weight: 600 !important;
-  color: #1e293b !important;
+  color: var(--text) !important;
 }
 
 ::ng-deep .unified-filter-field .mat-mdc-select-arrow-wrapper,
@@ -223,26 +223,26 @@ aside .fc-event ::ng-deep .fc-event-main {
 
 ::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
 ::ng-deep .custom-filter-select .mat-mdc-select-arrow svg {
-  fill: #64748b !important;
+  fill: var(--muted) !important;
 }
 
 /* ========================================================= */
 /* 3. GORNJI HEDER (KONTROLNA TRAKA)                        */
 /* ========================================================= */
 .top-ctrl-header {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 16px !important;
 }
 
 .top-title-text {
-  color: #0f172a !important;
+  color: var(--text) !important;
 }
 
 .unsaved-badge {
-  background-color: #fef3c7 !important;
-  border: 1px solid #fde68a !important;
-  color: #d97706 !important;
+  background-color: var(--tint-amber-bg) !important;
+  border: 1px solid var(--tint-amber-bd) !important;
+  color: var(--tint-amber-fg) !important;
 }
 
 .header-btn {
@@ -256,9 +256,9 @@ aside .fc-event ::ng-deep .fc-event-main {
   align-items: center !important;
   justify-content: center !important;
   gap: 7px !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #334155 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--text-2) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
   cursor: pointer !important;
   box-sizing: border-box !important;
@@ -266,19 +266,19 @@ aside .fc-event ::ng-deep .fc-event-main {
 }
 
 .header-btn svg {
-  color: #1F63A0 !important;
+  color: var(--primary-text) !important;
   width: 16px !important;
   height: 16px !important;
 }
 
 .header-btn:hover {
-  background-color: #f1f5f9 !important;
-  color: #0f172a !important;
+  background-color: var(--surface-3) !important;
+  color: var(--text) !important;
 }
 
 .header-btn.active-mode-btn {
-  background-color: #1F63A0 !important;
-  border-color: #164f82 !important;
+  background-color: var(--primary) !important;
+  border-color: var(--primary-dark) !important;
   color: #ffffff !important;
 }
 
@@ -287,17 +287,17 @@ aside .fc-event ::ng-deep .fc-event-main {
 }
 
 .btn-danger-action {
-  background-color: #fff1f2 !important;
-  border-color: #fecdd3 !important;
-  color: #e11d48 !important;
+  background-color: var(--tint-rose-bg) !important;
+  border-color: var(--tint-rose-bd) !important;
+  color: var(--tint-rose-fg) !important;
 }
 
 .btn-danger-action svg {
-  color: #e11d48 !important;
+  color: var(--tint-rose-fg) !important;
 }
 
 .btn-danger-action:hover {
-  background-color: #ffe4e6 !important;
+  background-color: var(--tint-rose-bg) !important;
 }
 
 .btn-publish {
@@ -316,54 +316,54 @@ aside .fc-event ::ng-deep .fc-event-main {
 }
 
 .btn-save-draft {
-  background-color: #F39C12 !important;
-  border: 1px solid #d68910 !important;
+  background-color: var(--accent) !important;
+  border: 1px solid var(--accent-dark) !important;
   color: #ffffff !important;
   font-weight: 800 !important;
 }
 
 .btn-save-draft:hover {
-  background-color: #e67e22 !important;
+  background-color: var(--accent-hover) !important;
 }
 
 /* Padajući meniji */
 .statistika-dropdown-card,
 .filteri-dropdown-card {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
 }
 
-.stat-blue { background-color: #eff6ff !important; border-color: #bfdbfe !important; color: #1F63A0 !important; }
-.stat-green { background-color: #f0fdf4 !important; border-color: #bbf7d0 !important; color: #16a34a !important; }
-.stat-slate { background-color: #f8fafc !important; border-color: #e2e8f0 !important; color: #475569 !important; }
-.stat-amber { background-color: #fffbeb !important; border-color: #fde68a !important; color: #d97706 !important; }
+.stat-blue { background-color: var(--tint-blue-bg) !important; border-color: var(--tint-blue-bd) !important; color: var(--primary-text) !important; }
+.stat-green { background-color: var(--tint-green-bg) !important; border-color: var(--tint-green-bd) !important; color: var(--tint-green-fg) !important; }
+.stat-slate { background-color: var(--surface-2) !important; border-color: var(--border) !important; color: var(--text-2) !important; }
+.stat-amber { background-color: var(--tint-amber-bg) !important; border-color: var(--tint-amber-bd) !important; color: var(--tint-amber-fg) !important; }
 
-.filter-header { border-color: #e2e8f0 !important; }
-.filter-title { color: #0f172a !important; }
-.filter-close-btn { color: #94a3b8 !important; }
-.filter-checks { border-color: #e2e8f0 !important; color: #334155 !important; }
-.filter-label { color: #64748b !important; }
+.filter-header { border-color: var(--border) !important; }
+.filter-title { color: var(--text) !important; }
+.filter-close-btn { color: var(--faint) !important; }
+.filter-checks { border-color: var(--border) !important; color: var(--text-2) !important; }
+.filter-label { color: var(--muted) !important; }
 
 /* Modali */
-.dialog-card-box { background-color: #ffffff !important; border: 1px solid #e2e8f0 !important; }
-.dialog-text { color: #334155 !important; }
-.dialog-hint { background-color: #f8fafc !important; border-color: #e2e8f0 !important; color: #64748b !important; }
-.dialog-label { color: #64748b !important; }
-.dialog-input { background-color: #f8fafc !important; border: 1px solid #cbd5e1 !important; color: #1e293b !important; }
-.dialog-cancel-btn { background-color: #f1f5f9 !important; border: 1px solid #cbd5e1 !important; color: #475569 !important; }
-.dialog-footer { background-color: #f8fafc !important; border-color: #e2e8f0 !important; }
+.dialog-card-box { background-color: var(--surface) !important; border: 1px solid var(--border) !important; }
+.dialog-text { color: var(--text-2) !important; }
+.dialog-hint { background-color: var(--surface-2) !important; border-color: var(--border) !important; color: var(--muted) !important; }
+.dialog-label { color: var(--muted) !important; }
+.dialog-input { background-color: var(--surface-2) !important; border: 1px solid var(--border-strong) !important; color: var(--text) !important; }
+.dialog-cancel-btn { background-color: var(--surface-3) !important; border: 1px solid var(--border-strong) !important; color: var(--text-2) !important; }
+.dialog-footer { background-color: var(--surface-2) !important; border-color: var(--border) !important; }
 
 /* ========================================================= */
 /* 4. KALENDAR & TOOLBAR (SVETLA TEMA)                       */
 /* ========================================================= */
 .main-wrapper {
-  background-color: #f4f7fb !important;
+  background-color: var(--bg-main) !important;
   min-height: calc(100vh - 62px);
 }
 
 .calendar-container-card {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 16px !important;
 }
 
@@ -396,9 +396,9 @@ aside .fc-event ::ng-deep .fc-event-main {
   font-family: 'Montserrat', sans-serif !important;
   font-size: 1.05rem !important;
   font-weight: 800 !important;
-  color: #1F63A0 !important;
-  background-color: #ffffff !important;
-  border: 1.5px solid #cbd5e1 !important;
+  color: var(--primary-text) !important;
+  background-color: var(--surface) !important;
+  border: 1.5px solid var(--border-strong) !important;
   padding: 6px 24px !important;
   border-radius: 12px !important;
   margin: 0 !important;
@@ -412,21 +412,21 @@ aside .fc-event ::ng-deep .fc-event-main {
   font-size: 0.85rem !important;
   font-weight: 700 !important;
   border-radius: 8px !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #1F63A0 !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--primary-text) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
 }
 
 :host ::ng-deep .fc .fc-button-primary:hover {
-  background-color: #f1f5f9 !important;
-  color: #164f82 !important;
+  background-color: var(--surface-3) !important;
+  color: var(--primary-text) !important;
 }
 
 :host ::ng-deep .fc .fc-button-primary.fc-button-active,
 :host ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
-  background-color: #1F63A0 !important;
-  border-color: #1F63A0 !important;
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
   color: #ffffff !important;
   font-weight: 800 !important;
 }
@@ -442,8 +442,8 @@ aside .fc-event ::ng-deep .fc-event-main {
 }
 
 :host ::ng-deep .fc .fc-col-header-cell {
-  background-color: #1F63A0 !important;
-  border-color: #164f82 !important;
+  background-color: var(--header-bg) !important;
+  border-color: var(--header-border) !important;
   padding: 7px 0 !important;
 }
 
@@ -459,19 +459,19 @@ aside .fc-event ::ng-deep .fc-event-main {
 :host ::ng-deep .fc-theme-standard th,
 :host ::ng-deep .fc-theme-standard td,
 :host ::ng-deep .fc .fc-scrollgrid {
-  border-color: #e2e8f0 !important;
+  border-color: var(--border) !important;
 }
 
 :host ::ng-deep .fc-daygrid-day {
-  background-color: #ffffff !important;
+  background-color: var(--surface) !important;
 }
 
 :host ::ng-deep .fc .fc-day-other {
-  background-color: #f8fafc !important;
+  background-color: var(--surface-2) !important;
 }
 
 :host ::ng-deep .fc .fc-daygrid-day-number {
-  color: #475569 !important;
+  color: var(--text-2) !important;
   font-weight: 800 !important;
   text-decoration: none !important;
   padding: 4px 6px !important;
@@ -479,275 +479,6 @@ aside .fc-event ::ng-deep .fc-event-main {
 
 :host ::ng-deep .fc .fc-day-today {
   background-color: rgba(31, 99, 160, 0.06) !important;
-}
-
-/* ========================================================= */
-/* 5. TAMNA TEMA (SAMO POD body.dark-theme ILI .dark)        */
-/* ========================================================= */
-:host-context(body.dark-theme) .main-wrapper,
-:host-context(.dark) .main-wrapper {
-  background-color: #080e1e !important;
-}
-
-:host-context(body.dark-theme) aside.left-bank-aside,
-:host-context(.dark) aside.left-bank-aside {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .bank-header-box,
-:host-context(.dark) .bank-header-box,
-:host-context(body.dark-theme) aside > div:first-child,
-:host-context(.dark) aside > div:first-child {
-  background-color: #0d1a44 !important;
-  border-bottom-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .bank-search-input,
-:host-context(.dark) .bank-search-input {
-  background-color: #080e1e !important;
-  border-color: #1e293b !important;
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) .bank-filter-btn,
-:host-context(.dark) .bank-filter-btn {
-  background-color: #080e1e !important;
-  border-color: #1e293b !important;
-  color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .bank-filters-panel,
-:host-context(.dark) .bank-filters-panel {
-  background-color: #080e1e !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .godine-grid,
-:host-context(.dark) .godine-grid {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .bank-items-scroll,
-:host-context(.dark) .bank-items-scroll {
-  background-color: #0b1329 !important;
-}
-
-:host-context(body.dark-theme) .bank-card-item,
-:host-context(.dark) .bank-card-item,
-:host-context(body.dark-theme) aside .fc-event,
-:host-context(.dark) aside .fc-event {
-  background-color: #0d1a44 !important;
-  border-color: #1e293b !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
-}
-
-:host-context(body.dark-theme) .bank-card-title,
-:host-context(.dark) .bank-card-title,
-:host-context(body.dark-theme) aside .fc-event h3,
-:host-context(.dark) aside .fc-event h3 {
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) .bank-card-prof,
-:host-context(.dark) .bank-card-prof,
-:host-context(body.dark-theme) aside .fc-event p,
-:host-context(.dark) aside .fc-event p {
-  color: #94a3b8 !important;
-}
-
-:host-context(body.dark-theme) .load-more-btn,
-:host-context(.dark) .load-more-btn {
-  background-color: rgba(31, 99, 160, 0.2) !important;
-  color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .unified-filter-field .mat-mdc-text-field-wrapper,
-:host-context(.dark) ::ng-deep .unified-filter-field .mat-mdc-text-field-wrapper,
-:host-context(body.dark-theme) ::ng-deep .custom-filter-select .mat-mdc-text-field-wrapper,
-:host-context(.dark) ::ng-deep .custom-filter-select .mat-mdc-text-field-wrapper {
-  background-color: #080e1e !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .unified-filter-field .mat-mdc-select-value-text,
-:host-context(.dark) ::ng-deep .unified-filter-field .mat-mdc-select-value-text,
-:host-context(body.dark-theme) ::ng-deep .custom-filter-select .mat-mdc-select-value-text,
-:host-context(.dark) ::ng-deep .custom-filter-select .mat-mdc-select-value-text {
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
-:host-context(.dark) ::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
-:host-context(body.dark-theme) ::ng-deep .custom-filter-select .mat-mdc-select-arrow svg,
-:host-context(.dark) ::ng-deep .custom-filter-select .mat-mdc-select-arrow svg {
-  fill: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .top-ctrl-header,
-:host-context(.dark) .top-ctrl-header {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .top-title-text,
-:host-context(.dark) .top-title-text {
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) .unsaved-badge,
-:host-context(.dark) .unsaved-badge {
-  background-color: rgba(245, 158, 11, 0.15) !important;
-  border-color: rgba(245, 158, 11, 0.3) !important;
-  color: #fbbf24 !important;
-}
-
-:host-context(body.dark-theme) .header-btn,
-:host-context(.dark) .header-btn {
-  background-color: #0d1a44 !important;
-  border-color: #1e293b !important;
-  color: #e2e8f0 !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25) !important;
-}
-
-:host-context(body.dark-theme) .header-btn svg,
-:host-context(.dark) .header-btn svg {
-  color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .header-btn:hover,
-:host-context(.dark) .header-btn:hover {
-  background-color: #162a6b !important;
-  border-color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .statistika-dropdown-card,
-:host-context(.dark) .statistika-dropdown-card,
-:host-context(body.dark-theme) .filteri-dropdown-card,
-:host-context(.dark) .filteri-dropdown-card {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .stat-blue,
-:host-context(.dark) .stat-blue {
-  background-color: rgba(31, 99, 160, 0.2) !important;
-  border-color: rgba(31, 99, 160, 0.4) !important;
-  color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) .stat-green,
-:host-context(.dark) .stat-green {
-  background-color: rgba(16, 185, 129, 0.2) !important;
-  border-color: rgba(16, 185, 129, 0.4) !important;
-  color: #4ade80 !important;
-}
-
-:host-context(body.dark-theme) .stat-slate,
-:host-context(.dark) .stat-slate {
-  background-color: #0d1533 !important;
-  border-color: #1e293b !important;
-  color: #cbd5e1 !important;
-}
-
-:host-context(body.dark-theme) .stat-amber,
-:host-context(.dark) .stat-amber {
-  background-color: rgba(245, 158, 11, 0.2) !important;
-  border-color: rgba(245, 158, 11, 0.4) !important;
-  color: #fbbf24 !important;
-}
-
-:host-context(body.dark-theme) .filter-header,
-:host-context(.dark) .filter-header { border-color: #1e293b !important; }
-:host-context(body.dark-theme) .filter-title,
-:host-context(.dark) .filter-title { color: #ffffff !important; }
-:host-context(body.dark-theme) .filter-checks,
-:host-context(.dark) .filter-checks { border-color: #1e293b !important; color: #cbd5e1 !important; }
-:host-context(body.dark-theme) .filter-label,
-:host-context(.dark) .filter-label { color: #94a3b8 !important; }
-
-:host-context(body.dark-theme) .dialog-card-box,
-:host-context(.dark) .dialog-card-box { background-color: #0b1329 !important; border-color: #1e293b !important; }
-:host-context(body.dark-theme) .dialog-text,
-:host-context(.dark) .dialog-text { color: #e2e8f0 !important; }
-:host-context(body.dark-theme) .dialog-hint,
-:host-context(.dark) .dialog-hint { background-color: #0d1533 !important; border-color: #1e293b !important; color: #94a3b8 !important; }
-:host-context(body.dark-theme) .dialog-label,
-:host-context(.dark) .dialog-label { color: #94a3b8 !important; }
-:host-context(body.dark-theme) .dialog-input,
-:host-context(.dark) .dialog-input { background-color: #0d1533 !important; border-color: #1e293b !important; color: #ffffff !important; }
-:host-context(body.dark-theme) .dialog-cancel-btn,
-:host-context(.dark) .dialog-cancel-btn { background-color: #0d1533 !important; border-color: #1e293b !important; color: #cbd5e1 !important; }
-:host-context(body.dark-theme) .dialog-footer,
-:host-context(.dark) .dialog-footer { background-color: #0d1533 !important; border-color: #1e293b !important; }
-
-:host-context(body.dark-theme) .calendar-container-card,
-:host-context(.dark) .calendar-container-card {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-toolbar-title,
-:host-context(.dark) ::ng-deep .fc .fc-toolbar-title {
-  color: #38bdf8 !important;
-  background-color: #0d1a44 !important;
-  border-color: #1F63A0 !important;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary,
-:host-context(.dark) ::ng-deep .fc .fc-button-primary {
-  background-color: #0d1a44 !important;
-  border-color: #1F63A0 !important;
-  color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary:hover,
-:host-context(.dark) ::ng-deep .fc .fc-button-primary:hover {
-  background-color: #162a6b !important;
-  border-color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary.fc-button-active,
-:host-context(.dark) ::ng-deep .fc .fc-button-primary.fc-button-active {
-  background-color: #1F63A0 !important;
-  border-color: #38bdf8 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc-theme-standard th,
-:host-context(body.dark-theme) ::ng-deep .fc-theme-standard td,
-:host-context(body.dark-theme) ::ng-deep .fc .fc-scrollgrid,
-:host-context(.dark) ::ng-deep .fc-theme-standard th,
-:host-context(.dark) ::ng-deep .fc-theme-standard td,
-:host-context(.dark) ::ng-deep .fc .fc-scrollgrid {
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc-daygrid-day,
-:host-context(.dark) ::ng-deep .fc-daygrid-day {
-  background-color: #0b1329 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-day-other,
-:host-context(.dark) ::ng-deep .fc .fc-day-other {
-  background-color: #070c1b !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-daygrid-day-number,
-:host-context(.dark) ::ng-deep .fc .fc-daygrid-day-number {
-  color: #94a3b8 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-day-today,
-:host-context(.dark) ::ng-deep .fc .fc-day-today {
-  background-color: #101c40 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-day-today .fc-daygrid-day-number,
-:host-context(.dark) ::ng-deep .fc .fc-day-today .fc-daygrid-day-number {
-  color: #38bdf8 !important;
 }
 
 /* ========================================================= */
@@ -975,4 +706,94 @@ div[class*="fc-event-dragging"] {
   border: 1.5px solid #38bdf8 !important;
   box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.35) !important;
   transform: scale(0.97);
+}
+
+/* ========================================================= */
+/* 7. KARTICE TERMINA I BROJEVI DANA (osnovni izgled)        */
+/*    Dizajni u theme.css ih menjaju preko promenljive --ev   */
+/* ========================================================= */
+:host ::ng-deep .cal-day-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+:host ::ng-deep .cal-day-num {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-2);
+  pointer-events: none;
+  padding: 2px;
+}
+:host ::ng-deep .cal-day-num.is-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: #ffffff !important;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(31, 99, 160, 0.35);
+}
+:host ::ng-deep .day-actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: auto;
+}
+:host ::ng-deep .day-select-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--border-strong);
+  background-color: var(--surface);
+  cursor: pointer;
+  pointer-events: auto !important;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+:host ::ng-deep .day-select-circle.is-selected {
+  background-color: var(--primary);
+  border-color: var(--primary-dark);
+}
+:host ::ng-deep .day-select-circle.is-copy {
+  border: 2px dashed var(--primary-text);
+  background-color: var(--primary-soft);
+}
+:host ::ng-deep .fc-daygrid-day.has-conflict {
+  background-color: var(--tint-amber-bg) !important;
+}
+
+:host ::ng-deep .clean-cal-card.is-ispit {
+  background-color: var(--ev) !important;
+  border: none !important;
+}
+:host ::ng-deep .clean-cal-card.is-ispit .cal-card-time {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  color: #ffffff !important;
+}
+:host ::ng-deep .clean-cal-card.is-ispit .cal-ticker-text {
+  color: #ffffff !important;
+}
+:host ::ng-deep .clean-cal-card.is-kolokvijum {
+  background-color: var(--surface) !important;
+  border: 1.5px solid var(--ev) !important;
+}
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-card-time {
+  background-color: var(--surface-3) !important;
+  color: var(--ev) !important;
+}
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-ticker-text {
+  color: var(--text) !important;
 }

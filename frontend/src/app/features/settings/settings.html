@@ -42,19 +42,11 @@
           </div>
         </div>
 
-        <!-- Podešavanje Teme -->
-        <div class="settings-card flex items-center justify-between">
-          <div>
-            <h2 class="card-title text-base">Izgled aplikacije</h2>
-            <p class="card-desc mt-0.5">Prebacivanje između svetle i tamne teme</p>
-          </div>
-        <button class="btn-theme-toggle" (click)="toggleTheme()">
-            @if (themeService.isDarkMode()) {
-              Svetla tema
-            } @else {
-              Tamna tema
-            }
-          </button>
+        <!-- Izgled aplikacije: dizajn + tema -->
+        <div class="settings-card">
+          <h2 class="card-title text-base">Izgled aplikacije</h2>
+          <p class="card-desc mt-0.5 mb-4">Izaberite dizajn i svetlu ili tamnu temu. Izbor se pamti u ovom pregledaču.</p>
+          <app-design-picker />
         </div>
 
       </div>
