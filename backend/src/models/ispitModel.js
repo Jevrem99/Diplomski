@@ -1,7 +1,9 @@
 const prisma = require('../db/prisma');
 
-const getAllIspiti = async () => {
+const getAllIspiti = async (where = {}) => {
     return await prisma.ispit.findMany({
+        where,
+        orderBy: [{ datum: 'asc' }, { vreme: 'asc' }],
         include: {
             predmet: { include: { profesor: true } },
             sala: true,
@@ -21,13 +23,14 @@ const getIspitById = async (id) => {
     });
 };
 
-const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true, tip_kolokvijuma = 'I', sala_id = null, dezurni_ids = []) => {
+// db = prisma ili transakcioni klijent (tx) kad se poziva unutar prisma.$transaction
+const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true, tip_kolokvijuma = 'I', sala_id = null, dezurni_ids = [], db = prisma) => {
     // 1. Kreiraj samo ispit (bez ugnježdenog dezurstva)
-    const noviIspit = await prisma.ispit.create({
+    const noviIspit = await db.ispit.create({
         data: {
             datum: new Date(datum),
-            vreme: new Date(`\({datum}T\){vreme}Z`),
-            vreme_kraja: vreme_kraja ? new Date(`\({datum}T\){vreme_kraja}Z`) : null,
+            vreme: new Date(`${datum}T${vreme}Z`),
+            vreme_kraja: vreme_kraja ? new Date(`${datum}T${vreme_kraja}Z`) : null,
             is_ispit: Boolean(is_ispit),
             tip_kolokvijuma: tip_kolokvijuma || 'I',
             predmet: predmet_id ? { connect: { id: Number(predmet_id) } } : undefined,
@@ -37,7 +40,7 @@ const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = tru
 
     // 2. Kreiraj dežurstva kao odvojen upit
     if (dezurni_ids && dezurni_ids.length > 0) {
-        await prisma.dezurstva.createMany({
+        await db.dezurstva.createMany({
             data: dezurni_ids.map(s_id => ({
                 ispit_id: noviIspit.id,
                 saradnik_id: Number(s_id)
@@ -46,7 +49,7 @@ const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = tru
     }
 
     // 3. Vrati kompletan ispit da format ostane isti za frontend
-    return await prisma.ispit.findUnique({
+    return await db.ispit.findUnique({
         where: { id: noviIspit.id },
         include: { predmet: true, sala: true, dezurstva: true }
     });
@@ -76,13 +79,13 @@ const updateIspit = async (
     let parsedVreme = null;
     if (vreme) {
         const cistoVreme = vreme.includes('T') ? vreme.substring(11, 16) : vreme.substring(0, 5);
-        parsedVreme = new Date(`\({dateStr}T\){cistoVreme}:00Z`);
+        parsedVreme = new Date(`${dateStr}T${cistoVreme}:00Z`);
     }
 
     let parsedVremeKraja = null;
     if (vreme_kraja) {
         const cistoVremeKraja = vreme_kraja.includes('T') ? vreme_kraja.substring(11, 16) : vreme_kraja.substring(0, 5);
-        parsedVremeKraja = new Date(`\({dateStr}T\){cistoVremeKraja}:00Z`);
+        parsedVremeKraja = new Date(`${dateStr}T${cistoVremeKraja}:00Z`);
     }
 
     // 1. Obriši stara dežurstva zasebnim upitom

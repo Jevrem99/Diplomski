@@ -1,3 +1,5 @@
+const { logAction } = require('../services/auditService');
+const { validirajOsobu, odbaciAkoImaGresaka, mapirajPrismaGresku } = require('../utils/validators');
 const profesorModel = require('../models/profesorModel');
 const prisma = require('../db/prisma'); // <--- DODAJ OVU LINIJU NA SAM VRH FAJLA
 const getAllPredavaci = async (req, res) => {
@@ -55,11 +57,14 @@ const getProfesorById = async (req, res) => {
 
 const createProfesor = async (req, res) => {
     const { ime, prezime, email,is_saradnik } = req.body;
+    if (odbaciAkoImaGresaka(res, validirajOsobu(req.body))) return;
     try {
         const newProfesor = await profesorModel.createProfesor(ime, prezime, email,is_saradnik);
+        await logAction(req.user?.username || 'Korisnik', 'CREATE', is_saradnik ? 'Saradnik' : 'Profesor', `Dodat ${ime} ${prezime}`);
         res.status(201).json(newProfesor);
     } catch (err) {
         console.error('Error creating profesor:', err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 }
@@ -67,25 +72,30 @@ const createProfesor = async (req, res) => {
 const updateProfesor = async (req, res) => {
     const { id } = req.params;
     const { ime, prezime, email , is_saradnik } = req.body;
+    if (odbaciAkoImaGresaka(res, validirajOsobu(req.body))) return;
     try {
         const updatedProfesor = await profesorModel.updateProfesor(id, ime, prezime, email,is_saradnik);
         if (!updatedProfesor) {
             return res.status(404).json({ error: 'Profesor not found' });
         }
+        await logAction(req.user?.username || 'Korisnik', 'UPDATE', is_saradnik ? 'Saradnik' : 'Profesor', `Izmenjen ${ime} ${prezime} (ID ${id})`);
         res.status(200).json(updatedProfesor);
     } catch (err) {
         console.error(`Error updating profesor with id ${id}:`, err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 }
 const createSaradnik = async (req, res) => {
     const { ime, prezime, email } = req.body;
+    if (odbaciAkoImaGresaka(res, validirajOsobu(req.body))) return;
     try {
         // Saradnik (asistent)
         const newSaradnik = await profesorModel.createProfesor(ime, prezime, email, true);
         res.status(201).json(newSaradnik);
     } catch (err) {
         console.error('Error creating saradnik:', err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -96,9 +106,11 @@ const deleteProfesor = async (req, res) => {
         if (!deletedProfesor) {
             return res.status(404).json({ error: 'Profesor not found' });
         }
+        await logAction(req.user?.username || 'Korisnik', 'DELETE', 'Profesor/Saradnik', `Obrisan zapis sa ID-jem ${id}`);
         res.status(200).json(deletedProfesor);
     } catch (err) {
         console.error(`Error deleting profesor with id ${id}:`, err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 } 

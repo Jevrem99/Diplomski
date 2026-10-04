@@ -1,8 +1,5 @@
 require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
-const types = require('pg').types;
-
-types.setTypeParser(1083, val => val);
 
 const basePrisma = new PrismaClient();
 

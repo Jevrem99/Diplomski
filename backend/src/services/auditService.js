@@ -15,9 +15,10 @@ const logAction = async (korisnik, akcija, entitet, detalji = '') => {
     }
 };
 
-const getRecentLogs = async (limit = 100) => {
+const getRecentLogs = async (limit = 100, skip = 0) => {
     return await prisma.auditLog.findMany({
         take: limit,
+        skip,
         orderBy: { created_at: 'desc' }
     });
 };

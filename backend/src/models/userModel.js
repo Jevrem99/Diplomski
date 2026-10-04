@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const config = require('../config/config');
 
 const getAllUsers = async () => {
@@ -113,23 +114,21 @@ const validatePassword = async (identifier, password) => {
 };
 
 const generateJwtToken = (user) => {
-    var expire = new Date();
-    expire.setDate(expire.getDate() + 7);
-    
-    return jwt.sign({
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        uloga: user.uloga, 
-        exp: parseInt(expire.getTime() / 1000),
-    }, config.secret)
-}
+    return jwt.sign(
+        { id: user.id, username: user.username, email: user.email, uloga: user.uloga },
+        config.secret,
+        { algorithm: 'HS256', expiresIn: config.jwtExpiresIn }
+    );
+};
+
+// Reset token se u bazi čuva samo kao hash; korisniku se šalje originalni token mejlom
+const hashToken = (token) => crypto.createHash('sha256').update(String(token)).digest('hex');
 
 const setResetToken = async (email, token, expiryDate) => {
     return await prisma.user.updateMany({
         where: { email: email.trim().toLowerCase() },
         data: {
-            reset_token: token,
+            reset_token: hashToken(token),
             reset_token_exp: expiryDate
         }
     });
@@ -138,7 +137,7 @@ const setResetToken = async (email, token, expiryDate) => {
 const getUserByResetToken = async (token) => {
     return await prisma.user.findFirst({
         where: {
-            reset_token: token,
+            reset_token: hashToken(token),
             reset_token_exp: {
                 gt: new Date() // Token mora biti veći od trenutnog vremena
             }

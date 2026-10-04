@@ -1,7 +1,10 @@
+const { logAction } = require('../services/auditService');
 const authService = require('../services/authService');
 const userModel = require('../models/userModel');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
+const config = require('../config/config');
+const { jeValidnaUloga, proveriLozinku } = require('../utils/validators');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -15,10 +18,12 @@ const loginUser = async (req, res) => {
     const { username, password } = req.body;
     try {
         const token = await authService.login(username, password);
+        await logAction(username, 'LOGIN', 'Sesija', 'Uspešna prijava');
         return res.status(200).json({ token });
     } catch (error) {
         console.error('Login error:', error.message);
         if (error.message === 'Invalid username or password') {
+            await logAction(String(username || '?').slice(0, 60), 'LOGIN_FAILED', 'Sesija', 'Neuspešna prijava');
             return res.status(401).json({ error: error.message });
         }
         return res.status(500).json({ error: 'Internal server error' });
@@ -45,7 +50,7 @@ const forgotPassword = async (req, res) => {
 
         await userModel.setResetToken(user.email, resetToken, expiresAt);
 
-        const resetUrl = `http://localhost:4200/login?resetToken=${resetToken}`;
+        const resetUrl = `${config.frontendUrl}/login?resetToken=${resetToken}`;
 
         const mailOptions = {
             from: `"Sistem za Raspored Ispita" <${process.env.EMAIL_USER}>`,
@@ -77,6 +82,8 @@ const resetPassword = async (req, res) => {
     if (!token || !newPassword) {
         return res.status(400).json({ error: 'Token i nova lozinka su obavezni.' });
     }
+    const greskaLozinke = proveriLozinku(newPassword);
+    if (greskaLozinke) return res.status(400).json({ error: greskaLozinke });
 
     try {
         const user = await userModel.getUserByResetToken(token);
@@ -106,6 +113,9 @@ const adminResetPassword = async (req, res) => {
     if (!email || !newPassword) {
         return res.status(400).json({ error: 'Email i nova lozinka su obavezni.' });
     }
+    const greskaLozinke = proveriLozinku(newPassword);
+    if (greskaLozinke) return res.status(400).json({ error: greskaLozinke });
+    if (role && !jeValidnaUloga(role)) return res.status(400).json({ error: 'Nevalidna uloga.' });
 
     const cleanEmail = email.trim().toLowerCase();
     // Ako username nije posebno prosleđen sa frontenda, koristimo email kao username
@@ -125,6 +135,7 @@ const adminResetPassword = async (req, res) => {
                 role || 'asistent'
             );
 
+            await logAction(req.user?.username || 'Korisnik', 'CREATE', 'Korisnik', `Napravljen nalog za ${cleanEmail} (admin)`);
             return res.status(201).json({ 
                 message: `Korisnički nalog za ${cleanEmail} je uspešno kreiran i lozinka je postavljena!` 
             });
@@ -133,6 +144,7 @@ const adminResetPassword = async (req, res) => {
         // 3. Ako nalog već postoji, samo mu ažuriramo lozinku
         await userModel.resetPasswordWithEmail(existingUser.email, newPassword);
 
+        await logAction(req.user?.username || 'Korisnik', 'PASSWORD', 'Korisnik', `Admin je resetovao lozinku za ${cleanEmail}`);
         return res.status(200).json({ 
             message: `Lozinka za ${cleanEmail} je uspešno izmenjena!` 
         });

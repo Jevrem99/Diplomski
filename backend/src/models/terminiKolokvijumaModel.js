@@ -3,17 +3,26 @@ const prisma = require('../db/prisma');
 
 // Dohvatanje predmeta na kojima je angažovan određeni profesor/asistent preko email-a
 const getPredmetiZaAsistenta = async (email) => {
+  if (!email) return [];
   const profesor = await prisma.profesor.findFirst({
-    where: { email: email },
+    where: { email: { equals: email, mode: 'insensitive' } },
     include: {
-      angazovanja: {
-        include: {
-          terminiKolokvijuma: true
-        }
-      }
+      angazovanja: { include: { terminiKolokvijuma: true } },
+      predmeti: { include: { terminiKolokvijuma: true } }
     }
   });
-  return profesor ? profesor.angazovanja : [];
+  if (!profesor) return [];
+
+  // Predmet na kome je i glavni profesor i saradnik prikazujemo samo jednom
+  const poId = new Map();
+  [...profesor.predmeti, ...profesor.angazovanja].forEach((p) => poId.set(p.id, p));
+  return [...poId.values()].sort((x, y) => x.godina - y.godina || x.naziv.localeCompare(y.naziv, 'sr'));
+};
+
+// Da li korisnik sme da menja termine datog predmeta (admin uvek; ostali samo na svojim predmetima)
+const korisnikImaPredmet = async (email, predmetId) => {
+  const moji = await getPredmetiZaAsistenta(email);
+  return moji.some((p) => p.id === Number(predmetId));
 };
 
 // Dohvatanje SVIH predmeta sa terminima kolokvijuma (za Admina / Profesorke i Excel export)
@@ -78,6 +87,7 @@ const upsertTerminiKolokvijuma = async (predmetId, data) => {
 };
 
 module.exports = {
+  korisnikImaPredmet,
   getPredmetiZaAsistenta,
   getAllTerminiKolokvijuma,
   upsertTerminiKolokvijuma

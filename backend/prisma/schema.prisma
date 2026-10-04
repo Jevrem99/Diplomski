@@ -9,8 +9,8 @@ datasource db {
 
 model User {
   id              Int       @id @default(autoincrement())
-  username        String
-  email           String
+  username        String    @unique
+  email           String    @unique
   password        String
   uloga           String    @default("asistent")
   reset_token     String?
@@ -28,6 +28,9 @@ model Profesor {
   
   dezurstva   Dezurstva[]
   obaveze     Obaveza[]
+
+  zahteviZamene       ZahtevZamene[] @relation("ZamenaTrazilac")
+  predlozeniZaZamenu  ZahtevZamene[] @relation("ZamenaPredlozeni")
 }
 
 model Predmet {
@@ -48,6 +51,8 @@ model Predmet {
   
   ispiti      Ispit[]
   terminiKolokvijuma TerminKolokvijuma?
+
+  @@index([profesor_id])
 }
 model Sala {
   id        Int      @id @default(autoincrement())
@@ -71,6 +76,11 @@ model Ispit {
   sala       Sala?       @relation(fields: [sala_id], references: [id])
   
   dezurstva  Dezurstva[] 
+
+  @@index([predmet_id])
+  @@index([datum])
+  @@index([sala_id])
+  @@index([is_published])
 }
 model RedovnaNastava {
   id             Int      @id @default(autoincrement())
@@ -81,6 +91,8 @@ model RedovnaNastava {
   vreme_kraja    String
   predmet        String
   nastavnik      String?
+
+  @@index([sala_id, datum])
 }
 model Obaveza {
   id            Int       @id @default(autoincrement())
@@ -93,6 +105,9 @@ model Obaveza {
   tip_obaveze   String?
 
   saradnik      Profesor  @relation(fields: [saradnik_id], references: [id], onDelete: Cascade)
+
+  @@index([saradnik_id])
+  @@index([datum])
 }
 model AuditLog {
   id         Int      @id @default(autoincrement())
@@ -101,13 +116,20 @@ model AuditLog {
   entitet    String
   detalji    String?
   created_at DateTime @default(now())
+
+  @@index([created_at])
 }
 model Dezurstva {
-id          Int       @id @default(autoincrement())
-ispit_id    Int?
-ispit       Ispit?    @relation(fields: [ispit_id], references: [id])
-saradnik_id Int?
-saradnik    Profesor? @relation(fields: [saradnik_id], references: [id])
+  id          Int       @id @default(autoincrement())
+  ispit_id    Int?
+  ispit       Ispit?    @relation(fields: [ispit_id], references: [id], onDelete: Cascade)
+  saradnik_id Int?
+  saradnik    Profesor? @relation(fields: [saradnik_id], references: [id], onDelete: Cascade)
+
+  zahtevi     ZahtevZamene[]
+
+  @@index([ispit_id])
+  @@index([saradnik_id])
 }
 
 model TerminKolokvijuma {
@@ -139,4 +161,24 @@ model TerminKolokvijuma {
 
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
+}
+
+// Zahtev asistenta da bude zamenjen na jednom dežurstvu; odobrava ga administrator
+model ZahtevZamene {
+  id              Int       @id @default(autoincrement())
+  dezurstvo_id    Int
+  dezurstvo       Dezurstva @relation(fields: [dezurstvo_id], references: [id], onDelete: Cascade)
+  trazilac_id     Int
+  trazilac        Profesor  @relation("ZamenaTrazilac", fields: [trazilac_id], references: [id], onDelete: Cascade)
+  predlozeni_id   Int?
+  predlozeni      Profesor? @relation("ZamenaPredlozeni", fields: [predlozeni_id], references: [id], onDelete: SetNull)
+  razlog          String
+  status          String    @default("na_cekanju") // na_cekanju | odobren | odbijen | otkazan
+  napomena_admina String?
+  created_at      DateTime  @default(now())
+  resolved_at     DateTime?
+
+  @@index([status])
+  @@index([trazilac_id])
+  @@index([dezurstvo_id])
 }

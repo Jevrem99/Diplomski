@@ -1,110 +1,133 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 const prisma = require('../db/prisma');
+const { mapLimit } = require('../utils/mapLimit');
 
-const syncZauzetostSala = async () => {
-    // 1. Brišemo staru redovnu nastavu iz baze
-    await prisma.redovnaNastava.deleteMany({});
-    let ukupnoSacuvano = 0;
+const IMI_DAY_URL = 'https://imi.pmf.kg.ac.rs/cp/rs/day.php';
+const PARALELNIH_ZAHTEVA = 5;
 
-    // 2. Generišemo sve radne dane za letnji semestar (od 01.03.2026. do 31.05.2026.)
-    const radnaNedelja = [];
-    const startDate = new Date(2026, 2, 1);  // 1. Mart 2026.
-    const endDate = new Date(2026, 4, 31);   // 31. Maj 2026.
+// Podrazumevani period: letnji semestar (mart-jun) ili zimski (okt-januar) prema današnjem datumu
+const podrazumevaniPeriod = () => {
+    const danas = new Date();
+    const god = danas.getFullYear();
+    const mesec = danas.getMonth(); // 0-11
+    if (mesec >= 9) return { od: new Date(god, 9, 1), do: new Date(god + 1, 0, 31) };
+    if (mesec === 0) return { od: new Date(god - 1, 9, 1), do: new Date(god, 0, 31) };
+    return { od: new Date(god, 2, 1), do: new Date(god, 5, 15) };
+};
 
+const parsirajDatum = (v) => {
+    if (!v) return null;
+    const d = new Date(`${String(v).split('T')[0]}T00:00:00`);
+    return Number.isNaN(d.getTime()) ? null : d;
+};
+
+// Preuzima i parsira jedan dan; vraća listu { salaNaziv, datum, vreme_pocetka, vreme_kraja, predmet }
+async function preuzmiDan(dan) {
+    const response = await axios.post(
+        IMI_DAY_URL,
+        `day=${dan.d}&month=${dan.m}&year=${dan.y}`,
+        { headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, timeout: 20000 }
+    );
+
+    const html = response.data && response.data.result;
+    if (!html) return [];
+
+    const $ = cheerio.load(html);
+
+    const saleNazivi = [];
+    $('table > tbody > tr:nth-child(2) > td').each((i, td) => {
+        if (i > 0) {
+            const txt = $(td).text().trim();
+            if (txt) saleNazivi.push(txt);
+        }
+    });
+
+    const kolone = $('table > tbody > tr:nth-child(3) > td[rowspan="17"]').toArray();
+    const termini = [];
+    const datum = new Date(Date.UTC(dan.y, dan.m - 1, dan.d));
+
+    kolone.forEach((kolona, i) => {
+        const salaNaziv = saleNazivi[i];
+        if (!salaNaziv) return;
+
+        $(kolona).find('a').toArray().forEach((aTag) => {
+            const vremeTekst = $(aTag).find('small').text().trim();
+            if (!vremeTekst || !vremeTekst.includes('-')) return;
+
+            const predmet = $(aTag).text().replace(vremeTekst, '').trim().replace(/^"/, '').replace(/"$/, '').trim();
+            const [pocetak, kraj] = vremeTekst.split('-');
+            termini.push({ salaNaziv, datum, vreme_pocetka: pocetak.trim(), vreme_kraja: kraj.trim(), predmet });
+        });
+    });
+
+    return termini;
+}
+
+// Sinhronizacija redovne nastave sa IMI sajta.
+// Opciono: { od: 'YYYY-MM-DD', do: 'YYYY-MM-DD' }. Stari podaci iz tog perioda se menjaju tek
+// kada je bar jedan dan uspešno preuzet, i to u jednoj transakciji.
+const syncZauzetostSala = async ({ od, do: doDatum } = {}) => {
+    const period = podrazumevaniPeriod();
+    const startDate = parsirajDatum(od) || period.od;
+    const endDate = parsirajDatum(doDatum) || period.do;
+
+    const dani = [];
     for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-        const dayOfWeek = d.getDay();
-        // Uzimamo samo radne dane (Ponedeljak=1 do Subota=6)
-        if (dayOfWeek !== 0) { 
-            radnaNedelja.push({
-                d: d.getDate(),
-                m: d.getMonth() + 1,
-                y: d.getFullYear(),
-                dan_u_nedelji: dayOfWeek
-            });
+        if (d.getDay() !== 0) { // bez nedelje
+            dani.push({ d: d.getDate(), m: d.getMonth() + 1, y: d.getFullYear() });
         }
     }
 
-    console.log(`Započinjem preuzimanje rasporeda za ${radnaNedelja.length} radnih dana semestra...`);
+    console.log(`Započinjem preuzimanje rasporeda za ${dani.length} dana...`);
 
-    // 3. Prolazimo kroz svaki dan i šaljemo POST zahtev na IMI server
-    for (const dan of radnaNedelja) {
+    let neuspelih = 0;
+    let uspelih = 0;
+    const rezultati = await mapLimit(dani, PARALELNIH_ZAHTEVA, async (dan) => {
         try {
-            const response = await axios.post(
-                'https://imi.pmf.kg.ac.rs/cp/rs/day.php',
-                `day=${dan.d}&month=${dan.m}&year=${dan.y}`,
-                { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
-            );
-
-            const html = response.data.result;
-            if (!html) continue;
-
-            const $ = cheerio.load(html);
-
-            // Sakupljamo nazive sala iz drugog <tr> reda
-            const saleNazivi = [];
-            $('table > tbody > tr:nth-child(2) > td').each((i, td) => {
-                if (i > 0) {
-                    const txt = $(td).text().trim();
-                    if (txt) saleNazivi.push(txt);
-                }
-            });
-
-            // Uzimamo kolone sa časovima za svaku salu iz trećeg <tr> reda
-            const kolone = $('table > tbody > tr:nth-child(3) > td[rowspan="17"]').toArray();
-
-            for (let i = 0; i < kolone.length; i++) {
-                const salaNaziv = saleNazivi[i];
-                if (!salaNaziv) continue;
-
-                // Bezbedno proveravamo/kreiramo salu u bazi
-                let dbSala = await prisma.sala.findFirst({ where: { naziv: salaNaziv } });
-                if (!dbSala) {
-                    try {
-                        dbSala = await prisma.sala.create({ data: { naziv: salaNaziv } });
-                    } catch (e) {
-                        dbSala = await prisma.sala.findFirst({ where: { naziv: salaNaziv } });
-                    }
-                }
-
-                if (!dbSala) continue;
-
-                // Čupamo sve <a> tagove unutar kolone te sale
-                const aTagovi = $(kolone[i]).find('a').toArray();
-
-                for (const aTag of aTagovi) {
-                    const vremeTekst = $(aTag).find('small').text().trim();
-                    if (!vremeTekst || !vremeTekst.includes('-')) continue;
-
-                    let predmetNaziv = $(aTag).text().replace(vremeTekst, '').trim();
-                    predmetNaziv = predmetNaziv.replace(/^"/, '').replace(/"$/, '').trim();
-
-                    const [vreme_pocetka, vreme_kraja] = vremeTekst.split('-');
-                    const tacanDatum = new Date(dan.y, dan.m - 1, dan.d);
-
-                    await prisma.redovnaNastava.create({
-                        data: {
-                            sala_id: dbSala.id,
-                            datum: tacanDatum,
-                            vreme_pocetka: vreme_pocetka.trim(),
-                            vreme_kraja: vreme_kraja.trim(),
-                            predmet: predmetNaziv
-                        }
-                    });
-                    ukupnoSacuvano++;
-                }
-            }
-
-            console.log(`Uspešno preuzet raspored za ${dan.d}.${dan.m}.${dan.y}.`);
-
+            const termini = await preuzmiDan(dan);
+            uspelih++;
+            return termini;
         } catch (error) {
+            neuspelih++;
             console.error(`Greška za datum ${dan.d}.${dan.m}.${dan.y}:`, error.message);
+            return [];
         }
+    });
+
+    if (uspelih === 0) {
+        throw new Error('Nijedan dan nije preuzet sa IMI servera - postojeći podaci su ostali netaknuti.');
     }
 
-    return { 
-        success: true, 
-        poruka: `Uspešno sinhronizovano ${ukupnoSacuvano} termina redovne nastave sa IMI servera za ceo semestar!` 
+    const termini = rezultati.flat();
+
+    // Sale: jedan upit za sve postojeće + kreiranje samo nedostajućih
+    const nazivi = [...new Set(termini.map((t) => t.salaNaziv))];
+    await prisma.sala.createMany({ data: nazivi.map((naziv) => ({ naziv })), skipDuplicates: true });
+    const sale = await prisma.sala.findMany({ where: { naziv: { in: nazivi } } });
+    const salaId = new Map(sale.map((s) => [s.naziv, s.id]));
+
+    const redovi = termini
+        .filter((t) => salaId.has(t.salaNaziv))
+        .map((t) => ({
+            sala_id: salaId.get(t.salaNaziv),
+            datum: t.datum,
+            vreme_pocetka: t.vreme_pocetka,
+            vreme_kraja: t.vreme_kraja,
+            predmet: t.predmet
+        }));
+
+    const od0 = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()));
+    const do0 = new Date(Date.UTC(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()));
+
+    await prisma.$transaction([
+        prisma.redovnaNastava.deleteMany({ where: { datum: { gte: od0, lte: do0 } } }),
+        prisma.redovnaNastava.createMany({ data: redovi })
+    ], { timeout: 60000 });
+
+    return {
+        success: true,
+        poruka: `Sinhronizovano ${redovi.length} termina redovne nastave (${uspelih} dana preuzeto${neuspelih ? `, ${neuspelih} neuspelo` : ''}).`
     };
 };
 
