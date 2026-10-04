@@ -1,20 +1,23 @@
 import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { procitajGresku } from '../../core/utils/validacija';
 
 @Component({
   selector: 'app-moja-dezurstva',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './moja-dezurstva.component.html'
 })
 export class MojaDezurstva implements OnInit {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef);
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
 
   userEmail = localStorage.getItem('email');
   saradnikId: number | null = null;
@@ -24,6 +27,16 @@ export class MojaDezurstva implements OnInit {
   svaDezurstva: any[] = [];
   predstojecaDezurstva: any[] = [];
   proslaDezurstva: any[] = [];
+
+  // Zahtevi za zamenu
+  zahtevi: any[] = [];
+  zamenaModal = false;
+  zamenaDez: any = null;
+  zamenaRazlog = '';
+  zamenaPredlozeniId: number | null = null;
+  zamenaKolege: any[] = [];
+  zamenaGreska = '';
+  zamenaSlanje = false;
 
   currentMonth = new Date();
   calendarDays: { date: Date, inMonth: boolean }[] = [];
@@ -120,9 +133,91 @@ export class MojaDezurstva implements OnInit {
 
       this.generateCalendar();
       this.cdr.detectChanges();
+      this.ucitajZahteve();
     }
   });
 }
+
+  // ---------- Zamena dežurstva ----------
+
+  ucitajZahteve(): void {
+    this.http.get<any[]>(`${this.API_URL}/zamene/moje`).subscribe({
+      next: (z) => { this.zahtevi = z; this.cdr.detectChanges(); },
+      error: () => { /* zahtevi nisu kritični za prikaz rasporeda */ }
+    });
+  }
+
+  // Zahtev na čekanju za dato dežurstvo (ako postoji)
+  zahtevNaCekanju(dez: any): any {
+    return this.zahtevi.find((z) => z.dezurstvo_id === dez.id && z.status === 'na_cekanju');
+  }
+
+  otvoriZamenu(dez: any): void {
+    this.zamenaDez = dez;
+    this.zamenaRazlog = '';
+    this.zamenaPredlozeniId = null;
+    this.zamenaKolege = [];
+    this.zamenaGreska = '';
+    this.zamenaModal = true;
+    this.http.get<any[]>(`${this.API_URL}/zamene/kolege/${dez.id}`).subscribe({
+      next: (k) => { this.zamenaKolege = k; this.cdr.detectChanges(); },
+      error: () => { this.zamenaKolege = []; }
+    });
+  }
+
+  posaljiZahtev(): void {
+    if (this.zamenaRazlog.trim().length < 5) {
+      this.zamenaGreska = 'Navedite razlog (najmanje 5 karaktera).';
+      return;
+    }
+    this.zamenaSlanje = true;
+    this.http.post(`${this.API_URL}/zamene`, {
+      dezurstvo_id: this.zamenaDez.id,
+      razlog: this.zamenaRazlog.trim(),
+      predlozeni_id: this.zamenaPredlozeniId
+    }).subscribe({
+      next: () => {
+        this.zamenaSlanje = false;
+        this.zamenaModal = false;
+        this.toast.show('Zahtev za zamenu je poslat administratoru.', 'success');
+        this.ucitajZahteve();
+      },
+      error: (err) => {
+        this.zamenaSlanje = false;
+        const { opsta, polja } = procitajGresku(err, 'Zahtev nije poslat.');
+        this.zamenaGreska = polja['razlog'] || opsta;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  povuciZahtev(z: any): void {
+    if (!confirm('Povući zahtev za zamenu?')) return;
+    this.http.delete(`${this.API_URL}/zamene/${z.id}`).subscribe({
+      next: () => { this.toast.show('Zahtev je povučen.', 'success'); this.ucitajZahteve(); },
+      error: (err) => this.toast.show(procitajGresku(err, 'Povlačenje nije uspelo.').opsta, 'error')
+    });
+  }
+
+  nazivStatusa(status: string): string {
+    return ({ na_cekanju: 'Na čekanju', odobren: 'Odobren', odbijen: 'Odbijen', otkazan: 'Povučen' } as Record<string, string>)[status] || status;
+  }
+
+  // ---------- Kalendar (.ics) ----------
+
+  izveziKalendar(): void {
+    this.http.get(`${this.API_URL}/dezurstva/moj-kalendar.ics`, { responseType: 'blob' }).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'moja-dezurstva.ics';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => this.toast.show(procitajGresku(err, 'Izvoz kalendara nije uspeo.').opsta, 'error')
+    });
+  }
 
   generateCalendar(): void {
     const year = this.currentMonth.getFullYear();

@@ -1,0 +1,73 @@
+<div class="termini-page">
+  <header class="termini-header">
+    <div>
+      <h1>Termini kolokvijuma</h1>
+      <p>
+        @if (jeAdmin) {
+          Pregled željenih termina svih predmeta, koje su uneli profesori i saradnici.
+        } @else {
+          Unesite željene termine kolokvijuma za svoje predmete. Konačan raspored objavljuje administrator.
+        }
+      </p>
+    </div>
+    @if (jeAdmin) {
+      <button class="btn btn-export" (click)="izveziExcel()">Izvezi Excel</button>
+    }
+  </header>
+
+  @if (ucitava()) {
+    <div class="info-box">Učitavanje predmeta…</div>
+  } @else if (greska()) {
+    <div class="info-box info-box-error">{{ greska() }}</div>
+  } @else if (rows().length === 0) {
+    <div class="info-box">
+      Nema predmeta povezanih sa vašim nalogom. Proverite da li je vaš email u bazi povezan sa profilom nastavnika.
+    </div>
+  } @else {
+    @for (r of rows(); track r.id) {
+      <section class="predmet-card">
+        <div class="predmet-head">
+          <div>
+            <h2>{{ r.naziv }}</h2>
+            <span class="meta">
+              {{ r.godina }}. godina · {{ nazivSemestra(r.semestar) }} · {{ r.status === 'И' || r.status === 'I' ? 'Izborni' : 'Obavezni' }}
+              @if (r.profesor) { · {{ r.profesor.ime }} {{ r.profesor.prezime }} }
+            </span>
+          </div>
+          @if (r.izmenjen) { <span class="badge-unsaved">Nesačuvane izmene</span> }
+        </div>
+
+        <div class="grid-kol">
+          <div class="grid-row grid-row-head">
+            <span>Kolokvijum</span><span>Datum</span><span>Trajanje (min)</span><span>Računarska sala</span>
+          </div>
+          @for (k of r.k; track $index) {
+            <div class="grid-row">
+              <span class="label">{{ $index + 1 }}. kolokvijum</span>
+              <input type="date" [(ngModel)]="k.datum" (ngModelChange)="oznaciIzmenu(r)" />
+              <input type="number" min="15" max="480" step="15" placeholder="npr. 90"
+                     [(ngModel)]="k.trajanje" (ngModelChange)="oznaciIzmenu(r)" />
+              <label class="check"><input type="checkbox" [(ngModel)]="k.racunarskaSala" (ngModelChange)="oznaciIzmenu(r)" /> Da</label>
+            </div>
+          }
+          <div class="grid-row">
+            <span class="label">Popravni</span>
+            <label class="check"><input type="checkbox" [(ngModel)]="r.popravniUTerminuIspita" (ngModelChange)="oznaciIzmenu(r)" /> u terminu ispita</label>
+            <input type="number" min="15" max="480" step="15" placeholder="npr. 90"
+                   [(ngModel)]="r.popravniTrajanje" (ngModelChange)="oznaciIzmenu(r)" />
+            <label class="check"><input type="checkbox" [(ngModel)]="r.popravniRacunarskaSala" (ngModelChange)="oznaciIzmenu(r)" /> Da</label>
+          </div>
+        </div>
+
+        <textarea rows="2" placeholder="Napomena (npr. kolokvijum samo posle 15h)"
+                  [(ngModel)]="r.napomena" (ngModelChange)="oznaciIzmenu(r)"></textarea>
+
+        <div class="actions">
+          <button class="btn btn-save" [disabled]="r.cuva || !r.izmenjen" (click)="sacuvaj(r)">
+            {{ r.cuva ? 'Čuvanje…' : 'Sačuvaj' }}
+          </button>
+        </div>
+      </section>
+    }
+  }
+</div>

@@ -5,6 +5,8 @@ import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
+import { environment } from '../../../environments/environment';
+import { procitajGresku } from '../../core/utils/validacija';
 
 export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'korisnici' | 'dnevnik';
 
@@ -34,7 +36,7 @@ export class DatabaseManagement implements OnInit {
   loading: boolean = false;
   uploading: boolean = false;
   
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
   allSaradnici: any[] = [];
   allProfesori: any[] = [];
   allPredmeti: any[] = [];
@@ -168,23 +170,17 @@ export class DatabaseManagement implements OnInit {
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori, 
         predmetiList: this.allPredmeti,
-        rolesList: this.allRoles
+        rolesList: this.allRoles,
+        // Prozor ostaje otvoren dok server ne potvrdi, a razlog odbijanja se prikazuje u formi
+        submit: (payload: any) => this.http.post(this.getEndpoint(this.activeEntity), payload)
       },
       disableClose: true
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.http.post(this.getEndpoint(this.activeEntity), result).subscribe({
-          next: () => {
-            this.toast.show('Uspešno dodato u bazu!', 'success');
-            this.fetchData(this.activeEntity);
-          },
-          error: (err) => {
-            console.error('Greška pri dodavanju:', err);
-            this.toast.show('Greška pri čuvanju podataka.', 'error');
-          }
-        });
+      if (result === true) {
+        this.toast.show('Uspešno dodato u bazu!', 'success');
+        this.fetchData(this.activeEntity);
       }
     });
   }
@@ -212,23 +208,16 @@ export class DatabaseManagement implements OnInit {
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori,
         predmetiList: this.allPredmeti,
-        rolesList: this.allRoles
+        rolesList: this.allRoles,
+        submit: (payload: any) => this.http.put(`${this.getEndpoint(this.activeEntity)}/${row.id}`, payload)
       },
       disableClose: true
     });
 
     dialogRef.afterClosed().subscribe(result => {
-      if (result) {
-        this.http.put(`${this.getEndpoint(this.activeEntity)}/${row.id}`, result).subscribe({
-          next: () => {
-            this.toast.show('Uspešno izmenjeno!', 'success');
-            this.fetchData(this.activeEntity);
-          },
-          error: (err) => {
-            console.error('Greška pri izmeni:', err);
-            this.toast.show('Greška pri izmeni podataka.', 'error');
-          }
-        });
+      if (result === true) {
+        this.toast.show('Uspešno izmenjeno!', 'success');
+        this.fetchData(this.activeEntity);
       }
     });
   }
@@ -242,7 +231,7 @@ export class DatabaseManagement implements OnInit {
         },
         error: (err) => {
           console.error('Greška pri brisanju:', err);
-          this.toast.show('Greška pri brisanju zapisa.', 'error');
+          this.toast.show(procitajGresku(err, 'Greška pri brisanju zapisa.').opsta, 'error');
         }
       });
     }
@@ -298,7 +287,7 @@ export class DatabaseManagement implements OnInit {
         },
         error: (err) => {
           console.error('Greška pri resetovanju lozinke:', err);
-          this.toast.show('Greška pri promeni lozinke.', 'error');
+          this.toast.show(procitajGresku(err, 'Greška pri promeni lozinke.').opsta, 'error');
         }
       });
     }
@@ -306,7 +295,7 @@ export class DatabaseManagement implements OnInit {
 
   deleteDatabase(): void {
     if (confirm('Da li ste sigurni da želite da obrišete celu bazu podataka? Ova akcija je nepovratna.')) {
-      this.http.post<any>(`${this.API_URL}/admin/reset-database`, {}).subscribe({
+      this.http.post<any>(`${this.API_URL}/admin/reset-database`, { confirm: 'RESET' }).subscribe({
         next: () => {
           alert('Baza podataka je uspešno obrisana.');
           this.tableData = [];

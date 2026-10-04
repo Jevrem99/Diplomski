@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../core/services/toast.service';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-moje-obaveze',
@@ -15,7 +16,7 @@ export class MojeObaveze implements OnInit {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
   private cdr = inject(ChangeDetectorRef); // <-- REŠAVA PROBLEM OSVEŽAVANJA LISTE
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
 
   userEmail = localStorage.getItem('email');
   saradnikId: number | null = null;

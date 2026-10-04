@@ -102,8 +102,16 @@
               <mat-form-field appearance="outline" class="w-full">
                 <mat-label>{{ col.label }}</mat-label>
                 <input matInput [(ngModel)]="formData[col.key]"
-                  [type]="col.key === 'godina' || col.key === 'broj_studenata' ? 'number' : col.key === 'password' ? 'password' : 'text'">
+                  [type]="col.key === 'godina' || col.key === 'broj_studenata' ? 'number' : col.key === 'password' ? 'password' : 'text'"
+                  [autocomplete]="col.key === 'password' ? 'new-password' : 'off'">
+                @if (hint(col.key)) {
+                  <mat-hint>{{ hint(col.key) }}</mat-hint>
+                }
               </mat-form-field>
+            }
+
+            @if (fieldErrors[col.key]) {
+              <div class="field-error">{{ fieldErrors[col.key] }}</div>
             }
           }
         }
@@ -124,6 +132,15 @@
               <span class="empty-hint">Nema dodeljenih saradnika. Izaberite iz desnog panela.</span>
             }
           </div>
+        </div>
+      }
+
+      @if (generalError) {
+        <div class="form-error-msg">
+          <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/>
+          </svg>
+          <span>{{ generalError }}</span>
         </div>
       }
 
@@ -164,6 +181,6 @@
   <!-- PODNOŽJE (DUGMAD ZA AKCIJU) -->
   <div class="modal-footer">
     <button class="btn-cancel" (click)="onCancel()">Otkaži</button>
-    <button class="btn-save" (click)="onSave()">Sačuvaj</button>
+    <button class="btn-save" [disabled]="saving" (click)="onSave()">{{ saving ? 'Čuvanje…' : 'Sačuvaj' }}</button>
   </div>
 </div>

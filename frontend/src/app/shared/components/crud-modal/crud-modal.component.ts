@@ -6,6 +6,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { Observable } from 'rxjs';
+import { HINTOVI, Polja, procitajGresku, validirajKorisnika, validirajOsobu, validirajPredmet } from '../../../core/utils/validacija';
 
 @Component({
   selector: 'app-crud-modal',
@@ -18,10 +20,13 @@ export class CrudModal {
   formData: any = {};
   searchQuery: string = '';
   showError: boolean = false;
+  fieldErrors: Polja = {};
+  generalError = '';
+  saving = false;
 
   constructor(
     public dialogRef: MatDialogRef<CrudModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string, columns: any[], rowData?: any, saradniciList?: any[], profesoriList?: any[], predmetiList?: any[], rolesList?: any[] }
+    @Inject(MAT_DIALOG_DATA) public data: { title: string, columns: any[], rowData?: any, saradniciList?: any[], profesoriList?: any[], predmetiList?: any[], rolesList?: any[], submit?: (payload: any) => Observable<any> }
   ) {
       if (this.data.rowData) {
         this.formData = { ...this.data.rowData };
@@ -92,11 +97,35 @@ export class CrudModal {
     this.formData.saradnici_ids = this.formData.saradnici_ids.filter((sId: number) => sId !== id);
   }
 
+  hint(key: string): string {
+    return HINTOVI[key] || '';
+  }
+
+  // Vrsta zapisa se prepoznaje po kolonama koje forma ima
+  private proveriPolja(podaci: any): Polja {
+    const kljucevi = this.data.columns.map((c) => c.key);
+    const jeIzmena = !!this.formData.id;
+    if (kljucevi.includes('username')) return validirajKorisnika(podaci, !jeIzmena);
+    if (kljucevi.includes('sifra')) return validirajPredmet(podaci);
+    if (kljucevi.includes('ime') && kljucevi.includes('prezime')) return validirajOsobu(podaci);
+    return {};
+  }
+
   onCancel(): void {
     this.dialogRef.close();
   }
 
   onSave(): void {
+    // Prvo provera formata po poljima (uključuje i obavezna polja), da se vidi tačno šta nedostaje
+    const probni = { ...this.formData };
+    if (probni.password === '********' || !probni.password) delete probni.password;
+    const greske = this.proveriPolja(probni);
+    if (Object.keys(greske).length > 0) {
+      this.fieldErrors = greske;
+      this.generalError = 'Ispravite označena polja.';
+      this.showError = false;
+      return;
+    }
     const requiredCols = this.data.columns.filter(c => {
       if (c.key === 'id' || c.key === 'saradnici_ids' || c.key === 'predmeti_ids') return false;
       if (c.key === 'password' && this.formData.id) return false; 
@@ -125,6 +154,21 @@ export class CrudModal {
     if (sanitizedData.profesor_id) sanitizedData.profesor_id = Number(sanitizedData.profesor_id);
     if (sanitizedData.predmet_id) sanitizedData.predmet_id = Number(sanitizedData.predmet_id);
     if (sanitizedData.sala_id) sanitizedData.sala_id = Number(sanitizedData.sala_id);
+
+    if (this.data.submit) {
+      // Prozor ostaje otvoren dok server ne potvrdi; ako odbije, razlog se prikazuje u formi
+      this.saving = true;
+      this.data.submit(sanitizedData).subscribe({
+        next: () => this.dialogRef.close(true),
+        error: (err) => {
+          const { opsta, polja } = procitajGresku(err, 'Greška pri čuvanju podataka.');
+          this.fieldErrors = polja;
+          this.generalError = opsta;
+          this.saving = false;
+        },
+      });
+      return;
+    }
 
     this.dialogRef.close(sanitizedData);
   }

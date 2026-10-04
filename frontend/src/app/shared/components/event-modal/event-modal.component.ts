@@ -10,6 +10,8 @@ import { HttpClient } from '@angular/common/http';
 import { MatIcon } from "@angular/material/icon";
 
 import { forkJoin } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { DataCacheService } from '../../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-event-modal',
@@ -24,6 +26,7 @@ import { forkJoin } from 'rxjs';
 })
 export class EventModal implements OnInit {
   private http = inject(HttpClient);
+  private cache = inject(DataCacheService);
   private cdr = inject(ChangeDetectorRef);
   formData = {
     startTime: '',
@@ -74,7 +77,7 @@ export class EventModal implements OnInit {
   }
 
   fetchUcionice(): void {
-    this.http.get<any[]>('http://localhost:5000/ucionice').subscribe({
+    this.cache.get<any[]>('/ucionice', 300_000).subscribe({
       next: (res) => {
         console.log('Učionice stigle sa beka:', res);
         this.sveUcionice = res;
@@ -86,8 +89,8 @@ export class EventModal implements OnInit {
 
   fetchDostupneSaradnikeIOdsustva(): void {
     forkJoin({
-      saradnici: this.http.get<any[]>('http://localhost:5000/profesors'),
-      obaveze: this.http.get<any[]>('http://localhost:5000/obaveze')
+      saradnici: this.cache.get<any[]>('/profesors'),
+      obaveze: this.cache.get<any[]>('/obaveze')
     }).subscribe({
       next: ({ saradnici, obaveze }) => {
         const datumModala = new Date(this.data.date).setHours(0, 0, 0, 0);
