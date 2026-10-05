@@ -51,7 +51,7 @@
       }
 
       <div class="drawer_button" (click)="drawer.close(); izgledOtvoren = true">
-        <span class="drawer_icon" style="font-size:20px;line-height:22px;text-align:center">🎨</span>
+        <svg class="drawer_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A3.7 3.7 0 0021 10.6C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg>
         <span>Izgled</span>
       </div>
 
@@ -94,7 +94,7 @@
           <img src="assets/settings_icon.png" alt="" class="rail-icon" /><span>Podešavanja</span>
         </a>
         <a class="rail-link" (click)="izgledOtvoren = !izgledOtvoren">
-          <span class="rail-icon rail-emoji">🎨</span><span>Izgled</span>
+          <svg class="rail-icon rail-emoji" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A3.7 3.7 0 0021 10.6C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg><span>Izgled</span>
         </a>
         <a class="rail-link rail-logout" (click)="logout()">
           <img src="assets/logout_icon.png" alt="" class="rail-icon" /><span>Odjavi se</span>
@@ -132,7 +132,7 @@
       <!-- DESNA STRANA: ODJAVA I MENI -->
       <div class="top-bar-right">
         <button class="design-btn" (click)="izgledOtvoren = !izgledOtvoren" title="Izaberi izgled aplikacije">
-          <span aria-hidden="true">🎨</span>
+          <svg class="design-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A3.7 3.7 0 0021 10.6C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg>
           <span>Izgled</span>
         </button>
 

@@ -24,7 +24,6 @@ import { ThemeService } from '../../../core/services/theme';
               </span>
             </span>
             <span class="dp-name">{{ d.naziv }}</span>
-            <span class="dp-desc">{{ d.opis }}</span>
           </button>
         }
       </div>
@@ -37,7 +36,7 @@ import { ThemeService } from '../../../core/services/theme';
   `,
   styles: [`
     .dp-root { display: flex; flex-direction: column; gap: 14px; }
-    .dp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+    .dp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
     .dp-card {
       display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer;
       padding: 10px; border-radius: 12px; border: 2px solid var(--border-strong);
@@ -47,7 +46,6 @@ import { ThemeService } from '../../../core/services/theme';
     .dp-card:hover { border-color: var(--primary); transform: translateY(-1px); }
     .dp-active { border-color: var(--primary); box-shadow: 0 0 0 3px var(--tint-blue-bd); }
     .dp-name { font-weight: 800; font-size: .95rem; }
-    .dp-desc { font-size: .75rem; color: var(--muted); line-height: 1.35; }
 
     /* ---- mali pregledi (fiksne boje, ne zavise od izabranog dizajna) ---- */
     .dp-preview { display: flex; flex-direction: column; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; background: #e9f0f8; }

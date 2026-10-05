@@ -8,17 +8,20 @@ export interface DesignInfo {
   id: DesignId;
   naziv: string;
   opis: string;
+  skriven?: boolean; // skriven dizajn se ne nudi u izboru (CSS ostaje, ukloni "skriven" da se vrati)
 }
 
-export const DESIGNS: DesignInfo[] = [
+const SVI_DIZAJNI: DesignInfo[] = [
   { id: 'klasik', naziv: 'Klasik', opis: 'Trenutni izgled: plava gornja traka, ravne kartice.' },
-  { id: 'panel', naziv: 'Panel', opis: 'Bočni meni levo, pregledan i kompaktan raspored; termini kao čipovi sa trakom u boji godine.' },
-  { id: 'minimal', naziv: 'Minimal', opis: 'Samo tipografija i tanke linije: bez senki i punih ploča, termini kao tanki redovi.' },
+  { id: 'panel', naziv: 'Panel', skriven: true, opis: 'Bočni meni levo, pregledan i kompaktan raspored; termini kao čipovi sa trakom u boji godine.' },
+  { id: 'minimal', naziv: 'Minimal', skriven: true, opis: 'Samo tipografija i tanke linije: bez senki i punih ploča, termini kao tanki redovi.' },
   { id: 'mekano', naziv: 'Mekano', opis: 'Neumorfizam: meke uzdignute i udubljene površine, ćelije kalendara kao udubljenja.' },
   { id: 'organski', naziv: 'Organski', opis: 'Zemljani tonovi, zaobljeni oblici i serifni naslovi; termini kao pastelne pilule.' },
   { id: 'staklo', naziv: 'Staklo', opis: 'Glassmorphism: providne kartice, mutna pozadina, plutajuća traka.' },
   { id: 'kontrast', naziv: 'Kontrast', opis: 'Debele ivice i jake boje: maksimalna čitljivost, kartice sa oštrom senkom.' },
 ];
+
+export const DESIGNS: DesignInfo[] = SVI_DIZAJNI.filter((d) => !d.skriven);
 
 const KLJUC = 'design';
 

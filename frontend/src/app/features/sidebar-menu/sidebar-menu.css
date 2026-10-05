@@ -321,3 +321,5 @@ mat-sidenav-content {
   .toggle-topbar { padding: 0 0.7rem; }
   .toggle-topbar span { display: none; }
 }
+
+.design-btn-icon { width: 18px; height: 18px; flex-shrink: 0; }
