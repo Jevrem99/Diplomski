@@ -1,8 +1,7 @@
 import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
@@ -54,7 +53,7 @@ interface Predmet {
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [SidebarMenu, CommonModule, FullCalendarModule, MatDialogModule, FormsModule, MatSelectModule, MatFormFieldModule],
+  imports: [CommonModule, FullCalendarModule, MatDialogModule, FormsModule, MatSelectModule, MatFormFieldModule],
   templateUrl: './main.html',
   styleUrl: './main.css',
 })
@@ -73,7 +72,6 @@ export class Main implements OnInit, AfterViewInit {
   // --- KONTROLA PRIKAZA PANELA I STATUSA ---
   prikaziLevoFiltere: boolean = false;
   prikaziDesnoFiltere: boolean = false;
-  username = localStorage.getItem('username');
   predmeti: Predmet[] = [];
   draggableInstance: Draggable | null = null;
   modifiedEvents: any[] = [];
@@ -90,20 +88,12 @@ export class Main implements OnInit, AfterViewInit {
   selektovaniDani = new Set<string>();
   kopiranjeAktivno: boolean = false;
 
-  // --- STARI MODAL ZA UPRAVLJANJE JEDNIM DANOM ---
-  prikaziDanModal: boolean = false;
-  danModalPrikaz: 'meni' | 'preuredi' = 'meni';
-  selektovanDan: string = '';
-  ispitiZaPreuredjivanje: any[] = [];
-  ispitiZaBrisanje: string[] = [];
-
   // --- MODALI ---
   prikaziObrisiModal: boolean = false;
   prikaziKonfliktiModal: boolean = false;
   prikaziKonfliktePriCuvanju: boolean = false;
   konfliktiPriCuvanju: any[] = [];
   proveraUToku: boolean = false;
-  prikaziIzvozModal: boolean = false;
 
   // --- FILTERI ---
   izabraneGodine: number[] = [];
@@ -115,9 +105,7 @@ export class Main implements OnInit, AfterViewInit {
   ];
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
-  filterLevoGodina: string = 'sve';
   filterLevoProfesor: string = 'svi';
-  izabranaGodinaBanka: string | number = 'sve';
   searchPredmet: string = '';
   prikazaniBrojPredmeta: number = 5;
   filterSaradnici: number[] = [];
@@ -130,14 +118,6 @@ export class Main implements OnInit, AfterViewInit {
   };
   godinaColors: any = { ...this.defaultGodinaColors };
 
-  // --- IZVOZ PODACI ---
-  izvozPodaci = {
-    tip: 'kolokvijumi',
-    datumOd: '',
-    datumDo: '',
-    nazivRoka: '',
-    naslovRasporeda: ''
-  };
   rezimBiranjaOpsegaIzvoza: boolean = false;
   tempExportData: any = null;
   tempPickingTarget: any = null;
@@ -1004,10 +984,6 @@ export class Main implements OnInit, AfterViewInit {
     }, 100);
   }
 
-  trackById(index: number, item: any): any {
-    return item?.id ?? index;
-  }
-
   get jedinstveniProfesori() {
     const map = new Map<string, any>();
     this.predmeti.forEach(p => {
@@ -1040,11 +1016,6 @@ export class Main implements OnInit, AfterViewInit {
 
   toggleSveGodine(): void {
     this.izabraneGodine = [];
-  }
-  formatirajDatumPrikaz(datumStr: string): string {
-    if (!datumStr) return '';
-    const [y, m, d] = datumStr.split('-');
-    return `\({d}.\){m}.${y}.`;
   }
   toggleGodina(godina: number): void {
     const index = this.izabraneGodine.indexOf(godina);
@@ -2001,7 +1972,7 @@ export class Main implements OnInit, AfterViewInit {
 
     // Glavni naslov
     // Glavni naslov koji si sam uneo u modal
-    const naslovZaPrikaz = this.izvozPodaci.naslovRasporeda || 'Распоред';
+    const naslovZaPrikaz = podaci.naslovRasporeda || 'Распоред';
     wsData.push([naslovZaPrikaz, null, null, null, null, null, null]);
     const merges = [{ s: { r: rowIndex - 1, c: 0 }, e: { r: rowIndex - 1, c: 6 } }];
     cellStyles['A' + rowIndex] = {
@@ -2125,96 +2096,5 @@ export class Main implements OnInit, AfterViewInit {
 
     XLSX.writeFile(wb, cistoImeFajla + '.xlsx');
     this.toastService.show('Excel fajl je uspešno generisan!', 'success');
-  }
-  // ============================================
-  // POJEDINAČNO PREUREĐIVANJE DANA (MODAL)
-  // ============================================
-
-  otvoriPreuredjivanje(): void {
-    this.danModalPrikaz = 'preuredi';
-    this.ispitiZaBrisanje = [];
-    const ispitiIzDana = this.allLoadedEvents.filter(e => e.start.startsWith(this.selektovanDan) && !e.extendedProps?.isNastava);
-    this.ispitiZaPreuredjivanje = JSON.parse(JSON.stringify(ispitiIzDana));
-  }
-
-  obrisiIspitIzDana(id: string): void {
-    this.ispitiZaPreuredjivanje = this.ispitiZaPreuredjivanje.filter(i => i.id !== id);
-    this.ispitiZaBrisanje.push(id);
-  }
-
-  sacuvajPreuredjivanje(): void {
-    this.hasUnsavedChanges = true;
-
-    this.ispitiZaBrisanje.forEach(id => {
-      if (!id.startsWith('temp_')) {
-        const idNum = Number(id);
-        if (!this.obrisaniIspitiServerIds.includes(idNum)) {
-          this.obrisaniIspitiServerIds.push(idNum);
-        }
-      }
-      this.allLoadedEvents = this.allLoadedEvents.filter(e => e.id !== id);
-      this.unsavedEvents = this.unsavedEvents.filter(e => e.tempId !== id);
-      this.modifiedEvents = this.modifiedEvents.filter(e => e.id !== id);
-    });
-
-    this.ispitiZaPreuredjivanje.forEach(modIspit => {
-      const idx = this.allLoadedEvents.findIndex(e => e.id === modIspit.id);
-      if (idx > -1) {
-        this.allLoadedEvents[idx].start = `${this.selektovanDan}T${modIspit.extendedProps.vreme}:00`;
-        this.allLoadedEvents[idx].end = modIspit.extendedProps.vremeKraja ? `${this.selektovanDan}T${modIspit.extendedProps.vremeKraja}:00` : undefined;
-        this.allLoadedEvents[idx].extendedProps.vreme = modIspit.extendedProps.vreme;
-        this.allLoadedEvents[idx].extendedProps.vremeKraja = modIspit.extendedProps.vremeKraja;
-        this.allLoadedEvents[idx].extendedProps.sala = modIspit.extendedProps.sala;
-        this.allLoadedEvents[idx].title = `${modIspit.title.split(' (')[0]} (${modIspit.extendedProps.sala})`;
-      }
-
-      if (modIspit.id.startsWith('temp_')) {
-        const uIdx = this.unsavedEvents.findIndex(e => e.tempId === modIspit.id);
-        if (uIdx > -1) {
-          this.unsavedEvents[uIdx].vreme = modIspit.extendedProps.vreme;
-          this.unsavedEvents[uIdx].vreme_kraja = modIspit.extendedProps.vremeKraja;
-          this.unsavedEvents[uIdx].sala = modIspit.extendedProps.sala;
-        }
-      } else {
-        const mIdx = this.modifiedEvents.findIndex(e => e.id === modIspit.id);
-
-        const payload = {
-          id: modIspit.id, datum: this.selektovanDan, vreme: modIspit.extendedProps.vreme,
-          vreme_kraja: modIspit.extendedProps.vremeKraja, sala: modIspit.extendedProps.sala,
-          predmet_id: modIspit.extendedProps.predmetId, is_ispit: modIspit.extendedProps.is_ispit,
-          dezurni_ids: modIspit.extendedProps.dezurni?.map((d: any) => d.id) || []
-        };
-        if (mIdx > -1) this.modifiedEvents[mIdx] = payload; else this.modifiedEvents.push(payload);
-      }
-    });
-
-    this.applyFilters();
-    this.prikaziDanModal = false;
-    this.toastService.show('Izmene u danu su evidentirane. Sačuvajte raspored.', 'success');
-    setTimeout(() => this.detectConflicts(), 150);
-  }
-
-  obrisiCeoDan(): void {
-    if (confirm(`Da li ste sigurni da želite da obrišete SVE ispite na dan ${this.selektovanDan}?`)) {
-      const ispitiIzDana = this.allLoadedEvents.filter(e => e.start.startsWith(this.selektovanDan) && !e.extendedProps?.isNastava);
-      ispitiIzDana.forEach(stariEvent => {
-        if (!stariEvent.id.startsWith('temp_')) {
-          const idNum = Number(stariEvent.id);
-          if (!this.obrisaniIspitiServerIds.includes(idNum)) {
-            this.obrisaniIspitiServerIds.push(idNum);
-          }
-        }
-      });
-      const idsToRemove = ispitiIzDana.map(e => e.id);
-      this.allLoadedEvents = this.allLoadedEvents.filter(e => !idsToRemove.includes(e.id));
-      this.unsavedEvents = this.unsavedEvents.filter(e => !idsToRemove.includes(e.tempId));
-      this.modifiedEvents = this.modifiedEvents.filter(e => !idsToRemove.includes(e.id));
-
-      this.hasUnsavedChanges = true;
-      this.applyFilters();
-      this.prikaziDanModal = false;
-      this.toastService.show('Svi ispiti u danu su uklonjeni.', 'success');
-      setTimeout(() => this.detectConflicts(), 150);
-    }
   }
 }
