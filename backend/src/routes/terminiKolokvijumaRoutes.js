@@ -6,6 +6,9 @@ const { protect, restrictToAdmin } = require('../middlewares/authMiddleware');
 // 1. Pregled sopstvenih predmeta (za nastavno osoblje / asistente)
 router.get('/moji', protect, terminiController.getMojiTermini);
 
+// 1b. Svi predmeti sa terminima (admin)
+router.get('/sve', protect, restrictToAdmin, terminiController.getSviTermini);
+
 // 2. Čuvanje unetih termina za kolokvijume
 router.post('/sacuvaj', protect, terminiController.saveTermini);
 

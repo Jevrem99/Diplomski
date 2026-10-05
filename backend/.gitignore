@@ -83,3 +83,9 @@ build/
 .windsurf/
 .claude/
 .prisma/
+
+# Primer pode≈°avanja se komituje
+!.env.example
+
+# Rezervne kopije baze (sadrûe heöirane lozinke)
+backups/

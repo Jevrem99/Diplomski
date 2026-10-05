@@ -1,8 +1,7 @@
 import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin } from 'rxjs';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
@@ -13,47 +12,19 @@ import interactionPlugin, { Draggable } from '@fullcalendar/interaction';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import { EventModal } from '../../shared/components/event-modal/event-modal.component';
 import { ToastService } from '../../core/services/toast.service';
+import { DataCacheService } from '../../core/services/data-cache.service';
 import { FormsModule } from '@angular/forms';
-import * as XLSX from 'xlsx-js-style';
-
-interface Profesor {
-  id?: number;
-  ime: string;
-  prezime: string;
-  email?: string;
-}
-
-function presloviULatinicu(tekst: string): string {
-  if (!tekst) return '';
-  const cirilicaToLatinica: { [key: string]: string } = {
-    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'ђ': 'dj', 'е': 'e', 'ж': 'z', 'з': 'z', 'и': 'i',
-    'ј': 'j', 'к': 'k', 'л': 'l', 'љ': 'lj', 'м': 'm', 'н': 'n', 'њ': 'nj', 'о': 'o', 'п': 'p', 'р': 'r',
-    'с': 's', 'т': 't', 'ћ': 'c', 'у': 'u', 'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'c', 'џ': 'dz', 'ш': 's',
-    'А': 'a', 'Б': 'b', 'В': 'v', 'Г': 'g', 'Д': 'd', 'Ђ': 'dj', 'Е': 'e', 'Ж': 'z', 'З': 'z', 'И': 'i',
-    'Ј': 'j', 'К': 'k', 'Л': 'l', 'Љ': 'lj', 'М': 'm', 'Н': 'n', 'Њ': 'nj', 'О': 'o', 'П': 'p', 'Р': 'r',
-    'С': 's', 'Т': 't', 'Ћ': 'c', 'У': 'u', 'Ф': 'f', 'Х': 'h', 'Ц': 'c', 'Ч': 'c', 'Џ': 'dz', 'Ш': 's',
-    'č': 'c', 'ć': 'c', 'š': 's', 'ž': 'z', 'đ': 'dj', 'Č': 'c', 'Ć': 'c', 'Š': 's', 'Ž': 'z', 'Đ': 'dj'
-  };
-  return tekst.split('').map(char => cirilicaToLatinica[char] || char).join('').toLowerCase();
-}
-
-interface Predmet {
-  id: number;
-  sifra: string;
-  naziv: string;
-  godina: number;
-  semestar?: string;
-  status?: string;
-  profesor_id?: number;
-  profesor?: Profesor;
-  profesorImePrezime?: string;
-  saradnici?: any[];
-}
-
+import { ExportModalComponent, ExportDataResult } from '../../shared/components/export-modal/export-modal.component';
+import { ExcelIzvozService } from './services/excel-izvoz.service';
+import { Predmet, Profesor } from './main.models';
+import { presloviULatinicu, formatDatumKonflikta, tipKonflikta, timeToMins } from './main.utils';
+import { GodinaColorService } from './services/godina-color.service';
+import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
+import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-main',
   standalone: true,
-  imports: [SidebarMenu, CommonModule, FullCalendarModule, MatDialogModule, FormsModule, MatSelectModule, MatFormFieldModule],
+  imports: [CommonModule, FullCalendarModule, MatDialogModule, FormsModule, MatSelectModule, MatFormFieldModule],
   templateUrl: './main.html',
   styleUrl: './main.css',
 })
@@ -63,15 +34,17 @@ export class Main implements OnInit, AfterViewInit {
 
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
   private cdr = inject(ChangeDetectorRef);
   private toastService = inject(ToastService);
+  private cache = inject(DataCacheService);
   private ngZone = inject(NgZone);
+  private excel = inject(ExcelIzvozService);
+  private boje = inject(GodinaColorService);
 
   // --- KONTROLA PRIKAZA PANELA I STATUSA ---
   prikaziLevoFiltere: boolean = false;
   prikaziDesnoFiltere: boolean = false;
-  username = localStorage.getItem('username');
   predmeti: Predmet[] = [];
   draggableInstance: Draggable | null = null;
   modifiedEvents: any[] = [];
@@ -88,17 +61,12 @@ export class Main implements OnInit, AfterViewInit {
   selektovaniDani = new Set<string>();
   kopiranjeAktivno: boolean = false;
 
-  // --- STARI MODAL ZA UPRAVLJANJE JEDNIM DANOM ---
-  prikaziDanModal: boolean = false;
-  danModalPrikaz: 'meni' | 'preuredi' = 'meni';
-  selektovanDan: string = '';
-  ispitiZaPreuredjivanje: any[] = [];
-  ispitiZaBrisanje: string[] = [];
-
   // --- MODALI ---
   prikaziObrisiModal: boolean = false;
   prikaziKonfliktiModal: boolean = false;
-  prikaziIzvozModal: boolean = false;
+  prikaziKonfliktePriCuvanju: boolean = false;
+  konfliktiPriCuvanju: any[] = [];
+  proveraUToku: boolean = false;
 
   // --- FILTERI ---
   izabraneGodine: number[] = [];
@@ -110,29 +78,17 @@ export class Main implements OnInit, AfterViewInit {
   ];
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
-  filterLevoGodina: string = 'sve';
   filterLevoProfesor: string = 'svi';
-  izabranaGodinaBanka: string | number = 'sve';
   searchPredmet: string = '';
   prikazaniBrojPredmeta: number = 5;
   filterSaradnici: number[] = [];
 
-  defaultGodinaColors: any = {
-    1: '#009bd9',
-    2: '#d81b43',
-    3: '#f39c12',
-    4: '#27AE60'
-  };
-  godinaColors: any = { ...this.defaultGodinaColors };
 
-  // --- IZVOZ PODACI ---
-  izvozPodaci = {
-    tip: 'ispiti',
-    datumOd: '',
-    datumDo: '',
-    nazivRoka: 'Испитни рок'
-  };
-
+  rezimBiranjaOpsegaIzvoza: boolean = false;
+  tempExportData: any = null;
+  tempPickingTarget: any = null;
+  exportStartPickedDate: string | null = null;
+  exportHoveredDate: string | null = null;
   // --- PODACI SA SERVERA ---
   dostupneSale: any[] = [];
   allLoadedEvents: any[] = [];
@@ -158,8 +114,41 @@ export class Main implements OnInit, AfterViewInit {
     dragRevertDuration: 0,
     droppable: true,
     editable: true,
+    dayCellClassNames: (arg) => {
+      const classes: string[] = [];
+      if (!this.rezimBiranjaOpsegaIzvoza) return classes;
 
-dayCellContent: (arg) => {
+      const d = arg.date;
+      const currentStr = d.getFullYear() + '-' +
+        String(d.getMonth() + 1).padStart(2, '0') + '-' +
+        String(d.getDate()).padStart(2, '0');
+
+      const start = this.exportStartPickedDate;
+      const hover = this.exportHoveredDate;
+
+      if (start) {
+        if (currentStr === start) {
+          classes.push('fc-day-range-edge');
+          return classes;
+        }
+
+        if (hover) {
+          let d1 = start;
+          let d2 = hover;
+          if (d1 > d2) {
+            const tmp = d1; d1 = d2; d2 = tmp;
+          }
+
+          if (currentStr === d2) {
+            classes.push('fc-day-range-edge');
+          } else if (currentStr > d1 && currentStr < d2) {
+            classes.push('fc-day-in-range');
+          }
+        }
+      }
+      return classes;
+    },
+    dayCellContent: (arg) => {
       const d = arg.date;
       const dateStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
       const today = new Date();
@@ -167,40 +156,22 @@ dayCellContent: (arg) => {
         d.getMonth() === today.getMonth() &&
         d.getDate() === today.getDate();
 
-      const isDark = document.body.classList.contains('dark-theme');
-
-      let html = `<div style="display:flex; justify-content:space-between; align-items:center; width:100%; gap:6px; box-sizing:border-box; pointer-events:auto;">`;
-
-      if (isToday) {
-        html += `
-          <span style="display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; min-width:24px; border-radius:50%; background-color:#1F63A0; color:#ffffff !important; font-family:'Montserrat', sans-serif; font-size:12px; font-weight:800; line-height:1; pointer-events:none; box-shadow:0 1px 3px rgba(31,99,160,0.35);">
-            ${arg.dayNumberText}
-          </span>`;
-      } else {
-        const numColor = isDark ? '#94a3b8' : '#475569';
-        html += `
-          <span style="font-family:'Montserrat', sans-serif; font-size:13px; font-weight:800; color:${numColor}; pointer-events:none; padding:2px;">
-            ${arg.dayNumberText}
-          </span>`;
-      }
-
-      html += `<div class="day-actions-wrapper" data-date="${dateStr}" style="display:flex; align-items:center; gap:4px; pointer-events:auto;">`;
+      // Izgled se definiše u CSS-u (main.css i theme.css), ovde samo klase
+      let html = `<div class="cal-day-row">`;
+      html += `<span class="cal-day-num${isToday ? ' is-today' : ''}">${arg.dayNumberText}</span>`;
+      html += `<div class="day-actions-wrapper" data-date="${dateStr}">`;
 
       if (this.rezimUredjivanjaDana) {
         const isSelected = this.selektovaniDani.has(dateStr);
         if (isSelected) {
           html += `
-            <div class="day-select-circle" data-date="${dateStr}" style="width:20px; height:20px; border-radius:6px; background-color:#1F63A0; border:2px solid ${isDark ? '#38bdf8' : '#164f82'}; display:flex; align-items:center; justify-content:center; cursor:pointer; pointer-events:auto !important; z-index:50;">
+            <div class="day-select-circle is-selected" data-date="${dateStr}">
               <svg width="12" height="12" fill="none" stroke="white" stroke-width="3.5" viewBox="0 0 24 24" style="pointer-events:none;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>
             </div>`;
         } else if (this.kopiranjeAktivno) {
-          html += `
-            <div class="day-select-circle" data-date="${dateStr}" style="width:20px; height:20px; border-radius:6px; border:2px dashed ${isDark ? '#38bdf8' : '#1F63A0'}; background-color:${isDark ? 'rgba(56,189,248,0.2)' : 'rgba(31,99,160,0.12)'}; cursor:pointer; pointer-events:auto !important; z-index:50;"></div>`;
+          html += `<div class="day-select-circle is-copy" data-date="${dateStr}"></div>`;
         } else {
-          const defaultBg = isDark ? '#0d1a44' : '#ffffff';
-          const defaultBorder = isDark ? '#334155' : '#cbd5e1';
-          html += `
-            <div class="day-select-circle" data-date="${dateStr}" style="width:20px; height:20px; border-radius:6px; border:2px solid ${defaultBorder}; background-color:${defaultBg}; cursor:pointer; pointer-events:auto !important; z-index:50;"></div>`;
+          html += `<div class="day-select-circle" data-date="${dateStr}"></div>`;
         }
       }
 
@@ -209,6 +180,13 @@ dayCellContent: (arg) => {
     },
 
     dateClick: (info) => {
+      if (this.rezimBiranjaOpsegaIzvoza) {
+        this.ngZone.run(() => {
+          this.obradiIzborDatumaZaIzvoz(info.dateStr);
+        });
+        return;
+      }
+
       if (this.rezimUredjivanjaDana) {
         this.ngZone.run(() => {
           this.toggleSelektovanDan(info.dateStr);
@@ -220,29 +198,38 @@ dayCellContent: (arg) => {
     eventClick: (info) => {
       if (info.event.display === 'background') return;
 
-      const eventDate = info.event.startStr ? info.event.startStr.split('T')[0] : (info.event.start?.toISOString().split('T')[0] || '');
-
+      const eventDate = info.event.startStr
+        ? info.event.startStr.split('T')[0]
+        : (info.event.start ? info.event.start.toISOString().split('T')[0] : '');
       const cistNaslov = info.event.title.split(' (')[0];
       const sviDogadjaji = this.calendarComponent.getApi().getEvents();
 
       const zauzecaNaDan = sviDogadjaji
         .filter(e => {
-          const dStr = e.startStr.split('T')[0] || (e.start?.toISOString().split('T')[0] || '');
+          const dStr = e.startStr.split('T')[0] || (e.start ? e.start.toISOString().split('T')[0] : '');
           return dStr === eventDate && e.id !== info.event.id;
         })
         .map(e => ({
           sala: e.extendedProps['sala'],
           vreme: e.extendedProps['vreme'],
-          vremeKraja: e.extendedProps['vremeKraja']
+          vremeKraja: e.extendedProps['vreme_kraja'] || e.extendedProps['vremeKraja'] || ''
         }));
 
+      // 2. Otvaranje modala (šaljemo vreme_kraja kao endTime)
       const dialogRef = this.dialog.open(EventModal, {
-        maxWidth: '95vw', width: '1100px', maxHeight: '120vh',
+        maxWidth: '95vw',
+        width: '1100px',
+        maxHeight: '120vh',
         data: {
-          title: cistNaslov, date: eventDate,
-          startTime: info.event.extendedProps['vreme'], endTime: info.event.extendedProps['vremeKraja'],
-          room: info.event.extendedProps['sala'], predmetId: info.event.extendedProps['predmetId'],
-          is_ispit: info.event.extendedProps['is_ispit'] ?? true, dezurni: info.event.extendedProps['dezurni'] || [],
+          title: cistNaslov,
+          date: eventDate,
+          startTime: info.event.extendedProps['vreme'],
+          endTime: info.event.extendedProps['vreme_kraja'] || info.event.extendedProps['vremeKraja'] || '', // <-- OVDJE POVLAČI VREME KRAJA
+          room: info.event.extendedProps['sala'],
+          predmetId: info.event.extendedProps['predmetId'],
+          tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
+          is_ispit: info.event.extendedProps['is_ispit'] ?? true,
+          dezurni: info.event.extendedProps['dezurni'] || [],
           zauzeteSaleNaDan: zauzecaNaDan
         },
         disableClose: true
@@ -274,33 +261,56 @@ dayCellContent: (arg) => {
           const dezurniIds = result.dezurni_ids || result.formData?.dezurni_ids || [];
           const izabraniSaradnici = result.izabraniSaradnici || [];
           const isIspit = result.is_ispit ?? true;
+          const tipKolokvijuma = result.tip_kolokvijuma || 'I';
+
+          const krajVreme = result.endTime || '';
 
           if (info.event.id && info.event.id.startsWith('temp_')) {
             const draftEvt = this.unsavedEvents.find(e => e.tempId === info.event.id);
             if (draftEvt) {
-              draftEvt.vreme = result.startTime; draftEvt.vreme_kraja = result.endTime;
-              draftEvt.sala = result.room; draftEvt.is_ispit = isIspit; draftEvt.dezurni_ids = dezurniIds;
+              draftEvt.vreme = result.startTime;
+              draftEvt.vreme_kraja = krajVreme;
+              draftEvt.sala = result.room;
+              draftEvt.is_ispit = isIspit;
+              draftEvt.tip_kolokvijuma = tipKolokvijuma;
+              draftEvt.dezurni_ids = dezurniIds;
             }
           } else {
             const payload = {
-              id: info.event.id, datum: eventDate, vreme: result.startTime, vreme_kraja: result.endTime,
-              sala: result.room, predmet_id: info.event.extendedProps['predmetId'], is_ispit: isIspit, dezurni_ids: dezurniIds
+              id: Number(info.event.id),
+              datum: eventDate,
+              vreme: result.startTime,
+              vreme_kraja: krajVreme,
+              sala: result.room,
+              predmet_id: info.event.extendedProps['predmetId'],
+              is_ispit: isIspit,
+              tip_kolokvijuma: tipKolokvijuma,
+              dezurni_ids: dezurniIds
             };
-            const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
-            if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload; else this.modifiedEvents.push(payload);
+            const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === String(info.event.id));
+            if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload;
+            else this.modifiedEvents.push(payload);
           }
 
-          const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
+          const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === String(info.event.id));
           if (evtIndex > -1) {
             const boja = this.getGodinaColor(this.allLoadedEvents[evtIndex].extendedProps.godina);
             this.allLoadedEvents[evtIndex] = {
               ...this.allLoadedEvents[evtIndex],
-              start: `${eventDate}T${result.startTime}:00`, end: result.endTime ? `${eventDate}T${result.endTime}:00` : undefined,
-              title: `${cistNaslov} (${result.room})`,
-              backgroundColor: isIspit ? boja : '#ffffff', textColor: isIspit ? '#ffffff' : boja, borderColor: boja,
+              start: eventDate + 'T' + result.startTime + ':00',
+              end: krajVreme ? (eventDate + 'T' + krajVreme + ':00') : undefined,
+              title: cistNaslov + ' (' + result.room + ')',
+              backgroundColor: isIspit ? boja : '#ffffff',
+              textColor: isIspit ? '#ffffff' : boja,
+              borderColor: boja,
               extendedProps: {
                 ...this.allLoadedEvents[evtIndex].extendedProps,
-                vreme: result.startTime, vremeKraja: result.endTime, sala: result.room, is_ispit: isIspit, dezurni: izabraniSaradnici
+                vreme: result.startTime,
+                vreme_kraja: krajVreme,
+                tip_kolokvijuma: tipKolokvijuma,
+                sala: result.room,
+                is_ispit: isIspit,
+                dezurni: izabraniSaradnici
               }
             };
           }
@@ -332,7 +342,8 @@ dayCellContent: (arg) => {
         maxWidth: '95vw', width: '1100px', maxHeight: '120vh',
         data: {
           title: originalEvent.title, date: eventDate, predmetId: predmetId,
-          dezurni: droppedPredmet?.saradnici || [], is_ispit: true, zauzeteSaleNaDan: zauzecaNaDan
+          dezurni: droppedPredmet?.saradnici || [], is_ispit: true, zauzeteSaleNaDan: zauzecaNaDan,
+          tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
         },
         disableClose: true
       });
@@ -343,12 +354,21 @@ dayCellContent: (arg) => {
           const dezurniIds = result.dezurni_ids || result.formData?.dezurni_ids || [];
           const izabraniSaradnici = result.izabraniSaradnici || [];
           const isIspit = result.is_ispit ?? true;
+          const tipKolokvijuma = result.tip_kolokvijuma || 'I';
 
           this.unsavedEvents.push({
-            tempId: tempId, predmet_id: predmetId, title: result.title,
-            datum: eventDate, vreme: result.startTime, vreme_kraja: result.endTime,
-            sala: result.room, is_ispit: isIspit, dezurni_ids: dezurniIds,
-            backgroundColor: originalEvent.backgroundColor, borderColor: originalEvent.borderColor
+            tempId: tempId,
+            predmet_id: predmetId,
+            title: result.title,
+            datum: eventDate,
+            vreme: result.startTime,
+            vreme_kraja: result.endTime,
+            sala: result.room,
+            is_ispit: isIspit,
+            tip_kolokvijuma: tipKolokvijuma,
+            dezurni_ids: dezurniIds,
+            backgroundColor: originalEvent.backgroundColor,
+            borderColor: originalEvent.borderColor
           });
 
           const noviEvent = {
@@ -359,7 +379,7 @@ dayCellContent: (arg) => {
             extendedProps: {
               vreme: result.startTime, vremeKraja: result.endTime, sala: result.room,
               predmetId: predmetId, godina: droppedPredmet?.godina, profesorId: droppedPredmet?.profesor_id,
-              profesorIme: droppedPredmet?.profesorImePrezime, is_ispit: isIspit, dezurni: izabraniSaradnici
+              profesorIme: droppedPredmet?.profesorImePrezime, is_ispit: isIspit, tip_kolokvijuma: tipKolokvijuma, dezurni: izabraniSaradnici
             }
           };
 
@@ -375,32 +395,101 @@ dayCellContent: (arg) => {
 
     eventDrop: (info) => {
       this.hasUnsavedChanges = true;
-      const newDate = info.event.startStr.split('T')[0];
-      const dezurniLica = info.event.extendedProps['dezurni'] || [];
-      const dezurniIds = dezurniLica.map((d: any) => d.id || d);
 
-      if (info.event.id && !info.event.id.startsWith('temp_')) {
-        const existingIndex = this.modifiedEvents.findIndex(e => e.id === info.event.id);
-        const payload = {
-          id: info.event.id, datum: newDate, vreme: info.event.extendedProps['vreme'],
-          vreme_kraja: info.event.extendedProps['vremeKraja'], sala: info.event.extendedProps['sala'],
-          predmet_id: info.event.extendedProps['predmetId'], is_ispit: info.event.extendedProps['is_ispit'] ?? true, dezurni_ids: dezurniIds
-        };
-        if (existingIndex > -1) this.modifiedEvents[existingIndex] = payload; else this.modifiedEvents.push(payload);
-      } else {
-        const unsavedEvent = this.unsavedEvents.find(e => e.tempId === info.event.id);
-        if (unsavedEvent) unsavedEvent.datum = newDate;
+      const d = info.event.start;
+      if (!d) return;
+
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      const newDate = y + '-' + m + '-' + day;
+
+      const eventIdStr = String(info.event.id);
+      const postojeci = this.allLoadedEvents.find(e => String(e.id) === eventIdStr);
+      const prethodnoIzmenjen = this.modifiedEvents.find(e => String(e.id) === eventIdStr);
+
+      // 1. Čitanje početka
+      let vreme = postojeci?.extendedProps?.vreme ||
+        prethodnoIzmenjen?.vreme ||
+        info.oldEvent?.extendedProps?.['vreme'] || '09:00';
+      if (vreme.length === 4 && vreme.indexOf(':') === 1) vreme = '0' + vreme;
+
+      // 2. Čitanje kraja (Gledamo postojeci, pa prethodni modifiedEvents, pa info.oldEvent)
+      let kraj = postojeci?.extendedProps?.vreme_kraja ||
+        prethodnoIzmenjen?.vreme_kraja ||
+        info.oldEvent?.extendedProps?.['vreme_kraja'] || '';
+
+      // Rezerva: ako je u postojeci.end stajao puni ISO string (npr. "2026-10-06T09:30:00")
+      if (!kraj && postojeci && postojeci.end && String(postojeci.end).includes('T')) {
+        kraj = String(postojeci.end).substring(11, 16);
       }
 
-      const evtIndex = this.allLoadedEvents.findIndex(e => e.id === info.event.id);
-      if (evtIndex > -1) {
-        this.allLoadedEvents[evtIndex].start = `${newDate}T${info.event.extendedProps['vreme']}:00`;
-        if (info.event.extendedProps['vremeKraja']) {
-          this.allLoadedEvents[evtIndex].end = `${newDate}T${info.event.extendedProps['vremeKraja']}:00`;
+      if (kraj === '00:00') kraj = '';
+
+      const isIspit = postojeci?.extendedProps?.is_ispit ?? true;
+      const sala = postojeci?.extendedProps?.sala || 'Bez sale';
+      const predmetId = postojeci?.extendedProps?.predmetId;
+      const tipKolokvijuma = postojeci?.extendedProps?.tip_kolokvijuma || 'I';
+      const dezurniLica = postojeci?.extendedProps?.dezurni || [];
+      const dezurniIds = dezurniLica.map((dez: any) => (typeof dez === 'object' ? dez.id : dez));
+
+      // 3. Upis u modifiedEvents (isključivo vreme_kraja)
+      if (!eventIdStr.startsWith('temp_')) {
+        const existingIndex = this.modifiedEvents.findIndex(e => String(e.id) === eventIdStr);
+        const payload = {
+          id: Number(info.event.id),
+          datum: newDate,
+          vreme: vreme,
+          vreme_kraja: kraj,
+          sala: sala,
+          predmet_id: predmetId,
+          is_ispit: isIspit,
+          tip_kolokvijuma: tipKolokvijuma,
+          dezurni_ids: dezurniIds
+        };
+
+        console.log('📦 Pripremljen PAYLOAD za modifiedEvents:', payload);
+
+        if (existingIndex > -1) {
+          this.modifiedEvents[existingIndex] = payload;
+        } else {
+          this.modifiedEvents.push(payload);
+        }
+      } else {
+        const unsavedEvent = this.unsavedEvents.find(e => String(e.tempId) === eventIdStr);
+        if (unsavedEvent) {
+          unsavedEvent.datum = newDate;
+          unsavedEvent.vreme = vreme;
+          unsavedEvent.vreme_kraja = kraj;
         }
       }
-      this.applyFilters();
-      setTimeout(() => this.detectConflicts(), 300);
+
+      // 4. Ažuriranje allLoadedEvents
+      const startIso = newDate + 'T' + vreme + ':00';
+      const endIso = kraj ? (newDate + 'T' + kraj + ':00') : undefined;
+
+      const evtIndex = this.allLoadedEvents.findIndex(e => String(e.id) === eventIdStr);
+      if (evtIndex > -1) {
+        this.allLoadedEvents[evtIndex] = {
+          ...this.allLoadedEvents[evtIndex],
+          start: startIso,
+          end: endIso,
+          extendedProps: {
+            ...this.allLoadedEvents[evtIndex].extendedProps,
+            vreme: vreme,
+            vreme_kraja: kraj
+          }
+        };
+      }
+
+      // 5. Ažuriranje FullCalendar prikaza
+      info.event.setAllDay(false);
+      info.event.setExtendedProp('vreme', vreme);
+      info.event.setExtendedProp('vreme_kraja', kraj);
+      info.event.setDates(startIso, endIso || null, { allDay: false });
+
+      this.detectConflicts();
+      this.cdr.detectChanges();
     },
 
     eventContent: (arg) => {
@@ -412,23 +501,13 @@ dayCellContent: (arg) => {
       const godina = arg.event.extendedProps['godina'] || 1;
       const boja = this.getGodinaColor(godina);
 
-      const bg = isIspit ? boja : '#ffffff';
-      const textColor = isIspit ? '#ffffff' : '#0f172a';
-      const border = isIspit ? `none` : `1.5px solid ${boja}`;
-      const timeBg = isIspit ? 'rgba(0, 0, 0, 0.25)' : 'rgba(0, 0, 0, 0.08)';
-      const timeTextColor = isIspit ? '#ffffff' : boja;
-
+      // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
-          <div class="clean-cal-card ${!isIspit ? 'is-kolokvijum' : ''}" 
-               style="display: flex !important; align-items: center !important; width: 100% !important; height: 32px !important; background-color: ${bg} !important; border: ${border} !important; border-radius: 6px !important; overflow: hidden !important; box-sizing: border-box !important; cursor: pointer !important; box-shadow: 0 1px 3px rgba(0,0,0,0.15) !important;">
-            <div style="flex-shrink: 0 !important; background-color: ${timeBg} !important; font-size: 11.5px !important; font-weight: 800 !important; font-family: 'Montserrat', sans-serif !important; padding: 0 7px !important; height: 100% !important; display: flex !important; align-items: center !important; color: ${timeTextColor} !important; border-right: 1px solid rgba(255,255,255,0.2) !important;">
-              ${vreme}
-            </div>
-            <div class="cal-title-container cal-ticker-wrap" style="flex: 1 !important; overflow: hidden !important; position: relative !important; padding: 0 6px !important;">
-              <span class="cal-title-text cal-ticker-text" style="display: inline-block !important; font-size: 12.5px !important; font-weight: 800 !important; font-family: 'Montserrat', sans-serif !important; color: ${textColor} !important; line-height: 32px !important; white-space: nowrap !important;">
-                ${title}
-              </span>
+          <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}" style="--ev: ${boja};">
+            <div class="cal-card-time">${vreme}</div>
+            <div class="cal-title-container cal-ticker-wrap">
+              <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>
           </div>
         `
@@ -438,24 +517,14 @@ dayCellContent: (arg) => {
     eventMouseEnter: (info) => {
       if (info.event.display === 'background') return;
 
-      const wrap = info.el.querySelector('.cal-ticker-wrap') as HTMLElement;
-      const text = info.el.querySelector('.cal-ticker-text') as HTMLElement;
-      if (wrap && text) {
-        const overflowDistance = text.scrollWidth - wrap.clientWidth;
-        if (overflowDistance > 0) {
-          const trajanje = Math.max(2, overflowDistance / 35);
-          text.style.transition = `transform ${trajanje}s linear`;
-          text.style.transform = `translateX(-${overflowDistance + 8}px)`;
-        }
-      }
-
       const postojeci = document.getElementById('brief-info-popup');
       if (postojeci) postojeci.remove();
 
       const props = info.event.extendedProps;
       const tip = props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit';
-      const vremeKraja = props['vremeKraja'] ? ` - ${props['vremeKraja']}h` : 'h';
-      const vremePocetka = props['vreme'] || '00:00';
+      const k = props['vremeKraja'] || props['vreme_kraja'];
+      const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
+      const vremePocetka = props['vreme'] || '09:00';
       const sala = props['sala'] || 'Bez sale';
       const naslov = info.event.title.split(' (')[0];
       const dezurniImena = (props['dezurni'] || []).map((d: any) => `${d.ime} ${d.prezime}`).join(', ') || 'Nema dodeljenih';
@@ -465,11 +534,11 @@ dayCellContent: (arg) => {
       tooltip.style.cssText = `
         position: fixed;
         z-index: 9999999;
-        background: #ffffff;
-        color: #1e293b;
+        background: var(--surface);
+        color: var(--text);
         border-radius: 12px;
         padding: 12px 15px;
-        box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(31, 99, 160, 0.1);
+        box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.2), 0 0 0 1px var(--border-strong);
         pointer-events: none;
         font-family: 'Montserrat', sans-serif;
         min-width: 220px;
@@ -478,12 +547,12 @@ dayCellContent: (arg) => {
 
       tooltip.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
-          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2.5px 8px; border-radius: 6px; background: ${props['is_ispit'] === false ? '#fef3c7' : '#e0f2fe'}; color: ${props['is_ispit'] === false ? '#b45309' : '#1F63A0'};">${tip}</span>
-          <span style="font-size: 11px; font-weight: 700; color: #64748b;">${sala}</span>
+          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2.5px 8px; border-radius: 6px; background: ${props['is_ispit'] === false ? 'var(--tint-amber-bg)' : 'var(--tint-sky-bg)'}; color: ${props['is_ispit'] === false ? 'var(--tint-amber-fg)' : 'var(--primary-text)'};">${tip}</span>
+          <span style="font-size: 11px; font-weight: 700; color: var(--muted);">${sala}</span>
         </div>
-        <div style="font-size: 13px; font-weight: 800; color: #0f172a; margin-bottom: 6px; line-height: 1.3;">${naslov}</div>
-        <div style="font-size: 12px; font-weight: 700; color: #1F63A0; margin-bottom: 7px;">Termin: ${vremePocetka}${vremeKraja}</div>
-        <div style="font-size: 11px; font-weight: 600; color: #64748b; border-top: 1px solid #f1f5f9; padding-top: 7px;">Dežurni: <strong style="color: #334155;">${dezurniImena}</strong></div>
+        <div style="font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 6px; line-height: 1.3;">${naslov}</div>
+        <div style="font-size: 12px; font-weight: 700; color: var(--primary-text); margin-bottom: 7px;">Termin: ${vremePocetka}${vremeKraja}</div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--muted); border-top: 1px solid var(--border); padding-top: 7px;">Dežurni: <strong style="color: var(--text-2);">${dezurniImena}</strong></div>
       `;
       document.body.appendChild(tooltip);
 
@@ -494,46 +563,11 @@ dayCellContent: (arg) => {
     },
 
     eventMouseLeave: (info) => {
-      const text = info.el.querySelector('.cal-ticker-text') as HTMLElement;
-      if (text) {
-        text.style.transition = 'transform 0.3s ease-out';
-        text.style.transform = 'translateX(0px)';
-      }
       const tooltip = document.getElementById('brief-info-popup');
       if (tooltip) tooltip.remove();
     },
 
-    titleFormat: (arg) => {
-      const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
-      return `${meseci[arg.date.month]} ${arg.date.year}.`;
-    },
-    dayHeaderContent: (arg) => {
-      const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-      return daniSkraceno[arg.date.getDay()];
-    },
-    views: {
-      timeGridWeek: {
-        dayHeaderContent: (arg) => {
-          const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-          const d = arg.date;
-          return `${daniSkraceno[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
-        }
-      },
-      timeGridDay: {
-        dayHeaderContent: (arg) => {
-          const daniPuni = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
-          const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
-          const d = arg.date;
-          return `${daniPuni[d.getDay()]}, ${d.getDate()}. ${meseci[d.getMonth()]}`;
-        }
-      }
-    },
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
-    buttonText: { today: 'Danas', month: 'Mesec', week: 'Nedelja', day: 'Dan' }
+    ...KALENDAR_STATICKA_PODESAVANJA
   };
 
   // ============================================
@@ -727,42 +761,96 @@ dayCellContent: (arg) => {
     const imaIzmenjenih = this.modifiedEvents && this.modifiedEvents.length > 0;
     const imaObrisanih = this.obrisaniIspitiServerIds && this.obrisaniIspitiServerIds.length > 0;
 
+    console.group('🚀 [KLIKNUTO SAČUVAJ] Slanje rasporeda na server');
+    console.log('📊 Stanje izmena:', { imaNovih, imaIzmenjenih, imaObrisanih });
+
     if (!imaNovih && !imaIzmenjenih && !imaObrisanih) {
+      console.log('⚠️ Nema detektovanih izmena za bazu.');
+      console.groupEnd();
       this.toastService.show('Nema izmena za čuvanje.', 'success');
       return;
     }
 
-    const requests: Observable<any>[] = [];
+    const validniIzmenjeni = (this.modifiedEvents || []).filter(e => e.id && !String(e.id).startsWith('temp_'));
+
+    console.log('📤 NOVI ISPITI (POST /ispit/bulk):', JSON.stringify(this.unsavedEvents, null, 2));
+    console.log('📤 IZMENJENI ISPITI (PUT /ispit/:id):', JSON.stringify(validniIzmenjeni, null, 2));
+    console.log('📤 OBRISANI ID-jevi (DELETE /ispit/:id):', this.obrisaniIspitiServerIds);
+
+    // Server prvo proveri celu seriju izmena (ništa ne čuva); konflikte prikazujemo u čitljivom prozoru
+    this.proveraUToku = true;
+    this.http.post<any>(this.API_URL + '/ispit/proveri-konflikte', {
+      novi: this.unsavedEvents || [],
+      izmenjeni: validniIzmenjeni,
+      obrisani: this.obrisaniIspitiServerIds || []
+    }).subscribe({
+      next: (r) => {
+        this.proveraUToku = false;
+        if (r?.konflikti?.length) {
+          console.groupEnd();
+          this.konfliktiPriCuvanju = r.konflikti;
+          this.prikaziKonfliktePriCuvanju = true;
+          this.cdr.detectChanges();
+        } else {
+          this.posaljiRaspored(validniIzmenjeni);
+        }
+      },
+      error: () => {
+        // ako provera ne uspe, čuvanje se ipak nastavlja (server svejedno vodi računa o ispravnosti podataka)
+        this.proveraUToku = false;
+        this.posaljiRaspored(validniIzmenjeni);
+      }
+    });
+  }
+
+  potvrdiCuvanjeSaKonfliktima(): void {
+    this.prikaziKonfliktePriCuvanju = false;
+    const validniIzmenjeni = (this.modifiedEvents || []).filter(e => e.id && !String(e.id).startsWith('temp_'));
+    this.posaljiRaspored(validniIzmenjeni);
+  }
+
+  private posaljiRaspored(validniIzmenjeni: any[]): void {
+    const imaNovih = this.unsavedEvents && this.unsavedEvents.length > 0;
+    const imaObrisanih = this.obrisaniIspitiServerIds && this.obrisaniIspitiServerIds.length > 0;
+    const requests: any[] = [];
 
     if (imaObrisanih) {
       this.obrisaniIspitiServerIds.forEach(id => {
-        requests.push(this.http.delete(`${this.API_URL}/ispit/${id}`));
+        requests.push(this.http.delete(this.API_URL + '/ispit/' + id));
       });
     }
 
     if (imaNovih) {
-      requests.push(this.http.post(`${this.API_URL}/ispit/bulk`, this.unsavedEvents));
+      requests.push(this.http.post(this.API_URL + '/ispit/bulk?force=1', this.unsavedEvents));
     }
 
-    if (imaIzmenjenih) {
-      this.modifiedEvents.forEach(evt => {
-        requests.push(this.http.put(`${this.API_URL}/ispit/${evt.id}`, evt));
+    if (validniIzmenjeni.length > 0) {
+      validniIzmenjeni.forEach(evt => {
+        const url = this.API_URL + '/ispit/' + evt.id + '?force=1';
+        console.log('➡️️ Šaljem PUT na ' + url + ' sa payloadom:', evt);
+        requests.push(this.http.put(url, evt));
       });
     }
 
     forkJoin(requests).subscribe({
-      next: () => {
+      next: (odgovori) => {
+        console.log('✅ SERVER JE ODGOVORIO SA USPEHOM:', odgovori);
+        console.groupEnd();
+
         this.toastService.show('Raspored je uspešno sačuvan!', 'success');
         this.unsavedEvents = [];
         this.modifiedEvents = [];
         this.obrisaniIspitiServerIds = [];
         this.hasUnsavedChanges = false;
-        this.fetchIspiti();
+        this.fetchIspiti(); // Ponovno čitanje iz baze
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('Greška pri čuvanju rasporeda:', err);
-        this.toastService.show('Došlo je do greške pri čuvanju.', 'error');
+        console.error('❌ GREŠKA OD STRANE SERVERA PRI ČUVANJU:', err);
+        console.log('🔍 Status kod:', err.status);
+        console.log('🔍 Detalji tela greške:', err.error);
+        console.groupEnd();
+        this.toastService.show(err.error?.error || err.error?.message || 'Došlo je do greške pri čuvanju.', 'error');
       }
     });
   }
@@ -800,15 +888,36 @@ dayCellContent: (arg) => {
     this.fetchSviSaradniciIObaveze();
     this.loadAllUcioniceForFilter();
     this.fetchStats();
-    this.loadSavedColors();
+    this.boje.ucitajSacuvane();
   }
+
+  private hoverRaf = 0;
 
   ngAfterViewInit(): void {
     this.initDraggable();
-  }
 
-  trackById(index: number, item: any): any {
-    return item?.id ?? index;
+    // Dohvatamo root element kalendara preko getApi().el ili selektora
+    setTimeout(() => {
+      const calEl = this.calendarComponent?.getApi()?.el || document.querySelector('full-calendar');
+      if (calEl) {
+        calEl.addEventListener('mouseover', (e: Event) => {
+          if (!this.rezimBiranjaOpsegaIzvoza || !this.exportStartPickedDate) return;
+          const cell = (e.target as HTMLElement).closest('.fc-daygrid-day') as HTMLElement;
+          if (cell) {
+            const dateStr = cell.getAttribute('data-date');
+            if (dateStr && dateStr !== this.exportHoveredDate) {
+              this.exportHoveredDate = dateStr;
+              if (!this.hoverRaf) {
+                this.hoverRaf = requestAnimationFrame(() => {
+                  this.hoverRaf = 0;
+                  this.calendarComponent.getApi().render();
+                });
+              }
+            }
+          }
+        });
+      }
+    }, 100);
   }
 
   get jedinstveniProfesori() {
@@ -844,7 +953,6 @@ dayCellContent: (arg) => {
   toggleSveGodine(): void {
     this.izabraneGodine = [];
   }
-
   toggleGodina(godina: number): void {
     const index = this.izabraneGodine.indexOf(godina);
     if (index > -1) {
@@ -943,9 +1051,7 @@ dayCellContent: (arg) => {
     }
 
     this.calendarOptions.events = [...filtered, ...backgroundEvents];
-    if (this.calendarComponent && this.calendarComponent.getApi()) {
-      this.calendarComponent.getApi().refetchEvents();
-    }
+
     this.cdr.detectChanges();
   }
 
@@ -962,8 +1068,8 @@ dayCellContent: (arg) => {
 
   fetchSviSaradniciIObaveze(): void {
     forkJoin({
-      saradnici: this.http.get<any[]>(`${this.API_URL}/profesors`),
-      obaveze: this.http.get<any[]>(`${this.API_URL}/obaveze`)
+      saradnici: this.cache.get<any[]>('/profesors'),
+      obaveze: this.cache.get<any[]>('/obaveze')
     }).subscribe({
       next: ({ saradnici, obaveze }) => {
         this.sviSaradnici = saradnici;
@@ -973,8 +1079,7 @@ dayCellContent: (arg) => {
   }
 
   getGodinaColor(godina?: number | string): string {
-    if (!godina) return '#009bd9';
-    return this.godinaColors[Number(godina)] || '#009bd9';
+    return this.boje.getGodinaColor(godina);
   }
 
   fetchPredmeti(): void {
@@ -991,54 +1096,79 @@ dayCellContent: (arg) => {
     });
   }
 
-  loadSavedColors(): void {
-    const saved = localStorage.getItem('app_godina_colors');
-    if (saved) {
-      try {
-        this.godinaColors = { ...this.defaultGodinaColors, ...JSON.parse(saved) };
-      } catch (e) {
-        this.godinaColors = { ...this.defaultGodinaColors };
-      }
-    }
-  }
-
   fetchIspiti(): void {
     forkJoin({
-      ispiti: this.http.get<any[]>(`${this.API_URL}/ispit`),
-      redovnaNastava: this.http.get<any[]>(`${this.API_URL}/ispit/zauzeti-termini`)
+      ispiti: this.http.get(this.API_URL + '/ispit'),
+      redovnaNastava: this.http.get(this.API_URL + '/ispit/zauzeti-termini')
     }).subscribe({
-      next: ({ ispiti, redovnaNastava }) => {
-        const ispitEvents = ispiti.map(i => {
+      next: (podaci) => {
+        // Ako backend vrati { data: [...] } ili { ispiti: [...] }, izvlači niz; ako je već niz, ostavlja ga
+        const siroviIspiti: any = podaci.ispiti;
+        const ispitiNiz: any[] = Array.isArray(siroviIspiti)
+          ? siroviIspiti
+          : (siroviIspiti?.data || siroviIspiti?.ispiti || siroviIspiti?.result || []);
+
+        const redovnaNastava = podaci.redovnaNastava;
+
+        const ispitEvents = ispitiNiz.map(i => {
           const pronadjeniPredmet = this.predmeti.find(p => p.id === (i.predmet_id || i.predmet?.id));
           const godina = i.predmet?.godina || pronadjeniPredmet?.godina || i.godina || 1;
           const boja = this.getGodinaColor(godina);
 
           const isIspit = i.is_ispit ?? true;
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
-          const formatiranoVreme = i.vreme ? (i.vreme.includes('T') ? i.vreme.substring(11, 16) : i.vreme.substring(0, 5)) : '00:00';
-          const formatiranoVremeKraja = i.vreme_kraja ? (i.vreme_kraja.includes('T') ? i.vreme_kraja.substring(11, 16) : i.vreme_kraja.substring(0, 5)) : '';
+
+          // 1. ČIŠĆENJE DATUMA KOJI STIGNE IZ BAZE
+          // 1. ČIŠĆENJE DATUMA
+          const cistDatum = (i.datum && String(i.datum).includes('T'))
+            ? String(i.datum).split('T')[0]
+            : String(i.datum);
+
+          // 2. ČIŠĆENJE VREMENA POČETKA
+          let formatiranoVreme = '09:00';
+          if (i.vreme) {
+            const s = String(i.vreme);
+            formatiranoVreme = s.includes('T') ? s.substring(11, 16) : s.substring(0, 5);
+          }
+          if (!formatiranoVreme || formatiranoVreme === '00:00') {
+            formatiranoVreme = '09:00';
+          }
+
+          // 3. ČIŠĆENJE VREMENA KRAJA (Rad sa stringom koji šalje JSON sa servera)
+          let formatiranoVremeKraja = '';
+          const rawKraj = i.vreme_kraja || i.vremeKraja;
+          if (rawKraj) {
+            const s = String(rawKraj);
+            formatiranoVremeKraja = s.includes('T') ? s.substring(11, 16) : s.substring(0, 5);
+          }
+          if (formatiranoVremeKraja === '00:00') {
+            formatiranoVremeKraja = '';
+          }
+
           const nazivPredmeta = i.predmet?.naziv || pronadjeniPredmet?.naziv || 'Ispit';
 
           return {
-            id: i.id.toString(),
-            title: `${nazivPredmeta} (${salaNaziv})`,
-            start: `${i.datum}T${formatiranoVreme}`,
-            end: formatiranoVremeKraja ? `${i.datum}T${formatiranoVremeKraja}` : undefined,
+            id: String(i.id),
+            title: nazivPredmeta + ' (' + salaNaziv + ')',
+            start: cistDatum + 'T' + formatiranoVreme + ':00',
+            end: formatiranoVremeKraja ? (cistDatum + 'T' + formatiranoVremeKraja + ':00') : undefined,
             display: 'block',
             backgroundColor: isIspit ? boja : '#ffffff',
             textColor: isIspit ? '#ffffff' : boja,
             borderColor: boja,
             extendedProps: {
               vreme: formatiranoVreme,
-              vremeKraja: formatiranoVremeKraja,
+              vreme_kraja: formatiranoVremeKraja, // SAMO JEDNO POLJE
               sala: salaNaziv,
-              predmetId: i.predmet_id,
+              predmetId: i.predmet_id || i.predmet?.id,
               godina: godina,
+              tip_kolokvijuma: i.tip_kolokvijuma || 'I',
               is_ispit: isIspit,
               dezurni: i.dezurstva ? i.dezurstva.map((d: any) => d.saradnik) : []
             }
           };
         });
+        // ostatak metode ostaje isti...
 
         const nastavaEvents: any[] = [];
         if (Array.isArray(redovnaNastava)) {
@@ -1046,10 +1176,10 @@ dayCellContent: (arg) => {
             const dStr = cas.datum ? cas.datum.split('T')[0] : null;
             if (!dStr) return;
             nastavaEvents.push({
-              id: `nastava_${cas.id}`,
-              title: `Nastava: ${cas.predmet} (${cas.sala?.naziv || 'Sala'})`,
-              start: `${dStr}T${cas.vreme_pocetka}:00`,
-              end: `${dStr}T${cas.vreme_kraja}:00`,
+              id: 'nastava_' + cas.id,
+              title: 'Nastava: ' + cas.predmet + ' (' + (cas.sala?.naziv || 'Sala') + ')',
+              start: dStr + 'T' + cas.vreme_pocetka + ':00',
+              end: dStr + 'T' + cas.vreme_kraja + ':00',
               display: 'block',
               backgroundColor: '#f3f4f6',
               borderColor: '#ef4444',
@@ -1072,7 +1202,7 @@ dayCellContent: (arg) => {
   }
 
   loadAllUcioniceForFilter(): void {
-    this.http.get<any[]>(`${this.API_URL}/ucionice`).subscribe({
+    this.cache.get<any[]>('/ucionice', 300_000).subscribe({
       next: (res) => this.dostupneSale = res,
       error: (err) => console.error('Greška pri dohvatanju svih učionica:', err)
     });
@@ -1081,11 +1211,13 @@ dayCellContent: (arg) => {
   private initDraggable(): void {
     const self = this;
     if (this.draggableContainer && this.draggableContainer.nativeElement) {
-      if (this.draggableInstance) this.draggableInstance.destroy();
+      if (this.draggableInstance) {
+        this.draggableInstance.destroy();
+      }
       this.draggableInstance = new Draggable(this.draggableContainer.nativeElement, {
-        itemSelector: '.fc-event',
+        itemSelector: '.bank-card-item',
         eventData: function (eventEl) {
-          const godina = parseInt(eventEl.getAttribute('data-godina') || '1');
+          const godina = parseInt(eventEl.getAttribute('data-godina') || '1', 10);
           const boja = self.getGodinaColor(godina);
           const id = eventEl.getAttribute('data-id');
           return {
@@ -1114,7 +1246,14 @@ dayCellContent: (arg) => {
     this.prikaziKonfliktiModal = true;
   }
 
+  // Poziva se sa ~10 mesta (često više puta za jednu akciju) - skupljamo ih u jedno izvršavanje
+  private conflictTimer: any = null;
   detectConflicts(): void {
+    clearTimeout(this.conflictTimer);
+    this.conflictTimer = setTimeout(() => this.runDetectConflicts(), 80);
+  }
+
+  private runDetectConflicts(): void {
     if (!this.calendarComponent) return;
 
     if (!(window as any)._conflictTooltipListener) {
@@ -1146,22 +1285,26 @@ dayCellContent: (arg) => {
         for (let j = i + 1; j < evts.length; j++) {
           const e1 = evts[i];
           const e2 = evts[j];
-          const start1 = this.timeToMins(String(e1.extendedProps['vreme'] || '').trim());
-          const end1 = this.timeToMins(String(e1.extendedProps['vremeKraja'] || '').trim()) || (start1 + 120);
-          const start2 = this.timeToMins(String(e2.extendedProps['vreme'] || '').trim());
-          const end2 = this.timeToMins(String(e2.extendedProps['vremeKraja'] || '').trim()) || (start2 + 120);
+          const start1 = timeToMins(String(e1.extendedProps['vreme'] || '').trim());
+          const end1 = timeToMins(String(e1.extendedProps['vremeKraja'] || '').trim()) || (start1 + 120);
+          const start2 = timeToMins(String(e2.extendedProps['vreme'] || '').trim());
+          const end2 = timeToMins(String(e2.extendedProps['vremeKraja'] || '').trim()) || (start2 + 120);
 
           if (start1 < end2 && start2 < end1) {
             const s1 = String(e1.extendedProps['sala'] || '').trim();
             const s2 = String(e2.extendedProps['sala'] || '').trim();
             if (s1 && s2 && s1 === s2 && s1 !== 'Bez sale' && s1 !== 'undefined') {
-              razlozi.push(`Sala "${s1}" je zauzeta u periodu od ${e1.extendedProps['vreme']}h do ${e1.extendedProps['vremeKraja'] || '(?)'}`);
+              const n1 = String(e1.title).split(' (')[0];
+              const n2 = String(e2.title).split(' (')[0];
+              razlozi.push(`Sala ${s1}: „${n1}“ (${e1.extendedProps['vreme']}–${e1.extendedProps['vremeKraja'] || '?'}) i „${n2}“ (${e2.extendedProps['vreme']}–${e2.extendedProps['vremeKraja'] || '?'}) se preklapaju.`);
             }
             const dezurni1: any[] = e1.extendedProps['dezurni'] || [];
             const dezurni2: any[] = e2.extendedProps['dezurni'] || [];
             dezurni1.forEach(d1 => {
               if (dezurni2.some(d2 => d2.id === d1.id)) {
-                razlozi.push(`Saradnik ${d1.ime} ${d1.prezime} je duplo angažovan kao dežurni!`);
+                const m1 = String(e1.title).split(' (')[0];
+                const m2 = String(e2.title).split(' (')[0];
+                razlozi.push(`Saradnik ${d1.ime} ${d1.prezime} je istovremeno dežuran na „${m1}“ (${e1.extendedProps['vreme']}) i „${m2}“ (${e2.extendedProps['vreme']}).`);
               }
             });
           }
@@ -1172,26 +1315,33 @@ dayCellContent: (arg) => {
 
     document.querySelectorAll('.fc-daygrid-day').forEach((cell: any) => {
       const date = cell.getAttribute('data-date');
-      cell.style.backgroundColor = '';
+      cell.classList.remove('has-conflict');
 
       const oldWarning = cell.querySelector('.conflict-warning');
       if (oldWarning) oldWarning.remove();
 
       if (date && conflictsByDate.has(date)) {
-        cell.style.backgroundColor = '#fff9c4';
+        cell.classList.add('has-conflict');
         const actionsWrapper = cell.querySelector('.day-actions-wrapper');
 
         if (actionsWrapper) {
           const warning = document.createElement('div');
           warning.className = 'conflict-warning';
           warning.style.cssText = 'display:inline-flex; align-items:center; cursor:pointer; z-index:50; flex-shrink:0;';
+          const stavke = conflictsByDate.get(date)!
+            .map((r) => `<li style="margin:0 0 8px 0;">${r}</li>`)
+            .join('');
+          const naslovDatuma = this.formatDatumKonflikta(date);
           warning.innerHTML = `
             <div style="position: relative; display: inline-flex; align-items: center;">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 18px; height: 18px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
                 <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
               </svg>
-              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #334155; border: 1px solid #cbd5e1; padding: 16px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; line-height: 1.5; white-space: normal; width: max-content; max-width: 320px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 9999px rgba(0, 0, 0, 0.1); z-index: 999999; pointer-events: none; text-align: center;">
-                ${conflictsByDate.get(date)!.join('<br><br>')}
+              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 14px; width: min(440px, 92vw); max-height: 70vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 999999; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
+                <div style="background:#1F63A0; color:#fff; padding:12px 18px; font-weight:800; font-size:14px; border-radius:14px 14px 0 0;">
+                  ⚠ Konflikti – ${naslovDatuma}
+                </div>
+                <ul style="margin:0; padding:14px 18px 8px 34px; font-size:13px; font-weight:500; line-height:1.55; list-style:disc;">${stavke}</ul>
               </div>
             </div>`;
 
@@ -1216,225 +1366,95 @@ dayCellContent: (arg) => {
     this.conflictsByDateMap = conflictsByDate;
   }
 
-  private timeToMins(timeStr: string): number {
-    if (!timeStr || !timeStr.includes(':')) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
-    return (h * 60) + m;
+  formatDatumKonflikta(datum: string): string {
+    return formatDatumKonflikta(datum);
+  }
+
+  tipKonflikta(tekst: string): 'sala' | 'dezurni' | 'odsustvo' {
+    return tipKonflikta(tekst);
   }
 
   // ============================================
   // IZVOZ U EXCEL I ŠTAMPA
   // ============================================
 
-  otvoriIzvozModal(): void {
-    this.prikaziIzvozModal = true;
-    const danas = new Date();
-    this.izvozPodaci.datumOd = danas.toISOString().split('T')[0];
-    const sledeciMesec = new Date();
-    sledeciMesec.setMonth(sledeciMesec.getMonth() + 1);
-    this.izvozPodaci.datumDo = sledeciMesec.toISOString().split('T')[0];
-  }
-
-  generisiExcel(): void {
-    const { tip, datumOd, datumDo, nazivRoka } = this.izvozPodaci;
-    if (!datumOd || !datumDo) {
-      this.toastService.show('Izaberite oba datuma!', 'error');
-      return;
-    }
-
-    const dOd = new Date(datumOd).getTime();
-    const dDo = new Date(datumDo).getTime();
-
-    const ispitiUPeriodu = this.allLoadedEvents.filter(e => {
-      const isIspitEvent = e.extendedProps?.is_ispit ?? true;
-      if (tip === 'ispiti' && !isIspitEvent) return false;
-      if (tip === 'kolokvijumi' && isIspitEvent) return false;
-      if (e.extendedProps?.isNastava) return false;
-
-      const evtStartStr = e.start.split('T')[0];
-      const evtDatumMs = new Date(evtStartStr).getTime();
-      return evtDatumMs >= dOd && evtDatumMs <= dDo;
+  otvoriIzvozModal(savedState?: ExportDataResult): void {
+    const dialogRef = this.dialog.open(ExportModalComponent, {
+      maxWidth: '95vw',
+      width: '920px',
+      maxHeight: '92vh',
+      panelClass: 'custom-export-dialog-panel',
+      data: savedState || null,
+      disableClose: true
     });
 
-    if (ispitiUPeriodu.length === 0) {
-      this.toastService.show('Nema zakazanih termina u izabranom periodu.', 'error');
-      return;
-    }
+    dialogRef.afterClosed().subscribe((rezultat: ExportDataResult & { action?: string; pickingTarget?: any }) => {
+      if (!rezultat) return;
 
-    ispitiUPeriodu.sort((a, b) => {
-      const godA = a.extendedProps.godina || 99;
-      const godB = b.extendedProps.godina || 99;
-      if (godA !== godB) return godA - godB;
-      const datumA = new Date(a.start.split('T')[0]).getTime();
-      const datumB = new Date(b.start.split('T')[0]).getTime();
-      if (datumA !== datumB) return datumA - datumB;
-      return a.title.localeCompare(b.title);
-    });
+      if (rezultat.action === 'pick_range') {
+        // Sakrivamo modal i ulazimo u mod biranja na kalendaru
+        this.tempExportData = rezultat;
+        this.tempPickingTarget = rezultat.pickingTarget;
+        this.rezimBiranjaOpsegaIzvoza = true;
+        this.exportStartPickedDate = null;
+        this.selektovaniDani.clear();
 
-    const wsData: any[][] = [];
-    const cellStyles: any = {};
-    let rowIndex = 1;
-
-    wsData.push(['ОАС и МАС', 'Информатике', null, null]);
-    cellStyles[`A${rowIndex}`] = { font: { sz: 12, name: 'Calibri' } };
-    cellStyles[`B${rowIndex}`] = { font: { sz: 12, name: 'Calibri' } };
-    rowIndex++;
-
-    const bojaPoGodini: any = {
-      1: 'FF8EA9DB',
-      2: 'FFF4B083',
-      3: 'FFFFD965',
-      4: 'FFA8D08D',
-      5: 'FF00B0F0'
-    };
-
-    const tankiOkvir = {
-      top: { style: 'thin', color: { rgb: 'FF000000' } },
-      bottom: { style: 'thin', color: { rgb: 'FF000000' } },
-      left: { style: 'thin', color: { rgb: 'FF000000' } },
-      right: { style: 'thin', color: { rgb: 'FF000000' } }
-    };
-
-    let trenutnaGodina = -1;
-    let redniBroj = 1;
-
-    ispitiUPeriodu.forEach(ispit => {
-      const ispitGodina = ispit.extendedProps.godina || 1;
-      if (ispitGodina !== trenutnaGodina) {
-        trenutnaGodina = ispitGodina;
-        redniBroj = 1;
-        const rimska = ['I', 'II', 'III', 'IV', 'Мастер'][trenutnaGodina - 1] || trenutnaGodina;
-
-        wsData.push([`${rimska} година`, null, null, null]);
-        cellStyles[`A${rowIndex}`] = { font: { bold: true, sz: 12, name: 'Calibri' } };
-        rowIndex++;
-
-        wsData.push([null, 'Предмет', nazivRoka, null]);
-        cellStyles[`B${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
-        cellStyles[`C${rowIndex}`] = { font: { sz: 11, name: 'Calibri' } };
-        rowIndex++;
+        this.toastService.show('Kliknite prvi datum opsega na kalendaru.', 'success');
+        this.osveziPrikazKalendara();
+        return;
       }
 
-      const nazivPredmeta = ispit.title.split(' (')[0];
-      const datumSirovo = ispit.start.split('T')[0].split('-');
-      const datumPrikaz = `${datumSirovo[2]}.${datumSirovo[1]}.`;
-      const vremePrikaz = ispit.extendedProps.vreme + 'h';
-
-      wsData.push([redniBroj, nazivPredmeta, datumPrikaz, vremePrikaz]);
-      const bgColor = bojaPoGodini[trenutnaGodina] || 'FFFFFFFF';
-
-      cellStyles[`A${rowIndex}`] = { border: tankiOkvir, alignment: { horizontal: 'right' }, font: { name: 'Calibri', sz: 11 } };
-      cellStyles[`B${rowIndex}`] = { fill: { fgColor: { rgb: bgColor } }, border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
-      cellStyles[`C${rowIndex}`] = { border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
-      cellStyles[`D${rowIndex}`] = { border: tankiOkvir, font: { name: 'Calibri', sz: 11 } };
-
-      rowIndex++;
-      redniBroj++;
-    });
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    for (const key in cellStyles) {
-      if (ws[key]) ws[key].s = cellStyles[key];
-    }
-
-    ws['!cols'] = [{ wch: 15 }, { wch: 45 }, { wch: 15 }, { wch: 10 }];
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Raspored');
-    XLSX.writeFile(wb, `Raspored_${tip}_${datumOd}.xlsx`);
-
-    this.prikaziIzvozModal = false;
-    this.toastService.show('Excel fajl je uspešno generisan!', 'success');
-  }
-
-  // ============================================
-  // POJEDINAČNO PREUREĐIVANJE DANA (MODAL)
-  // ============================================
-
-  otvoriPreuredjivanje(): void {
-    this.danModalPrikaz = 'preuredi';
-    this.ispitiZaBrisanje = [];
-    const ispitiIzDana = this.allLoadedEvents.filter(e => e.start.startsWith(this.selektovanDan) && !e.extendedProps?.isNastava);
-    this.ispitiZaPreuredjivanje = JSON.parse(JSON.stringify(ispitiIzDana));
-  }
-
-  obrisiIspitIzDana(id: string): void {
-    this.ispitiZaPreuredjivanje = this.ispitiZaPreuredjivanje.filter(i => i.id !== id);
-    this.ispitiZaBrisanje.push(id);
-  }
-
-  sacuvajPreuredjivanje(): void {
-    this.hasUnsavedChanges = true;
-
-    this.ispitiZaBrisanje.forEach(id => {
-      if (!id.startsWith('temp_')) {
-        const idNum = Number(id);
-        if (!this.obrisaniIspitiServerIds.includes(idNum)) {
-          this.obrisaniIspitiServerIds.push(idNum);
+      if (rezultat.action === 'export' || !rezultat.action) {
+        if (rezultat.tip === 'kolokvijumi') {
+          this.excel.generisiKolokvijume(rezultat, this.allLoadedEvents, this.predmeti);
+        } else if (rezultat.tip === 'ispiti') {
+          this.excel.generisiIspite(rezultat, this.allLoadedEvents, this.predmeti);
         }
       }
-      this.allLoadedEvents = this.allLoadedEvents.filter(e => e.id !== id);
-      this.unsavedEvents = this.unsavedEvents.filter(e => e.tempId !== id);
-      this.modifiedEvents = this.modifiedEvents.filter(e => e.id !== id);
     });
-
-    this.ispitiZaPreuredjivanje.forEach(modIspit => {
-      const idx = this.allLoadedEvents.findIndex(e => e.id === modIspit.id);
-      if (idx > -1) {
-        this.allLoadedEvents[idx].start = `${this.selektovanDan}T${modIspit.extendedProps.vreme}:00`;
-        this.allLoadedEvents[idx].end = modIspit.extendedProps.vremeKraja ? `${this.selektovanDan}T${modIspit.extendedProps.vremeKraja}:00` : undefined;
-        this.allLoadedEvents[idx].extendedProps.vreme = modIspit.extendedProps.vreme;
-        this.allLoadedEvents[idx].extendedProps.vremeKraja = modIspit.extendedProps.vremeKraja;
-        this.allLoadedEvents[idx].extendedProps.sala = modIspit.extendedProps.sala;
-        this.allLoadedEvents[idx].title = `${modIspit.title.split(' (')[0]} (${modIspit.extendedProps.sala})`;
-      }
-
-      if (modIspit.id.startsWith('temp_')) {
-        const uIdx = this.unsavedEvents.findIndex(e => e.tempId === modIspit.id);
-        if (uIdx > -1) {
-          this.unsavedEvents[uIdx].vreme = modIspit.extendedProps.vreme;
-          this.unsavedEvents[uIdx].vreme_kraja = modIspit.extendedProps.vremeKraja;
-          this.unsavedEvents[uIdx].sala = modIspit.extendedProps.sala;
-        }
-      } else {
-        const mIdx = this.modifiedEvents.findIndex(e => e.id === modIspit.id);
-        const payload = {
-          id: modIspit.id, datum: this.selektovanDan, vreme: modIspit.extendedProps.vreme,
-          vreme_kraja: modIspit.extendedProps.vremeKraja, sala: modIspit.extendedProps.sala,
-          predmet_id: modIspit.extendedProps.predmetId, is_ispit: modIspit.extendedProps.is_ispit,
-          dezurni_ids: modIspit.extendedProps.dezurni?.map((d: any) => d.id) || []
-        };
-        if (mIdx > -1) this.modifiedEvents[mIdx] = payload; else this.modifiedEvents.push(payload);
-      }
-    });
-
-    this.applyFilters();
-    this.prikaziDanModal = false;
-    this.toastService.show('Izmene u danu su evidentirane. Sačuvajte raspored.', 'success');
-    setTimeout(() => this.detectConflicts(), 150);
   }
 
-  obrisiCeoDan(): void {
-    if (confirm(`Da li ste sigurni da želite da obrišete SVE ispite na dan ${this.selektovanDan}?`)) {
-      const ispitiIzDana = this.allLoadedEvents.filter(e => e.start.startsWith(this.selektovanDan) && !e.extendedProps?.isNastava);
-      ispitiIzDana.forEach(stariEvent => {
-        if (!stariEvent.id.startsWith('temp_')) {
-          const idNum = Number(stariEvent.id);
-          if (!this.obrisaniIspitiServerIds.includes(idNum)) {
-            this.obrisaniIspitiServerIds.push(idNum);
+  obradiIzborDatumaZaIzvoz(kliknutiDatum: string): void {
+    if (!this.exportStartPickedDate) {
+      this.exportStartPickedDate = kliknutiDatum;
+      this.exportHoveredDate = kliknutiDatum;
+      this.calendarComponent.getApi().render();
+      this.toastService.show(`Početni datum: ${kliknutiDatum}. Sada kliknite krajnji datum.`, 'success');
+    } else {
+      let dOd = this.exportStartPickedDate;
+      let dDo = kliknutiDatum;
+      if (new Date(dOd) > new Date(dDo)) {
+        const temp = dOd;
+        dOd = dDo;
+        dDo = temp;
+      }
+
+      if (this.tempExportData) {
+        if (this.tempPickingTarget === 'kolokvijumi') {
+          this.tempExportData.datumOd = dOd;
+          this.tempExportData.datumDo = dDo;
+        } else if (typeof this.tempPickingTarget === 'number' && this.tempExportData.rokovi) {
+          if (this.tempExportData.rokovi[this.tempPickingTarget]) {
+            this.tempExportData.rokovi[this.tempPickingTarget].datumOd = dOd;
+            this.tempExportData.rokovi[this.tempPickingTarget].datumDo = dDo;
           }
         }
-      });
-      const idsToRemove = ispitiIzDana.map(e => e.id);
-      this.allLoadedEvents = this.allLoadedEvents.filter(e => !idsToRemove.includes(e.id));
-      this.unsavedEvents = this.unsavedEvents.filter(e => !idsToRemove.includes(e.tempId));
-      this.modifiedEvents = this.modifiedEvents.filter(e => !idsToRemove.includes(e.id));
+      }
 
-      this.hasUnsavedChanges = true;
-      this.applyFilters();
-      this.prikaziDanModal = false;
-      this.toastService.show('Svi ispiti u danu su uklonjeni.', 'success');
-      setTimeout(() => this.detectConflicts(), 150);
+      this.toastService.show(`Izabran opseg: ${dOd} do ${dDo}! Vraćam tabelu...`, 'success');
+
+      this.rezimBiranjaOpsegaIzvoza = false;
+      this.exportStartPickedDate = null;
+      this.exportHoveredDate = null;
+      this.calendarComponent.getApi().render();
+
+      const stateToRestore = this.tempExportData;
+      this.tempExportData = null;
+      this.tempPickingTarget = null;
+
+      setTimeout(() => {
+        this.otvoriIzvozModal(stateToRestore || undefined);
+      }, 200);
     }
   }
 }

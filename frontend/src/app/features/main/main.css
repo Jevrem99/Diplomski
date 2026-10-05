@@ -13,257 +13,367 @@
 }
 
 /* ========================================================= */
-/* 1. FIKS ZA KARTICE U BANCI PREDMETA (NE SEČE SLOVA)       */
+/* 1. LEVI PANEL: BANKA PREDMETA                             */
 /* ========================================================= */
-.subject-drag-card {
-  position: relative !important;
-  overflow: hidden !important;
-  padding: 10px 12px 10px 22px !important; /* Dovoljan razmak da plava linija nikad ne seče tekst */
-  box-sizing: border-box !important;
-  border-radius: 12px !important;
-  border: 1px solid #e2e8f0 !important;
-  background-color: #f8fafc !important;
+aside.left-bank-aside,
+aside.w-full {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  overflow: hidden !important; /* Reže unutrašnje elemente da ne vire */
 }
 
-/* Resetuje interne FullCalendar omotače unutar kartice u banci */
-.subject-drag-card ::ng-deep .fc-event-main {
+/* Plavo zaglavlje banke predmeta - popravlja isečeno slovo "B" */
+.bank-header-box,
+aside > div:first-child {
+  background-color: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  padding: 16px 18px 16px 18px !important;
+  border-top-left-radius: 15px !important;
+  border-top-right-radius: 15px !important;
+  box-sizing: border-box !important;
+}
+
+.bank-header-box h2,
+aside > div:first-child h2 {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 1rem !important;
+  font-weight: 800 !important;
+  color: #ffffff !important;
+  margin: 0 !important;
+  padding-left: 2px !important;
+  line-height: 1.3 !important;
+}
+
+.bank-header-box p,
+aside > div:first-child p {
+  color: rgba(255, 255, 255, 0.85) !important;
+  font-size: 0.75rem !important;
+  margin: 4px 0 0 0 !important;
+  padding-left: 2px !important;
+}
+
+.bank-search-input {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--text) !important;
+}
+
+.bank-filter-btn {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--primary-text) !important;
+}
+
+.bank-filters-panel {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+}
+
+.godine-grid {
+  background-color: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+}
+
+.year-tag-btn {
+  color: #ffffff !important;
+}
+
+.bank-items-scroll {
+  background-color: var(--surface) !important;
+  padding: 16px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+}
+
+/* Kartice predmeta u banci */
+/* Kartice predmeta u banci - oslobođen drag preview */
+.bank-card-item,
+aside .fc-event {
+  position: relative !important;
+  display: block !important;
+  background-color: var(--surface-2) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 12px !important;
+  padding: 12px 14px 12px 24px !important;
+  box-sizing: border-box !important;
+  cursor: grab !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  touch-action: none !important; /* <--- OVO sprečava browser da blokira FullCalendar pointer */
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+  margin-bottom: 0 !important;
+}
+
+.bank-card-item:active {
+  cursor: grabbing !important;
+  opacity: 0.6 !important; /* Kartica u listi vizualno posvijetli dok je vučeš */
+}
+
+.bank-card-item ::ng-deep .fc-event-main,
+aside .fc-event ::ng-deep .fc-event-main {
   padding: 0 !important;
   margin: 0 !important;
   background: transparent !important;
 }
 
-.color-indicator-stripe {
+.bank-card-color-bar {
   position: absolute !important;
   left: 0 !important;
   top: 0 !important;
   bottom: 0 !important;
-  width: 7px !important;
+  width: 6px !important;
   border-top-left-radius: 12px !important;
   border-bottom-left-radius: 12px !important;
 }
 
-.subject-text-container {
+.bank-card-content {
   display: flex !important;
   flex-direction: column !important;
-  gap: 6px !important; /* Povećano sa 2px na 6px za čistiji prikaz */
+  gap: 3px !important;
   width: 100% !important;
-  padding-right: 4px !important;
 }
 
-.subject-item-title {
-  font-size: 0.85rem !important;
-  font-weight: 800 !important;
-  line-height: 1.4 !important; /* Povećan prored */
-  margin: 0 !important;
-  word-break: break-word !important; /* Sprečava da tekst izbije iz okvira */
-}
-.subject-item-prof {
-  font-size: 0.75rem !important;
-  font-weight: 600 !important;
-  color: #64748b !important;
-  margin: 0 !important;
-}
-
-/* Dark mode za kartice u banci */
-:host-context(body.dark-theme) .subject-drag-card,
-:host-context(.dark) .subject-drag-card {
-  background-color: #0d1a44 !important;
-  border-color: #1e293b !important;
-}
-
-:host-context(body.dark-theme) .subject-item-title,
-:host-context(.dark) .subject-item-title {
-  color: #ffffff !important;
-}
-
-:host-context(body.dark-theme) .subject-item-prof,
-:host-context(.dark) .subject-item-prof {
-  color: #94a3b8 !important;
-}
-
-/* ========================================================= */
-/* 2. SVETLA TEMA (ČISTA BELA OSNOVA)                        */
-/* ========================================================= */
-.main-wrapper {
-  background-color: #f4f7fb !important;
-  min-height: calc(100vh - 62px);
+.bank-card-title {
   font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.88rem !important;
+  font-weight: 800 !important;
+  color: var(--text) !important;
+  line-height: 1.35 !important;
+  margin: 0 !important;
+  word-break: break-word !important;
 }
 
-.calendar-container-card {
-  background-color: #ffffff !important;
-  border: 1px solid #e2e8f0 !important;
+.bank-card-prof {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.76rem !important;
+  font-weight: 600 !important;
+  color: var(--muted) !important;
+  margin: 0 !important;
+}
+
+.load-more-btn {
+  background-color: var(--tint-blue-bg) !important;
+  color: var(--primary-text) !important;
+}
+
+/* ========================================================= */
+/* 2. DROPDOWN POLJA (MAT-FORM-FIELD)                        */
+/* ========================================================= */
+::ng-deep .mat-mdc-form-field.unified-filter-field,
+::ng-deep .mat-mdc-form-field.custom-filter-select {
+  width: 100% !important;
+  --mdc-outlined-text-field-container-shape: 12px !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-text-field-wrapper,
+::ng-deep .custom-filter-select .mat-mdc-text-field-wrapper {
+  height: 42px !important;
+  min-height: 42px !important;
+  max-height: 42px !important;
+  padding: 0 12px !important;
+  border-radius: 12px !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .unified-filter-field .mdc-notched-outline,
+::ng-deep .custom-filter-select .mdc-notched-outline {
+  display: none !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-form-field-infix,
+::ng-deep .custom-filter-select .mat-mdc-form-field-infix {
+  padding: 0 !important;
+  min-height: unset !important;
+  height: 42px !important;
+  display: flex !important;
+  align-items: center !important;
+  border-top: none !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-trigger,
+::ng-deep .custom-filter-select .mat-mdc-select-trigger {
+  display: flex !important;
+  align-items: center !important;
+  height: 42px !important;
+  width: 100% !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-value-text,
+::ng-deep .unified-filter-field .mat-mdc-select-placeholder,
+::ng-deep .custom-filter-select .mat-mdc-select-value-text,
+::ng-deep .custom-filter-select .mat-mdc-select-placeholder {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-arrow-wrapper,
+::ng-deep .custom-filter-select .mat-mdc-select-arrow-wrapper {
+  transform: none !important;
+  display: flex !important;
+  align-items: center !important;
+}
+
+::ng-deep .unified-filter-field .mat-mdc-select-arrow svg,
+::ng-deep .custom-filter-select .mat-mdc-select-arrow svg {
+  fill: var(--muted) !important;
+}
+
+/* ========================================================= */
+/* 3. GORNJI HEDER (KONTROLNA TRAKA)                        */
+/* ========================================================= */
+.top-ctrl-header {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 16px !important;
 }
 
-/* Kapsula meseca u svetloj temi */
-:host ::ng-deep .fc .fc-toolbar-title {
-  font-family: 'Montserrat', sans-serif !important;
-  font-size: 1.05rem !important;
-  font-weight: 800 !important;
-  color: #1F63A0 !important;
-  background-color: #ffffff !important;
-  border: 1.5px solid #cbd5e1 !important;
-  padding: 6px 24px !important;
-  border-radius: 12px !important;
-  margin: 0 !important;
-  text-align: center !important;
+.top-title-text {
+  color: var(--text) !important;
 }
 
-/* Dugmad kalendara u svetloj temi */
-:host ::ng-deep .fc .fc-button-primary {
-  height: 38px !important;
+.unsaved-badge {
+  background-color: var(--tint-amber-bg) !important;
+  border: 1px solid var(--tint-amber-bd) !important;
+  color: var(--tint-amber-fg) !important;
+}
+
+.header-btn {
+  height: 40px !important;
   padding: 0 14px !important;
   font-family: 'Montserrat', sans-serif !important;
   font-size: 0.85rem !important;
   font-weight: 700 !important;
-  border-radius: 8px !important;
-  background-color: #ffffff !important;
-  border: 1px solid #cbd5e1 !important;
-  color: #1F63A0 !important;
+  border-radius: 10px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 7px !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--text-2) !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  cursor: pointer !important;
+  box-sizing: border-box !important;
+  transition: all 0.15s ease !important;
 }
 
-:host ::ng-deep .fc .fc-button-primary:hover {
-  background-color: #f1f5f9 !important;
-  color: #164f82 !important;
+.header-btn svg {
+  color: var(--primary-text) !important;
+  width: 16px !important;
+  height: 16px !important;
 }
 
-:host ::ng-deep .fc .fc-button-primary.fc-button-active,
-:host ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
-  background-color: #1F63A0 !important;
-  border-color: #1F63A0 !important;
+.header-btn:hover {
+  background-color: var(--surface-3) !important;
+  color: var(--text) !important;
+}
+
+.header-btn.active-mode-btn {
+  background-color: var(--primary) !important;
+  border-color: var(--primary-dark) !important;
+  color: #ffffff !important;
+}
+
+.header-btn.active-mode-btn svg {
+  color: #ffffff !important;
+}
+
+.btn-danger-action {
+  background-color: var(--tint-rose-bg) !important;
+  border-color: var(--tint-rose-bd) !important;
+  color: var(--tint-rose-fg) !important;
+}
+
+.btn-danger-action svg {
+  color: var(--tint-rose-fg) !important;
+}
+
+.btn-danger-action:hover {
+  background-color: var(--tint-rose-bg) !important;
+}
+
+.btn-publish {
+  background-color: #27AE60 !important;
+  border: 1px solid #219653 !important;
   color: #ffffff !important;
   font-weight: 800 !important;
 }
 
-:host ::ng-deep .fc-theme-standard th,
-:host ::ng-deep .fc-theme-standard td,
-:host ::ng-deep .fc .fc-scrollgrid {
-  border-color: #e2e8f0 !important;
-}
-
-:host ::ng-deep .fc-daygrid-day {
-  background-color: #ffffff !important;
-}
-
-:host ::ng-deep .fc .fc-day-other {
-  background-color: #f8fafc !important;
-}
-
-:host ::ng-deep .fc .fc-daygrid-day-number {
-  color: #475569 !important;
-  font-weight: 800 !important;
-  text-decoration: none !important;
-  padding: 4px 6px !important;
-}
-
-/* Danas u svetloj temi: blag azurni ton */
-:host ::ng-deep .fc .fc-day-today {
-  background-color: rgba(31, 99, 160, 0.06) !important;
-}
-
-/* ========================================================= */
-/* 3. TAMNA TEMA (AKTIVIRA SE ISKLJUČIVO POD .dark ILI .dark-theme) */
-/* ========================================================= */
-:host-context(body.dark-theme) .main-wrapper,
-:host-context(.dark) .main-wrapper {
-  background-color: #080e1e !important;
-}
-
-:host-context(body.dark-theme) .calendar-container-card,
-:host-context(.dark) .calendar-container-card {
-  background-color: #0b1329 !important;
-  border-color: #1e293b !important;
-}
-
-/* Kapsula meseca u tamnoj temi */
-:host-context(body.dark-theme) ::ng-deep .fc .fc-toolbar-title,
-:host-context(.dark) ::ng-deep .fc .fc-toolbar-title {
-  color: #38bdf8 !important;
-  background-color: #0d1a44 !important;
-  border-color: #1F63A0 !important;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4) !important;
-}
-
-/* Dugmad u tamnoj temi */
-:host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary,
-:host-context(.dark) ::ng-deep .fc .fc-button-primary {
-  background-color: #0d1a44 !important;
-  border-color: #1F63A0 !important;
+.btn-publish svg {
   color: #ffffff !important;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
 }
 
-:host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary:hover,
-:host-context(.dark) ::ng-deep .fc .fc-button-primary:hover {
-  background-color: #162a6b !important;
-  border-color: #38bdf8 !important;
+.btn-publish:hover {
+  background-color: #219653 !important;
 }
 
-:host-context(body.dark-theme) ::ng-deep .fc .fc-button-primary.fc-button-active,
-:host-context(.dark) ::ng-deep .fc .fc-button-primary.fc-button-active {
-  background-color: #1F63A0 !important;
-  border-color: #38bdf8 !important;
+.btn-save-draft {
+  background-color: var(--accent) !important;
+  border: 1px solid var(--accent-dark) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
 }
 
-:host-context(body.dark-theme) ::ng-deep .fc-theme-standard th,
-:host-context(body.dark-theme) ::ng-deep .fc-theme-standard td,
-:host-context(body.dark-theme) ::ng-deep .fc .fc-scrollgrid,
-:host-context(.dark) ::ng-deep .fc-theme-standard th,
-:host-context(.dark) ::ng-deep .fc-theme-standard td,
-:host-context(.dark) ::ng-deep .fc .fc-scrollgrid {
-  border-color: #1e293b !important;
+.btn-save-draft:hover {
+  background-color: var(--accent-hover) !important;
 }
 
-:host-context(body.dark-theme) ::ng-deep .fc-daygrid-day,
-:host-context(.dark) ::ng-deep .fc-daygrid-day {
-  background-color: #0b1329 !important;
+/* Padajući meniji */
+.statistika-dropdown-card,
+.filteri-dropdown-card {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
 }
 
-:host-context(body.dark-theme) ::ng-deep .fc .fc-day-other,
-:host-context(.dark) ::ng-deep .fc .fc-day-other {
-  background-color: #070c1b !important;
-}
+.stat-blue { background-color: var(--tint-blue-bg) !important; border-color: var(--tint-blue-bd) !important; color: var(--primary-text) !important; }
+.stat-green { background-color: var(--tint-green-bg) !important; border-color: var(--tint-green-bd) !important; color: var(--tint-green-fg) !important; }
+.stat-slate { background-color: var(--surface-2) !important; border-color: var(--border) !important; color: var(--text-2) !important; }
+.stat-amber { background-color: var(--tint-amber-bg) !important; border-color: var(--tint-amber-bd) !important; color: var(--tint-amber-fg) !important; }
 
-:host-context(body.dark-theme) ::ng-deep .fc .fc-daygrid-day-number,
-:host-context(.dark) ::ng-deep .fc .fc-daygrid-day-number {
-  color: #94a3b8 !important;
-}
+.filter-header { border-color: var(--border) !important; }
+.filter-title { color: var(--text) !important; }
+.filter-close-btn { color: var(--faint) !important; }
+.filter-checks { border-color: var(--border) !important; color: var(--text-2) !important; }
+.filter-label { color: var(--muted) !important; }
 
-/* Danas u tamnoj temi */
-:host-context(body.dark-theme) ::ng-deep .fc .fc-day-today,
-:host-context(.dark) ::ng-deep .fc .fc-day-today {
-  background-color: #101c40 !important;
-}
-
-:host-context(body.dark-theme) ::ng-deep .fc .fc-day-today .fc-daygrid-day-number,
-:host-context(.dark) ::ng-deep .fc .fc-day-today .fc-daygrid-day-number {
-  color: #38bdf8 !important;
-}
+/* Modali */
+.dialog-card-box { background-color: var(--surface) !important; border: 1px solid var(--border) !important; }
+.dialog-text { color: var(--text-2) !important; }
+.dialog-hint { background-color: var(--surface-2) !important; border-color: var(--border) !important; color: var(--muted) !important; }
+.dialog-label { color: var(--muted) !important; }
+.dialog-input { background-color: var(--surface-2) !important; border: 1px solid var(--border-strong) !important; color: var(--text) !important; }
+.dialog-cancel-btn { background-color: var(--surface-3) !important; border: 1px solid var(--border-strong) !important; color: var(--text-2) !important; }
+.dialog-footer { background-color: var(--surface-2) !important; border-color: var(--border) !important; }
 
 /* ========================================================= */
-/* 4. GEOMETRIJA KALENDARA I DUGMADI                         */
+/* 4. KALENDAR & TOOLBAR (SVETLA TEMA)                       */
 /* ========================================================= */
+.main-wrapper {
+  background-color: var(--bg-main) !important;
+  min-height: calc(100vh - 62px);
+}
+
+.calendar-container-card {
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+}
+
 :host ::ng-deep .fc {
-  font-family: 'Montserrat', sans-serif !important;
-  background-color: transparent !important;
-}
-
-:host ::ng-deep .fc .fc-icon {
-  font-family: 'fcicons' !important;
-}
-
-:host ::ng-deep .fc,
-:host ::ng-deep .fc-view-harness,
-:host ::ng-deep .fc-theme-standard,
-:host ::ng-deep .fc-scrollgrid {
   background-color: transparent !important;
 }
 
 :host ::ng-deep .fc .fc-header-toolbar {
   background-color: transparent !important;
-  margin-bottom: 12px !important;
+  margin-bottom: 14px !important;
   padding: 4px 6px !important;
   display: flex !important;
   align-items: center !important;
@@ -282,6 +392,45 @@
   align-items: center !important;
 }
 
+:host ::ng-deep .fc .fc-toolbar-title {
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+  color: var(--primary-text) !important;
+  background-color: var(--surface) !important;
+  border: 1.5px solid var(--border-strong) !important;
+  padding: 6px 24px !important;
+  border-radius: 12px !important;
+  margin: 0 !important;
+  text-align: center !important;
+}
+
+:host ::ng-deep .fc .fc-button-primary {
+  height: 38px !important;
+  padding: 0 14px !important;
+  font-family: 'Montserrat', sans-serif !important;
+  font-size: 0.85rem !important;
+  font-weight: 700 !important;
+  border-radius: 8px !important;
+  background-color: var(--surface) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--primary-text) !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+:host ::ng-deep .fc .fc-button-primary:hover {
+  background-color: var(--surface-3) !important;
+  color: var(--primary-text) !important;
+}
+
+:host ::ng-deep .fc .fc-button-primary.fc-button-active,
+:host ::ng-deep .fc .fc-button-primary:not(:disabled).fc-button-active {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+}
+
 :host ::ng-deep .fc .fc-prev-button,
 :host ::ng-deep .fc .fc-next-button {
   width: 38px !important;
@@ -293,8 +442,8 @@
 }
 
 :host ::ng-deep .fc .fc-col-header-cell {
-  background-color: #1F63A0 !important;
-  border-color: #164f82 !important;
+  background-color: var(--header-bg) !important;
+  border-color: var(--header-border) !important;
   padding: 7px 0 !important;
 }
 
@@ -307,13 +456,34 @@
   text-decoration: none !important;
 }
 
-:host-context(body.dark-theme) ::ng-deep .fc .fc-col-header-cell,
-:host-context(.dark) ::ng-deep .fc .fc-col-header-cell {
-  background-color: #164f82 !important;
-  border-color: #1F63A0 !important;
+:host ::ng-deep .fc-theme-standard th,
+:host ::ng-deep .fc-theme-standard td,
+:host ::ng-deep .fc .fc-scrollgrid {
+  border-color: var(--border) !important;
 }
 
-/* Kartice ispita unutar kalendara */
+:host ::ng-deep .fc-daygrid-day {
+  background-color: var(--surface) !important;
+}
+
+:host ::ng-deep .fc .fc-day-other {
+  background-color: var(--surface-2) !important;
+}
+
+:host ::ng-deep .fc .fc-daygrid-day-number {
+  color: var(--text-2) !important;
+  font-weight: 800 !important;
+  text-decoration: none !important;
+  padding: 4px 6px !important;
+}
+
+:host ::ng-deep .fc .fc-day-today {
+  background-color: rgba(31, 99, 160, 0.06) !important;
+}
+
+/* ========================================================= */
+/* 6. KARTICE TERMINA I INTERAKCIJA                          */
+/* ========================================================= */
 :host ::ng-deep .fc-daygrid-event-harness {
   margin-bottom: 3px !important;
 }
@@ -359,4 +529,271 @@
 
 :host ::ng-deep .day-select-circle:hover {
   transform: scale(1.1) !important;
+}
+/* ========================================================= */
+/* 6. KARTICE TERMINA I ČISTI KAJRON NA HOVER               */
+/* ========================================================= */
+:host ::ng-deep .fc-daygrid-event-harness {
+  margin-bottom: 3px !important;
+}
+
+:host ::ng-deep .fc-event,
+:host ::ng-deep .fc-event-main {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  overflow: visible !important;
+}
+
+:host ::ng-deep .clean-cal-card {
+  height: 32px !important;
+  border-radius: 6px !important;
+  display: flex !important;
+  align-items: center !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+  cursor: pointer !important;
+  position: relative !important;
+}
+
+:host ::ng-deep .cal-card-time {
+  flex-shrink: 0 !important;
+  font-size: 11.5px !important;
+  font-weight: 800 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  padding: 0 7px !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
+  z-index: 5 !important;
+}
+
+:host ::ng-deep .cal-ticker-wrap {
+  flex: 1 1 auto !important;
+  overflow: hidden !important;
+  white-space: nowrap !important;
+  position: relative !important;
+  padding: 0 6px !important;
+  display: block !important;
+}
+
+:host ::ng-deep .cal-ticker-text {
+  display: inline-block !important;
+  font-size: 12.5px !important;
+  font-weight: 800 !important;
+  font-family: 'Montserrat', sans-serif !important;
+  line-height: 32px !important;
+  white-space: nowrap !important;
+  will-change: transform !important;
+  transform: translateX(0);
+}
+
+/* Kajron animacija: aktivira se čim kursor pređe preko kartice */
+:host ::ng-deep .fc-event:hover .cal-ticker-text,
+:host ::ng-deep .clean-cal-card:hover .cal-ticker-text {
+  animation: kajronScroll 3.8s linear infinite alternate !important;
+}
+
+@keyframes kajronScroll {
+  0% {
+    transform: translateX(0%);
+  }
+  20% {
+    transform: translateX(0%); /* Zadržava početak radi lakšeg čitanja */
+  }
+  100% {
+    transform: translateX(-55%); /* Pomiče dugačak naziv ulijevo */
+  }
+}
+
+:host ::ng-deep .fc-daygrid-day-top,
+:host ::ng-deep .fc-daygrid-day-top a {
+  pointer-events: auto !important;
+  cursor: pointer !important;
+}
+
+:host ::ng-deep .day-select-circle {
+  transition: all 0.15s ease !important;
+}
+
+:host ::ng-deep .day-select-circle:hover {
+  transform: scale(1.1) !important;
+}
+/* ========================================================= */
+/* POPRAVKA: DRAG & DROP ANIMACIJA I PREVIEW                 */
+/* ========================================================= */
+
+/* 1. Omogućava elementu da "ispliva" iz levog panela dok se vuče */
+aside.left-bank-aside {
+  overflow: visible !important;
+}
+
+/* 2. FullCalendar klon / preview element koji prati kursor */
+:host ::ng-deep body > .fc-event-dragging,
+:host ::ng-deep .fc-event-dragging,
+:host ::ng-deep .fc-event-mirror {
+  opacity: 0.92 !important;
+  z-index: 999999 !important;
+  pointer-events: none !important;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28) !important;
+  transform: scale(1.04) rotate(1.5deg) !important;
+  transition: transform 0.1s ease !important;
+}
+
+/* 3. Vraćanje vidljive pozadine klonu u slučaju da je nasleđen transparent */
+:host ::ng-deep .fc-event-dragging .bank-card-item,
+:host ::ng-deep .fc-event-mirror .bank-card-item {
+  background-color: #ffffff !important;
+  border: 1.5px solid #1F63A0 !important;
+}
+
+/* 4. Senka i stil na ćeliji kalendara preko koje se trenutno prelazi */
+:host ::ng-deep .fc-daygrid-day.fc-day-over {
+  background-color: rgba(31, 99, 160, 0.12) !important;
+  outline: 2px dashed #1F63A0 !important;
+  outline-offset: -2px !important;
+}
+/* FullCalendar klon koji se kreće po ekranu dok držiš klik */
+.fc-event-dragging,
+.fc-event-mirror,
+div[class*="fc-event-dragging"] {
+  display: block !important;
+  opacity: 0.9 !important;
+  z-index: 99999999 !important;
+  pointer-events: none !important;
+  position: fixed !important;
+  background: #ffffff !important;
+  border: 2px solid #1F63A0 !important;
+  box-shadow: 0 20px 30px rgba(0, 0, 0, 0.25) !important;
+}
+/* Booking.com stil opsega datuma */
+.fc-day-range-edge {
+  background-color: #1F63A0 !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  transition: all 0.15s ease-in-out;
+}
+.fc-day-range-edge .fc-daygrid-day-number {
+  color: #ffffff !important;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fc-day-in-range {
+  background-color: rgba(31, 99, 160, 0.16) !important;
+  transition: all 0.15s ease-in-out;
+}
+.fc-day-in-range:hover {
+  background-color: rgba(31, 99, 160, 0.26) !important;
+}
+.year-tag-btn {
+  font-family: 'Montserrat', sans-serif;
+}
+
+.year-tag-btn.aktivna-godina {
+  background-color: #0b3558 !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  border: 1.5px solid #38bdf8 !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.4), 0 0 10px rgba(56, 189, 248, 0.35) !important;
+  transform: scale(0.97);
+}
+
+/* ========================================================= */
+/* 7. KARTICE TERMINA I BROJEVI DANA (osnovni izgled)        */
+/*    Dizajni u theme.css ih menjaju preko promenljive --ev   */
+/* ========================================================= */
+:host ::ng-deep .cal-day-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 6px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+:host ::ng-deep .cal-day-num {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-2);
+  pointer-events: none;
+  padding: 2px;
+}
+:host ::ng-deep .cal-day-num.is-today {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  color: #ffffff !important;
+  font-size: 12px;
+  line-height: 1;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(31, 99, 160, 0.35);
+}
+:host ::ng-deep .day-actions-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  pointer-events: auto;
+}
+:host ::ng-deep .day-select-circle {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--border-strong);
+  background-color: var(--surface);
+  cursor: pointer;
+  pointer-events: auto !important;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+:host ::ng-deep .day-select-circle.is-selected {
+  background-color: var(--primary);
+  border-color: var(--primary-dark);
+}
+:host ::ng-deep .day-select-circle.is-copy {
+  border: 2px dashed var(--primary-text);
+  background-color: var(--primary-soft);
+}
+:host ::ng-deep .fc-daygrid-day.has-conflict {
+  background-color: var(--tint-amber-bg) !important;
+}
+
+:host ::ng-deep .clean-cal-card.is-ispit {
+  background-color: var(--ev) !important;
+  border: none !important;
+}
+:host ::ng-deep .clean-cal-card.is-ispit .cal-card-time {
+  background-color: rgba(0, 0, 0, 0.25) !important;
+  color: #ffffff !important;
+}
+:host ::ng-deep .clean-cal-card.is-ispit .cal-ticker-text {
+  color: #ffffff !important;
+}
+:host ::ng-deep .clean-cal-card.is-kolokvijum {
+  background-color: var(--surface) !important;
+  border: 1.5px solid var(--ev) !important;
+}
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-card-time {
+  background-color: var(--surface-3) !important;
+  color: var(--ev) !important;
+}
+:host ::ng-deep .clean-cal-card.is-kolokvijum .cal-ticker-text {
+  color: var(--text) !important;
 }

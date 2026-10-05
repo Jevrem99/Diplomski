@@ -5,11 +5,13 @@ import { HttpClient } from '@angular/common/http';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { ThemeService } from '../../core/services/theme';
 import { ToastService } from '../../core/services/toast.service';
+import { environment } from '../../../environments/environment';
+import { DesignPickerComponent } from '../../shared/components/design-picker/design-picker.component';
 
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [SidebarMenu, CommonModule, FormsModule],
+  imports: [SidebarMenu, CommonModule, FormsModule, DesignPickerComponent],
   templateUrl: './settings.html',
   styleUrl: './settings.css',
 })
@@ -17,7 +19,7 @@ export class Settings implements OnInit {
   themeService = inject(ThemeService);
   private http = inject(HttpClient);
   private toast = inject(ToastService);
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
 
   // Podaci za prikaz
   userInfo = {

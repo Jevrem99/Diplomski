@@ -11,7 +11,9 @@ router.post('/sync-imi', protect, restrictToAdmin, adminController.runImiSync);
 // Pregled dnevnika rada
 router.get('/logs', protect, restrictToAdmin, async (req, res) => {
     try {
-        const logs = await auditService.getRecentLogs(100);
+        const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 100, 1), 500);
+        const skip = Math.max(parseInt(req.query.skip, 10) || 0, 0);
+        const logs = await auditService.getRecentLogs(limit, skip);
         res.status(200).json(logs);
     } catch (err) {
         console.error('GREŠKA U /admin/logs:', err);

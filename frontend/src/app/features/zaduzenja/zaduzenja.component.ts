@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { forkJoin } from 'rxjs';
-import * as XLSX from 'xlsx-js-style';
+import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-zaduzenja',
   standalone: true,
@@ -100,7 +100,7 @@ import * as XLSX from 'xlsx-js-style';
 export class ZaduzenjaComponent implements OnInit {
   private http = inject(HttpClient);
   private cdr = inject(ChangeDetectorRef); // OVO REŠAVA PROBLEM SA UČITAVANJEM!
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
 
   sviSaradnici: any[] = [];
   sviIspiti: any[] = [];
@@ -213,73 +213,27 @@ export class ZaduzenjaComponent implements OnInit {
       return;
     }
 
-    // 1. Red (Zaglavlje)
-    const header = [
-      'Predmet - kolokvijum', 
-      'Datum', 
-      'Broj sati', 
-      'Potreban broj dežurnih', 
-      'Broj dežurnih', 
-      'Broj prijavljenih studenata'
-    ];
-    
-    // Formatiramo imena (L. Krstić)
-    const imenaSaradnika = this.zaduzenjaSati.map(s => `${s.ime.charAt(0)}. ${s.prezime}`);
-    header.push(...imenaSaradnika);
-    header.push('Unnamed: 19'); // Po ugledu na tvoj Excel fajl za status
+    // Excel generiše backend (formule, formatiranje); šaljemo samo trenutno filtrirane ispite
+    const ids = this.filtriraniIspiti.map(i => i.id).join(',');
 
-    // 2. Red (Ukupni sati)
-    const totalsRow = [null, null, null, null, null, null];
-    const ukupniSati = this.zaduzenjaSati.map(s => s.ukupnoSati);
-    totalsRow.push(...ukupniSati);
-    totalsRow.push(null);
-
-    const wsData: any[][] = [header, totalsRow];
-
-    // 3. Ostali redovi (Ispiti sortirani po datumu)
-    const sortiraniIspiti = [...this.filtriraniIspiti].sort((a, b) => new Date(a.datum).getTime() - new Date(b.datum).getTime());
-    
-    sortiraniIspiti.forEach(ispit => {
-      const naziv = ispit.predmet?.naziv || 'Nepoznato';
-      // Format datuma 15.4.2026.
-      const datum = ispit.datum ? ispit.datum.split('-').reverse().join('.') + '.' : '';
-      const sati = this.razlikaUSatima(ispit.vreme, ispit.vreme_kraja);
-      const dezurstva = ispit.dezurstva || [];
-      const brojDezurnih = dezurstva.length;
-      const potrebanBroj = brojDezurnih || 2; 
-      
-      const red = [
-        naziv, datum, sati, potrebanBroj, brojDezurnih, null
-      ];
-
-      // Gde god se poklapa ID, upisujemo '1.0'
-      this.zaduzenjaSati.forEach(s => {
-        const dežura = dezurstva.some((d: any) => (typeof d.saradnik === 'object' ? d.saradnik.id : d.saradnik_id) === s.id);
-        red.push(dežura ? 1.0 : null);
-      });
-
-      red.push('OK');
-      wsData.push(red);
+    this.http.get(`${this.API_URL}/dezurstva/export-excel`, {
+      params: { ids },
+      responseType: 'blob'
+    }).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = this.filterSemestar !== 'sve'
+          ? `Raspored dezurstava - ${this.filterSemestar}.xlsx`
+          : 'Raspored dezurstava.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (err) => {
+        console.error('Greška pri izvozu:', err);
+        alert('Greška pri generisanju Excel fajla.');
+      }
     });
-
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-
-    // Formatiranje širine kolona da izgleda lepo i uredno
-    const wscols = [
-      { wch: 35 }, // Predmet
-      { wch: 12 }, // Datum
-      { wch: 10 }, // Broj sati
-      { wch: 22 }, // Potreban broj
-      { wch: 15 }, // Broj dežurnih
-      { wch: 25 }, // Prijavljeni studenti
-      ...imenaSaradnika.map(() => ({ wch: 10 })), // Imena saradnika
-      { wch: 8 }   // Unnamed (OK)
-    ];
-    ws['!cols'] = wscols;
-
-    const wb = XLSX.utils.book_new();
-    const sheetName = this.filterSemestar !== 'sve' ? `Raspored - ${this.filterSemestar}` : 'Raspored dezurstava';
-    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-    XLSX.writeFile(wb, `${sheetName}.xlsx`);
   }
 }

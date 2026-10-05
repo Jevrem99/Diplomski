@@ -11,11 +11,7 @@ export const roleGuard = (allowedRoles: string[]): CanActivateFn => {
     }
 
     // Ako uloga nije dozvoljena, preusmeravamo ga na njegovu početnu stranicu
-    if (uloga === 'asistent') {
-      router.navigate(['/moja-dezurstva']);
-    } else {
-      router.navigate(['/main']);
-    }
+    router.navigate([uloga === 'admin' ? '/main' : '/moja-dezurstva']);
     return false;
   };
 };

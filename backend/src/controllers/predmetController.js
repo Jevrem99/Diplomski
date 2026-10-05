@@ -1,3 +1,5 @@
+const { logAction } = require('../services/auditService');
+const { validirajPredmet, odbaciAkoImaGresaka, mapirajPrismaGresku } = require('../utils/validators');
 const predmetModel = require('../models/predmetModel');
 
 const getAllPredmets = async (req, res) => {
@@ -26,13 +28,16 @@ const getPredmetById = async (req, res) => {
 
 const createPredmet = async (req, res) => {
     const { sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids } = req.body;
+    if (odbaciAkoImaGresaka(res, validirajPredmet(req.body))) return;
     try {
         const newPredmet = await predmetModel.createPredmet(
             sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids
         );
+        await logAction(req.user?.username || 'Korisnik', 'CREATE', 'Predmet', `Dodat predmet ${sifra} ${naziv}`);
         res.status(201).json(newPredmet);
     } catch (err) {
         console.error('Error creating predmet:', err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -40,14 +45,17 @@ const createPredmet = async (req, res) => {
 const updatePredmet = async (req, res) => {
     const { id } = req.params;
     const { sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids } = req.body;
+    if (odbaciAkoImaGresaka(res, validirajPredmet(req.body))) return;
     try {
         const updatedPredmet = await predmetModel.updatePredmet(
             id, sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids
         );
         if (!updatedPredmet) return res.status(404).json({ error: 'Predmet not found' });
+        await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Predmet', `Izmenjen predmet ${sifra} ${naziv}`);
         res.status(200).json(updatedPredmet);
     } catch (err) {
         console.error(`Error updating predmet ${id}:`, err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -59,9 +67,11 @@ const deletePredmet = async (req, res) => {
         if (!deletedPredmet) {
             return res.status(404).json({ error: 'Predmet not found' });
         }
+        await logAction(req.user?.username || 'Korisnik', 'DELETE', 'Predmet', `Obrisan predmet sa ID-jem ${id}`);
         res.status(200).json(deletedPredmet);
     } catch (err) {
         console.error(`Error deleting predmet with id ${id}:`, err);
+        if (mapirajPrismaGresku(err, res)) return;
         res.status(500).json({ error: 'Internal server error' });
     }
 }

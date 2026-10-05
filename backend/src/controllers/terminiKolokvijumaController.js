@@ -1,3 +1,4 @@
+const { logAction } = require('../services/auditService');
 const terminiModel = require('../models/terminiKolokvijumaModel');
 const ExcelJS = require('exceljs');
 
@@ -13,15 +14,46 @@ const getMojiTermini = async (req, res) => {
   }
 };
 
+// Svi predmeti sa terminima (admin pregled)
+const getSviTermini = async (req, res) => {
+  try {
+    res.json(await terminiModel.getAllTerminiKolokvijuma());
+  } catch (error) {
+    console.error('Greška u getSviTermini:', error);
+    res.status(500).json({ message: 'Greška pri dohvatanju predmeta' });
+  }
+};
+
+const DATUM_REGEX = /^\d{2}\.\d{2}\.\d{4}\.?$/; // 29.04.2026 ili 29.04.2026.
+
 // 2. Sačuvaj/Ažuriraj termine za predmet
 const saveTermini = async (req, res) => {
   try {
     const { predmet_id, ...data } = req.body;
-    if (!predmet_id) {
+    if (!predmet_id || !Number.isInteger(Number(predmet_id))) {
       return res.status(400).json({ message: 'predmet_id je obavezan' });
     }
 
+    // Menjati se mogu samo termini sopstvenih predmeta (admin sme sve)
+    if (req.user.uloga !== 'admin' && !(await terminiModel.korisnikImaPredmet(req.user.email, predmet_id))) {
+      return res.status(403).json({ message: 'Ovaj predmet nije vaš.' });
+    }
+
+    for (const k of ['k1', 'k2', 'k3']) {
+      const datum = data[`${k}_datum`];
+      if (datum && !DATUM_REGEX.test(String(datum).trim())) {
+        return res.status(400).json({ message: `Datum ${k.toUpperCase()} mora biti u formatu DD.MM.GGGG.` });
+      }
+    }
+    for (const polje of ['k1_trajanje', 'k2_trajanje', 'k3_trajanje', 'popravni_trajanje']) {
+      const v = data[polje];
+      if (v !== null && v !== undefined && v !== '' && (!Number.isInteger(Number(v)) || Number(v) < 15 || Number(v) > 480)) {
+        return res.status(400).json({ message: 'Trajanje kolokvijuma mora biti između 15 i 480 minuta.' });
+      }
+    }
+
     const updated = await terminiModel.upsertTerminiKolokvijuma(predmet_id, data);
+    await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Termini kolokvijuma', `Predmet ID ${predmet_id}`);
     res.json({ message: 'Uspešno sačuvano', data: updated });
   } catch (error) {
     console.error('Greška u saveTermini:', error);
@@ -95,6 +127,7 @@ const exportExcel = async (req, res) => {
 
 module.exports = {
   getMojiTermini,
+  getSviTermini,
   saveTermini,
   exportExcel
 };

@@ -10,6 +10,8 @@ import { HttpClient } from '@angular/common/http';
 import { MatIcon } from "@angular/material/icon";
 
 import { forkJoin } from 'rxjs';
+import { environment } from '../../../../environments/environment';
+import { DataCacheService } from '../../../core/services/data-cache.service';
 
 @Component({
   selector: 'app-event-modal',
@@ -24,10 +26,12 @@ import { forkJoin } from 'rxjs';
 })
 export class EventModal implements OnInit {
   private http = inject(HttpClient);
+  private cache = inject(DataCacheService);
   private cdr = inject(ChangeDetectorRef);
   formData = {
     startTime: '',
     endTime: '',
+    tip_kolokvijuma: 'I',
     room: '',
     is_ispit: true,
     dezurni_ids: [] as number[]
@@ -43,13 +47,13 @@ export class EventModal implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean } 
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean,tip_kolokvijuma?: string } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
     if (this.data.room) this.formData.room = this.data.room;
     if (this.data.is_ispit !== undefined) this.formData.is_ispit = this.data.is_ispit;
-    
+    if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma; // <--- DODANO OVDJ
     if (this.data.dezurni) {
       this.izabraniSaradnici = [...this.data.dezurni];
       this.formData.dezurni_ids = this.izabraniSaradnici.map(s => s.id);
@@ -73,7 +77,7 @@ export class EventModal implements OnInit {
   }
 
   fetchUcionice(): void {
-    this.http.get<any[]>('http://localhost:5000/ucionice').subscribe({
+    this.cache.get<any[]>('/ucionice', 300_000).subscribe({
       next: (res) => {
         console.log('Učionice stigle sa beka:', res);
         this.sveUcionice = res;
@@ -85,8 +89,8 @@ export class EventModal implements OnInit {
 
   fetchDostupneSaradnikeIOdsustva(): void {
     forkJoin({
-      saradnici: this.http.get<any[]>('http://localhost:5000/profesors'),
-      obaveze: this.http.get<any[]>('http://localhost:5000/obaveze')
+      saradnici: this.cache.get<any[]>('/profesors'),
+      obaveze: this.cache.get<any[]>('/obaveze')
     }).subscribe({
       next: ({ saradnici, obaveze }) => {
         const datumModala = new Date(this.data.date).setHours(0, 0, 0, 0);
@@ -170,7 +174,12 @@ export class EventModal implements OnInit {
     if (this.formData.startTime && this.formData.endTime && this.formData.room) {
       this.showError = false;
       this.odsustvoErrorPoruka = '';
-      this.dialogRef.close({ ...this.data, ...this.formData, izabraniSaradnici: this.izabraniSaradnici });
+      this.dialogRef.close({ 
+        ...this.data, 
+        ...this.formData, 
+        tip_kolokvijuma: this.formData.tip_kolokvijuma || 'I', // <--- EKSPLICITNO PROSLEDITI
+        izabraniSaradnici: this.izabraniSaradnici 
+      });
     } else {
       this.showError = true;
     }

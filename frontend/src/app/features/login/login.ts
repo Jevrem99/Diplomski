@@ -9,8 +9,8 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth';
 import { ToastService } from '../../core/services/toast.service';
-import { forkJoin, timer } from 'rxjs';
 import { SpinnerComponent } from '../../shared/components/spinner/spinner.component';
+import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -32,7 +32,7 @@ export class Login implements OnInit {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
   private toast = inject(ToastService);
-  private API_URL = 'http://localhost:5000';
+  private API_URL = environment.apiUrl;
   loading: boolean = false;
   loginData = { username: '', password: '' };
   hide = true;
@@ -53,14 +53,17 @@ export class Login implements OnInit {
     });
   }
 
+  private pocetnaStranica(uloga: string): string {
+    if (uloga === 'admin') return '/main';
+    if (uloga === 'profesor') return '/termini-kolokvijuma';
+    return '/moja-dezurstva';
+  }
+
   onLogin() {
     this.loading = true;
 
-    forkJoin({
-      response: this.authService.login(this.loginData),
-      delay: timer(600)
-    }).subscribe({
-      next: ({ response }) => {
+    this.authService.login(this.loginData).subscribe({
+      next: (response: any) => {
         this.loading = false;
         const payload = JSON.parse(atob(response.token.split('.')[1]));
         const uloga = payload.uloga || 'asistent';
@@ -70,11 +73,7 @@ export class Login implements OnInit {
         localStorage.setItem('email', payload.email || '');
         localStorage.setItem('uloga', uloga);
         
-        if (uloga === 'asistent') {
-          this.router.navigate(['/moja-dezurstva']);
-        } else {
-          this.router.navigate(['/main']);
-        }
+        this.router.navigate([this.pocetnaStranica(uloga)]);
       },
       error: () => {
         this.loading = false;
@@ -91,11 +90,8 @@ export class Login implements OnInit {
 
     this.loading = true;
 
-    forkJoin({
-      res: this.http.post<any>(`${this.API_URL}/auth/forgot-password`, { email: this.forgotEmail }),
-      delay: timer(600)
-    }).subscribe({
-      next: ({ res }) => {
+    this.http.post<any>(`${this.API_URL}/auth/forgot-password`, { email: this.forgotEmail }).subscribe({
+      next: (res) => {
         this.loading = false;
         this.toast.show(res.message || 'Zahtev je poslat.', 'success');
         this.prikazModala = 'login';
@@ -138,11 +134,7 @@ export class Login implements OnInit {
           this.router.navigate([], { queryParams: {} });
 
           // Redirekcija na odgovarajući početni ekran
-          if (uloga === 'asistent') {
-            this.router.navigate(['/moja-dezurstva']);
-          } else {
-            this.router.navigate(['/main']);
-          }
+          this.router.navigate([this.pocetnaStranica(uloga)]);
         } else {
           this.prikazModala = 'login';
           this.router.navigate(['/login']);

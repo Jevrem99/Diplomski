@@ -10,8 +10,8 @@
         <span class="user-subtitle">Korisnik: <strong>{{username}}</strong> ({{uloga}})</span>
       </div>
 
-      <!-- SAMO ZA ADMINA I PROFESORA -->
-      @if (uloga === 'admin' || uloga === 'profesor') {
+      <!-- SAMO ZA ADMINA -->
+      @if (uloga === 'admin') {
         <div class="drawer_button" (click)="navigateToMain()">
           <img src="assets/calendar_icon.png" alt="Raspored" class="drawer_icon">
           <span>Glavni Raspored</span>
@@ -24,14 +24,22 @@
           <img src="assets/database_management_icon.png" alt="Baza" class="drawer_icon">
           <span>Upravljaj bazom</span>
         </div>
+        <div class="drawer_button" (click)="navigateToZahteviZamena()">
+          <img src="assets/calendar_icon.png" alt="Zamene" class="drawer_icon">
+          <span>Zahtevi za zamenu</span>
+        </div>
         <div class="drawer_button" (click)="navigateToZaduzenja()">
           <img src="assets/settings_icon.png" alt="Zaduženja" class="drawer_icon">
           <span>Pregled Zaduženja</span>
         </div>
       }
 
-      <!-- ZA ASISTENTE I SARADNIKE -->
-      @if (uloga === 'asistent' || uloga === 'saradnik') {
+      <!-- ZA PROFESORE I ASISTENTE -->
+      @if (uloga !== 'admin') {
+        <div class="drawer_button" (click)="navigateToTerminiKolokvijuma()">
+          <img src="assets/calendar_icon.png" alt="Termini" class="drawer_icon">
+          <span>Termini kolokvijuma</span>
+        </div>
         <div class="drawer_button" (click)="navigateToMojaDezurstva()">
           <img src="assets/calendar_icon.png" alt="Raspored" class="drawer_icon">
           <span>Moj Raspored</span>
@@ -41,6 +49,11 @@
           <span>Prijavi Odsustvo</span>
         </div>
       }
+
+      <div class="drawer_button" (click)="drawer.close(); izgledOtvoren = true">
+        <svg class="drawer_icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A3.7 3.7 0 0021 10.6C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg>
+        <span>Izgled</span>
+      </div>
 
       <div class="drawer_button" (click)="navigateToSettings()">
         <img src="assets/settings_icon.png" alt="Podešavanja" class="drawer_icon">
@@ -56,6 +69,39 @@
 
   <!-- GLAVNI TOP-BAR -->
   <mat-sidenav-content>
+    <!-- BOČNI MENI (vidi se samo u dizajnu "Panel") -->
+    <aside class="side-rail" aria-label="Glavna navigacija">
+      <div class="rail-brand" (click)="navigateToMain()">
+        <img src="assets/imi_logo.png" alt="IMI" class="rail-logo" />
+        <div class="rail-titles">
+          <span class="rail-sub">PMF Kragujevac</span>
+          <span class="rail-main">Raspored ispita</span>
+        </div>
+      </div>
+
+      <nav class="rail-links">
+        @for (l of linkovi; track l.ruta) {
+          <a class="rail-link" [class.rail-active]="aktivna(l.ruta)" (click)="idi(l.ruta)">
+            <img [src]="l.ikona" alt="" class="rail-icon" />
+            <span>{{ l.naziv }}</span>
+          </a>
+        }
+      </nav>
+
+      <div class="rail-bottom">
+        <span class="rail-user"><strong>{{ username }}</strong> · {{ uloga }}</span>
+        <a class="rail-link" [class.rail-active]="aktivna('/settings')" (click)="navigateToSettings()">
+          <img src="assets/settings_icon.png" alt="" class="rail-icon" /><span>Podešavanja</span>
+        </a>
+        <a class="rail-link" (click)="izgledOtvoren = !izgledOtvoren">
+          <svg class="rail-icon rail-emoji" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A3.7 3.7 0 0021 10.6C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg><span>Izgled</span>
+        </a>
+        <a class="rail-link rail-logout" (click)="logout()">
+          <img src="assets/logout_icon.png" alt="" class="rail-icon" /><span>Odjavi se</span>
+        </a>
+      </div>
+    </aside>
+
     <nav class="top-bar-imi">
       <!-- LEVO: imi_logo.png + NASLOVI KAO PRE -->
       <div class="top-bar-left" (click)="navigateToMain()">
@@ -68,14 +114,14 @@
 
       <!-- SREDINA: DESKTOP LINKOVI -->
       <div class="top-bar-links">
-        @if (uloga === 'admin' || uloga === 'profesor') {
-          <a class="nav-item-link" (click)="navigateToMain()">Raspored</a>
-        }
         @if (uloga === 'admin') {
+          <a class="nav-item-link" (click)="navigateToMain()">Raspored</a>
+          <a class="nav-item-link" (click)="navigateToTerminiKolokvijuma()">Termini kolokvijuma</a>
           <a class="nav-item-link" (click)="navigateToDatabaseManagement()">Upravljaj bazom</a>
+          <a class="nav-item-link" (click)="navigateToZahteviZamena()">Zahtevi za zamenu</a>
           <a class="nav-item-link" (click)="navigateToZaduzenja()">Pregled zaduženja</a>
         }
-        @if (uloga === 'asistent' || uloga === 'saradnik') {
+        @if (uloga !== 'admin') {
           <a class="nav-item-link" (click)="navigateToMojaDezurstva()">Moj Raspored</a>
           <a class="nav-item-link" (click)="navigateToMojeObaveze()">Prijavi odsustvo</a>
           <a class="nav-item-link" (click)="navigateToTerminiKolokvijuma()">Termini kolokvijuma</a>
@@ -85,6 +131,11 @@
 
       <!-- DESNA STRANA: ODJAVA I MENI -->
       <div class="top-bar-right">
+        <button class="design-btn" (click)="izgledOtvoren = !izgledOtvoren" title="Izaberi izgled aplikacije">
+          <svg class="design-btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 100 18c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.4-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.3A3.7 3.7 0 0021 10.6C21 6.4 17 3 12 3z"/><circle cx="7.5" cy="11" r="1"/><circle cx="10.5" cy="7" r="1"/><circle cx="15" cy="7" r="1"/></svg>
+          <span>Izgled</span>
+        </button>
+
         <button class="desktop-logout-btn" (click)="logout()" title="Odjavi se">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
@@ -100,6 +151,17 @@
         </button>
       </div>
     </nav>
+
+    @if (izgledOtvoren) {
+      <div class="design-backdrop" (click)="izgledOtvoren = false"></div>
+      <div class="design-popover" role="dialog" aria-label="Izgled aplikacije">
+        <div class="design-popover-head">
+          <strong>Izgled aplikacije</strong>
+          <button type="button" class="design-popover-close" (click)="izgledOtvoren = false" aria-label="Zatvori">✕</button>
+        </div>
+        <app-design-picker />
+      </div>
+    }
 
     <router-outlet></router-outlet>
   </mat-sidenav-content>
