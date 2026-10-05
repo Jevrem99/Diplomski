@@ -14,3 +14,27 @@ export function presloviULatinicu(tekst: string): string {
   };
   return tekst.split('').map(char => cirilicaToLatinica[char] || char).join('').toLowerCase();
 }
+
+// "2026-04-15" -> "sreda, 15.04.2026."
+export function formatDatumKonflikta(datum: string): string {
+  const d = new Date(`${datum}T12:00:00`);
+  if (isNaN(d.getTime())) return datum;
+  const dani = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota'];
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dani[d.getDay()]}, ${dd}.${mm}.${d.getFullYear()}.`;
+}
+
+// Vrsta konflikta (za bojenje u prozoru)
+export function tipKonflikta(tekst: string): 'sala' | 'dezurni' | 'odsustvo' {
+  if (/^Sala\b/.test(tekst)) return 'sala';
+  if (/odsutan/.test(tekst)) return 'odsustvo';
+  return 'dezurni';
+}
+
+// "09:30" -> 570 (minuta od ponoći); prazno/neispravno -> 0
+export function timeToMins(timeStr: string): number {
+  if (!timeStr || !timeStr.includes(':')) return 0;
+  const [h, m] = timeStr.split(':').map(Number);
+  return (h * 60) + m;
+}

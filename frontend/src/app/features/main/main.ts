@@ -17,7 +17,9 @@ import { FormsModule } from '@angular/forms';
 import { ExportModalComponent, ExportDataResult } from '../../shared/components/export-modal/export-modal.component';
 import { ExcelIzvozService } from './services/excel-izvoz.service';
 import { Predmet, Profesor } from './main.models';
-import { presloviULatinicu } from './main.utils';
+import { presloviULatinicu, formatDatumKonflikta, tipKonflikta, timeToMins } from './main.utils';
+import { GodinaColorService } from './services/godina-color.service';
+import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
 @Component({
   selector: 'app-main',
@@ -38,6 +40,7 @@ export class Main implements OnInit, AfterViewInit {
   private cache = inject(DataCacheService);
   private ngZone = inject(NgZone);
   private excel = inject(ExcelIzvozService);
+  private boje = inject(GodinaColorService);
 
   // --- KONTROLA PRIKAZA PANELA I STATUSA ---
   prikaziLevoFiltere: boolean = false;
@@ -80,13 +83,6 @@ export class Main implements OnInit, AfterViewInit {
   prikazaniBrojPredmeta: number = 5;
   filterSaradnici: number[] = [];
 
-  defaultGodinaColors: any = {
-    1: '#009bd9',
-    2: '#d81b43',
-    3: '#f39c12',
-    4: '#27AE60'
-  };
-  godinaColors: any = { ...this.defaultGodinaColors };
 
   rezimBiranjaOpsegaIzvoza: boolean = false;
   tempExportData: any = null;
@@ -571,37 +567,7 @@ export class Main implements OnInit, AfterViewInit {
       if (tooltip) tooltip.remove();
     },
 
-    titleFormat: (arg) => {
-      const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
-      return `${meseci[arg.date.month]} ${arg.date.year}.`;
-    },
-    dayHeaderContent: (arg) => {
-      const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-      return daniSkraceno[arg.date.getDay()];
-    },
-    views: {
-      timeGridWeek: {
-        dayHeaderContent: (arg) => {
-          const daniSkraceno = ['Ned', 'Pon', 'Uto', 'Sre', 'Čet', 'Pet', 'Sub'];
-          const d = arg.date;
-          return `${daniSkraceno[d.getDay()]} ${d.getDate()}.${d.getMonth() + 1}.`;
-        }
-      },
-      timeGridDay: {
-        dayHeaderContent: (arg) => {
-          const daniPuni = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak', 'Petak', 'Subota'];
-          const meseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Jun', 'Jul', 'Avgust', 'Septembar', 'Oktobar', 'Novembar', 'Decembar'];
-          const d = arg.date;
-          return `${daniPuni[d.getDay()]}, ${d.getDate()}. ${meseci[d.getMonth()]}`;
-        }
-      }
-    },
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: 'dayGridMonth,timeGridWeek,timeGridDay'
-    },
-    buttonText: { today: 'Danas', month: 'Mesec', week: 'Nedelja', day: 'Dan' }
+    ...KALENDAR_STATICKA_PODESAVANJA
   };
 
   // ============================================
@@ -922,7 +888,7 @@ export class Main implements OnInit, AfterViewInit {
     this.fetchSviSaradniciIObaveze();
     this.loadAllUcioniceForFilter();
     this.fetchStats();
-    this.loadSavedColors();
+    this.boje.ucitajSacuvane();
   }
 
   private hoverRaf = 0;
@@ -1113,8 +1079,7 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   getGodinaColor(godina?: number | string): string {
-    if (!godina) return '#009bd9';
-    return this.godinaColors[Number(godina)] || '#009bd9';
+    return this.boje.getGodinaColor(godina);
   }
 
   fetchPredmeti(): void {
@@ -1129,17 +1094,6 @@ export class Main implements OnInit, AfterViewInit {
       },
       error: (err) => console.error('Greška pri dohvatanju predmeta:', err)
     });
-  }
-
-  loadSavedColors(): void {
-    const saved = localStorage.getItem('app_godina_colors');
-    if (saved) {
-      try {
-        this.godinaColors = { ...this.defaultGodinaColors, ...JSON.parse(saved) };
-      } catch (e) {
-        this.godinaColors = { ...this.defaultGodinaColors };
-      }
-    }
   }
 
   fetchIspiti(): void {
@@ -1331,10 +1285,10 @@ export class Main implements OnInit, AfterViewInit {
         for (let j = i + 1; j < evts.length; j++) {
           const e1 = evts[i];
           const e2 = evts[j];
-          const start1 = this.timeToMins(String(e1.extendedProps['vreme'] || '').trim());
-          const end1 = this.timeToMins(String(e1.extendedProps['vremeKraja'] || '').trim()) || (start1 + 120);
-          const start2 = this.timeToMins(String(e2.extendedProps['vreme'] || '').trim());
-          const end2 = this.timeToMins(String(e2.extendedProps['vremeKraja'] || '').trim()) || (start2 + 120);
+          const start1 = timeToMins(String(e1.extendedProps['vreme'] || '').trim());
+          const end1 = timeToMins(String(e1.extendedProps['vremeKraja'] || '').trim()) || (start1 + 120);
+          const start2 = timeToMins(String(e2.extendedProps['vreme'] || '').trim());
+          const end2 = timeToMins(String(e2.extendedProps['vremeKraja'] || '').trim()) || (start2 + 120);
 
           if (start1 < end2 && start2 < end1) {
             const s1 = String(e1.extendedProps['sala'] || '').trim();
@@ -1412,27 +1366,12 @@ export class Main implements OnInit, AfterViewInit {
     this.conflictsByDateMap = conflictsByDate;
   }
 
-  // "2026-04-15" -> "sreda, 15.04.2026."
   formatDatumKonflikta(datum: string): string {
-    const d = new Date(`${datum}T12:00:00`);
-    if (isNaN(d.getTime())) return datum;
-    const dani = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota'];
-    const dd = String(d.getDate()).padStart(2, '0');
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    return `${dani[d.getDay()]}, ${dd}.${mm}.${d.getFullYear()}.`;
+    return formatDatumKonflikta(datum);
   }
 
-  // Vrsta konflikta za bojenje u prozoru
   tipKonflikta(tekst: string): 'sala' | 'dezurni' | 'odsustvo' {
-    if (/^Sala\b/.test(tekst)) return 'sala';
-    if (/odsutan/.test(tekst)) return 'odsustvo';
-    return 'dezurni';
-  }
-
-  private timeToMins(timeStr: string): number {
-    if (!timeStr || !timeStr.includes(':')) return 0;
-    const [h, m] = timeStr.split(':').map(Number);
-    return (h * 60) + m;
+    return tipKonflikta(tekst);
   }
 
   // ============================================
@@ -1502,7 +1441,7 @@ export class Main implements OnInit, AfterViewInit {
         }
       }
 
-      this.toastService.show(`Izabran opseg: \({dOd} do\){dDo}! Vraćam tabelu...`, 'success');
+      this.toastService.show(`Izabran opseg: ${dOd} do ${dDo}! Vraćam tabelu...`, 'success');
 
       this.rezimBiranjaOpsegaIzvoza = false;
       this.exportStartPickedDate = null;
