@@ -246,6 +246,11 @@
                   class="w-4 h-4 text-[#27AE60] rounded">
                 Prikaži kolokvijume
               </label>
+              <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                <input type="checkbox" [(ngModel)]="prikaziNastavu" (change)="applyFilters()"
+                  class="w-4 h-4 rounded">
+                Prikaži redovnu nastavu
+              </label>
             </div>
 
             <div class="flex flex-col gap-1">

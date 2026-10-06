@@ -71,10 +71,20 @@ html, body {
   margin: 0 !important;
 }
 
-.fc .fc-daygrid-day-bottom,
+.fc .fc-daygrid-day-bottom { margin: 0 !important; padding: 0 3px 3px !important; }
 .fc .fc-daygrid-more-link {
-  display: none !important;
+  display: block !important;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: 'Montserrat', sans-serif;
+  color: var(--primary-text);
+  background: var(--primary-soft);
+  border-radius: 6px;
+  padding: 2px 0;
+  cursor: pointer;
 }
+.fc .fc-daygrid-more-link:hover { background: var(--tint-blue-bd); }
 
 .fc .fc-daygrid-day-events::-webkit-scrollbar {
   width: 4px;

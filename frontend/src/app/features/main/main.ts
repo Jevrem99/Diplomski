@@ -21,6 +21,9 @@ import { presloviULatinicu, formatDatumKonflikta, tipKonflikta, timeToMins } fro
 import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
+// Boja kartica redovne nastave (namerno drugačija od boja godina)
+const NASTAVA_BOJA = '#7a6fa8';
+
 @Component({
   selector: 'app-main',
   standalone: true,
@@ -54,6 +57,7 @@ export class Main implements OnInit, AfterViewInit {
 
   prikaziIspite: boolean = true;
   prikaziKolokvijume: boolean = true;
+  prikaziNastavu: boolean = false; // redovna nastava je podrazumevano sakrivena (puno kartica = sporiji kalendar)
   isDashboardOpen: boolean = false;
 
   // --- MASOVNO UREĐIVANJE I KOPIRANJE DANA ---
@@ -108,9 +112,11 @@ export class Main implements OnInit, AfterViewInit {
     height: '100%',
     firstDay: 1,
     displayEventEnd: false,
-    dayMaxEvents: false,
+    dayMaxEvents: 4,
+    // ispiti i kolokvijumi uvek ispred redovne nastave, da ih "+N još" nikad ne sakrije
+    eventOrder: (a: any, b: any) => (a.extendedProps?.isNastava ? 1 : 0) - (b.extendedProps?.isNastava ? 1 : 0) || String(a.start).localeCompare(String(b.start)),
+    moreLinkContent: (arg) => `+${arg.num} još`,
     dayMaxEventRows: false,
-    eventOrder: 'start,title',
     dragRevertDuration: 0,
     droppable: true,
     editable: true,
@@ -495,11 +501,12 @@ export class Main implements OnInit, AfterViewInit {
     eventContent: (arg) => {
       if (arg.event.display === 'background') return null;
 
-      const title = arg.event.title ? arg.event.title.split(' (')[0] : '';
+      const title = arg.event.title ? arg.event.title.replace(/^Nastava:\s*/, '').split(' (')[0] : '';
       const isIspit = arg.event.extendedProps['is_ispit'] ?? true;
       const vreme = arg.event.extendedProps['vreme'] || '00:00';
       const godina = arg.event.extendedProps['godina'] || 1;
-      const boja = this.getGodinaColor(godina);
+      const jeNastava = !!arg.event.extendedProps['isNastava'];
+      const boja = jeNastava ? NASTAVA_BOJA : this.getGodinaColor(godina);
       const salaProp = arg.event.extendedProps['sala'];
       const salaNaziv = (typeof salaProp === 'object' ? salaProp?.naziv : salaProp) || '';
       const salaTag = salaNaziv && salaNaziv !== 'Bez sale' ? `<small class="cal-card-sala">${salaNaziv}</small>` : '';
@@ -507,7 +514,7 @@ export class Main implements OnInit, AfterViewInit {
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
-          <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}" style="--ev: ${boja};">
+          <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja};">
             <div class="cal-card-time">${vreme}${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
@@ -524,12 +531,13 @@ export class Main implements OnInit, AfterViewInit {
       if (postojeci) postojeci.remove();
 
       const props = info.event.extendedProps;
-      const tip = props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit';
+      const jeNastava = !!props['isNastava'];
+      const tip = jeNastava ? 'Nastava' : (props['is_ispit'] === false ? 'Kolokvijum' : 'Ispit');
       const k = props['vremeKraja'] || props['vreme_kraja'];
       const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
       const vremePocetka = props['vreme'] || '09:00';
       const sala = props['sala'] || 'Bez sale';
-      const naslov = info.event.title.split(' (')[0];
+      const naslov = jeNastava ? info.event.title.replace(/^Nastava:\s*/, '').split(' (')[0] : info.event.title.split(' (')[0];
       const dezurniImena = (props['dezurni'] || []).map((d: any) => `${d.ime} ${d.prezime}`).join(', ') || 'Nema dodeljenih';
 
       const tooltip = document.createElement('div');
@@ -550,12 +558,12 @@ export class Main implements OnInit, AfterViewInit {
 
       tooltip.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
-          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2.5px 8px; border-radius: 6px; background: ${props['is_ispit'] === false ? 'var(--tint-amber-bg)' : 'var(--tint-sky-bg)'}; color: ${props['is_ispit'] === false ? 'var(--tint-amber-fg)' : 'var(--primary-text)'};">${tip}</span>
+          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2.5px 8px; border-radius: 6px; background: ${jeNastava ? NASTAVA_BOJA : (props['is_ispit'] === false ? 'var(--tint-amber-bg)' : 'var(--tint-sky-bg)')}; color: ${jeNastava ? '#fff' : (props['is_ispit'] === false ? 'var(--tint-amber-fg)' : 'var(--primary-text)')};">${tip}</span>
           <span style="font-size: 11px; font-weight: 700; color: var(--muted);">${sala}</span>
         </div>
         <div style="font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 6px; line-height: 1.3;">${naslov}</div>
         <div style="font-size: 12px; font-weight: 700; color: var(--primary-text); margin-bottom: 7px;">Termin: ${vremePocetka}${vremeKraja}</div>
-        <div style="font-size: 11px; font-weight: 600; color: var(--muted); border-top: 1px solid var(--border); padding-top: 7px;">Dežurni: <strong style="color: var(--text-2);">${dezurniImena}</strong></div>
+        ${jeNastava ? '' : `<div style="font-size: 11px; font-weight: 600; color: var(--muted); border-top: 1px solid var(--border); padding-top: 7px;">Dežurni: <strong style="color: var(--text-2);">${dezurniImena}</strong></div>`}
       `;
       document.body.appendChild(tooltip);
 
@@ -973,7 +981,7 @@ export class Main implements OnInit, AfterViewInit {
     let filtered = [...this.allLoadedEvents];
 
     filtered = filtered.filter(e => {
-      if (e.extendedProps?.isNastava) return true;
+      if (e.extendedProps?.isNastava) return this.prikaziNastavu;
       const isIspit = e.extendedProps?.is_ispit ?? true;
       if (isIspit && !this.prikaziIspite) return false;
       if (!isIspit && !this.prikaziKolokvijume) return false;
