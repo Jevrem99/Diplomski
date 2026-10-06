@@ -1,132 +1,168 @@
-<div class="crud-modal-container">
-  <!-- IMI TEGET ZAGLAVLJE DIJALOGA -->
-  <div class="modal-header">
+<div class="crud-modal-container" [attr.data-vrsta]="vrsta">
+
+  <!-- ZAGLAVLJE sa ikonom i meračem popunjenosti -->
+  <header class="modal-header">
+    <div class="hdr-badge" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <path [attr.d]="ikonaZaglavlja"></path>
+      </svg>
+    </div>
     <div class="modal-title-wrapper">
       <h2 class="modal-title">{{ data.title }}</h2>
-      <span class="modal-subtitle">Unesite ili izmenite podatke u bazi</span>
+      <span class="modal-subtitle">{{ podnaslov }}</span>
     </div>
-    <button class="modal-close-btn" (click)="onCancel()" title="Zatvori">✕</button>
-  </div>
+    <button class="modal-close-btn" (click)="onCancel()" title="Zatvori" aria-label="Zatvori">✕</button>
 
-  <!-- TELO DIJALOGA -->
+    @if (napredak.ukupno > 0) {
+      <div class="hdr-progress" [attr.aria-label]="'Popunjeno ' + napredak.gotovo + ' od ' + napredak.ukupno">
+        <div class="hdr-progress-bar"><span [style.width.%]="napredak.procenat"></span></div>
+        <span class="hdr-progress-text">{{ napredak.gotovo }} / {{ napredak.ukupno }} obaveznih polja</span>
+      </div>
+    }
+  </header>
+
   <div class="modal-body">
-    <!-- LEVA KOLONA: Forma -->
     <div class="modal-form-col">
-      <div class="form-fields-scroll">
-        @for (col of data.columns; track col.key) {
-          @if (col.key !== 'id' && col.key !== 'saradnici_ids') {
 
-            @if (col.key === 'profesor_id') {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Glavni profesor</mat-label>
-                <mat-select [(ngModel)]="formData[col.key]">
-                  @for (prof of data.profesoriList; track prof.id) {
-                    <mat-option [value]="prof.id">{{ prof.ime }} {{ prof.prezime }}</mat-option>
+      <div class="fields-grid">
+        @for (col of polja; track col.key) {
+          <div class="field"
+               [class.wide]="tipPolja(col.key) === 'pills' || tipPolja(col.key) === 'multi' || col.key === 'naziv' || col.key === 'email'"
+               [class.is-invalid]="!!greska(col.key)"
+               [class.is-valid]="valjano(col.key)">
+
+            <label class="field-label">
+              {{ col.label }}@if (obavezno(col.key)) {<span class="req">*</span>}
+            </label>
+
+            @switch (tipPolja(col.key)) {
+
+              <!-- IZBOR KAO "PILULE": uloga, semestar, status -->
+              @case ('pills') {
+                <div class="pills" role="radiogroup">
+                  @for (o of opcije(col.key); track o.value) {
+                    <button type="button" class="pill" role="radio"
+                            [class.active]="formData[col.key] === o.value"
+                            [attr.aria-checked]="formData[col.key] === o.value"
+                            (click)="izaberi(col.key, o.value)">
+                      {{ o.label }}
+                    </button>
                   }
-                </mat-select>
-              </mat-form-field>
-            }
+                </div>
+              }
 
-            @else if (col.key === 'predmet_id') {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Predmet</mat-label>
-                <mat-select [(ngModel)]="formData[col.key]">
-                  @for (predmet of data.predmetiList; track predmet.id) {
-                    <mat-option [value]="predmet.id">{{ predmet.naziv }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
+              <!-- PADAJUĆA LISTA: profesor, predmet -->
+              @case ('select') {
+                <div class="control">
+                  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="ikonaPolja(col.key)"></path></svg>
+                  <select [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" (blur)="dodir(col.key)">
+                    <option [ngValue]="null">— izaberite —</option>
+                    @for (o of izborZaSelect(col.key); track o.id) {
+                      <option [ngValue]="o.id">{{ o.naziv }}</option>
+                    }
+                  </select>
+                </div>
+              }
 
-            <!-- ⬇️ DODATO: Izbor više predmeta za saradnika (Multiselect) ⬇️ -->
-            @else if (col.key === 'predmeti_ids') {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>Izaberite predmete (Zaduženja)</mat-label>
-                <mat-select [(ngModel)]="formData[col.key]" multiple>
-                  
-                  <!-- 🎨 KARTICE SADA IMAJU I DUGME '×' ZA BRZO UKLANJANJE -->
-                  <mat-select-trigger>
-                    <div class="flex flex-wrap gap-1.5 py-1">
-                      @for (predmetId of formData[col.key]; track predmetId) {
-                        @if (getPredmetById(predmetId); as p) {
-                          <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200 shadow-sm">
-                            <span>{{ p.naziv }}</span>
-                            <span 
-                              (click)="$event.stopPropagation(); ukloniPredmet(predmetId)" 
-                              class="cursor-pointer hover:bg-indigo-200 hover:text-red-700 rounded px-1 leading-none transition-colors"
-                              title="Ukloni predmet">
-                              ×
+              <!-- VIŠESTRUKI IZBOR PREDMETA -->
+              @case ('multi') {
+                <mat-form-field appearance="outline" class="w-full multi-field" subscriptSizing="dynamic">
+                  <mat-select [(ngModel)]="formData[col.key]" multiple placeholder="Izaberite predmete">
+                    <mat-select-trigger>
+                      <div class="chips">
+                        @for (predmetId of formData[col.key]; track predmetId) {
+                          @if (getPredmetById(predmetId); as p) {
+                            <span class="chip">
+                              <span>{{ p.naziv }}</span>
+                              <span class="chip-x" (click)="$event.stopPropagation(); ukloniPredmet(predmetId)" title="Ukloni predmet">×</span>
                             </span>
-                          </span>
+                          }
                         }
-                      }
-                    </div>
-                  </mat-select-trigger>
+                      </div>
+                    </mat-select-trigger>
+                    @for (predmet of data.predmetiList; track predmet.id) {
+                      <mat-option [value]="predmet.id">{{ predmet.sifra ? predmet.sifra + ' - ' : '' }}{{ predmet.naziv }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              }
 
-                  <!-- Prikaz u padajućoj listi sa šifrom i nazivom -->
-                  @for (predmet of data.predmetiList; track predmet.id) {
-                    <mat-option [value]="predmet.id">
-                      {{ predmet.sifra ? predmet.sifra + ' - ' : '' }}{{ predmet.naziv }}
-                    </mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
+              <!-- BROJ SA DUGMIĆIMA + / - -->
+              @case ('number') {
+                <div class="control control-number">
+                  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="ikonaPolja(col.key)"></path></svg>
+                  <input type="number" min="0" [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" (blur)="dodir(col.key)" autocomplete="off" />
+                  <button type="button" class="step" (click)="korak(col.key, -1)" aria-label="Smanji">−</button>
+                  <button type="button" class="step" (click)="korak(col.key, 1)" aria-label="Povećaj">+</button>
+                </div>
+              }
 
-            @else if (col.key.includes('datum')) {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>{{ col.label }}</mat-label>
-                <input matInput type="date" [(ngModel)]="formData[col.key]">
-              </mat-form-field>
-            }
-
-            @else if (col.key.includes('vreme')) {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>{{ col.label }}</mat-label>
-                <input matInput type="time" [(ngModel)]="formData[col.key]">
-              </mat-form-field>
-            }
-
-            @else if (col.key === 'uloga') {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>{{ col.label }}</mat-label>
-                <mat-select [(ngModel)]="formData[col.key]">
-                  @for (role of data.rolesList; track role.id) {
-                    <mat-option [value]="role.id">{{ role.naziv }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
-            }
-
-            @else {
-              <mat-form-field appearance="outline" class="w-full">
-                <mat-label>{{ col.label }}</mat-label>
-                <input matInput [(ngModel)]="formData[col.key]"
-                  [type]="col.key === 'godina' || col.key === 'broj_studenata' ? 'number' : col.key === 'password' ? 'password' : 'text'"
-                  [autocomplete]="col.key === 'password' ? 'new-password' : 'off'">
-                @if (hint(col.key)) {
-                  <mat-hint>{{ hint(col.key) }}</mat-hint>
+              <!-- LOZINKA sa prikazom i merom jačine -->
+              @case ('password') {
+                <div class="control">
+                  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="ikonaPolja(col.key)"></path></svg>
+                  <input [type]="prikaziLozinku ? 'text' : 'password'" [(ngModel)]="formData[col.key]"
+                         (ngModelChange)="promena(col.key)" (focus)="fokusLozinke()" (blur)="dodir(col.key)"
+                         autocomplete="new-password" placeholder="Najmanje 8 karaktera" />
+                  <button type="button" class="eye" (click)="prikaziLozinku = !prikaziLozinku" [attr.aria-label]="prikaziLozinku ? 'Sakrij lozinku' : 'Prikaži lozinku'">
+                    {{ prikaziLozinku ? 'Sakrij' : 'Prikaži' }}
+                  </button>
+                </div>
+                @if (jacinaLozinke.nivo > 0) {
+                  <div class="strength" [attr.data-nivo]="jacinaLozinke.nivo">
+                    <span></span><span></span><span></span>
+                    <em>{{ jacinaLozinke.tekst }}</em>
+                  </div>
                 }
-              </mat-form-field>
+              }
+
+              <!-- DATUM / VREME -->
+              @case ('date') {
+                <div class="control">
+                  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="ikonaPolja(col.key)"></path></svg>
+                  <input type="date" [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" (blur)="dodir(col.key)" />
+                </div>
+              }
+              @case ('time') {
+                <div class="control">
+                  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="ikonaPolja(col.key)"></path></svg>
+                  <input type="time" [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" (blur)="dodir(col.key)" />
+                </div>
+              }
+
+              <!-- OBIČAN TEKST -->
+              @default {
+                <div class="control">
+                  <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path [attr.d]="ikonaPolja(col.key)"></path></svg>
+                  <input type="text" [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" (blur)="dodir(col.key)"
+                         autocomplete="off" [placeholder]="col.label" />
+                  <span class="state" aria-hidden="true">
+                    @if (greska(col.key)) { ! } @else if (valjano(col.key)) { ✓ }
+                  </span>
+                </div>
+              }
             }
 
-            @if (fieldErrors[col.key]) {
-              <div class="field-error">{{ fieldErrors[col.key] }}</div>
+            <!-- poruka ispod polja: greška (crveno) ili savet (sivo) -->
+            @if (greska(col.key)) {
+              <div class="msg msg-error" role="alert">{{ greska(col.key) }}</div>
+            } @else if (hint(col.key) && tipPolja(col.key) !== 'pills') {
+              <div class="msg msg-hint">{{ hint(col.key) }}</div>
             }
-          }
+          </div>
         }
       </div>
 
       <!-- Bedževi za saradnike -->
       @if (hasSaradniciColumn) {
         <div class="selected-saradnici-box">
-          <span class="box-label">Izabrani saradnici na predmetu</span>
-          <div class="flex flex-wrap gap-1.5">
+          <span class="box-label">Izabrani saradnici na predmetu ({{ izabraniSaradniciObjekti.length }})</span>
+          <div class="chips">
             @for (saradnik of izabraniSaradniciObjekti; track saradnik.id) {
-              <div (click)="ukloniSaradnika(saradnik.id)" class="saradnik-chip">
+              <span class="chip" (click)="ukloniSaradnika(saradnik.id)" title="Ukloni">
                 <span>{{ saradnik.ime }} {{ saradnik.prezime }}</span>
-                <span class="chip-remove">×</span>
-              </div>
+                <span class="chip-x">×</span>
+              </span>
             }
             @if (izabraniSaradniciObjekti.length === 0) {
               <span class="empty-hint">Nema dodeljenih saradnika. Izaberite iz desnog panela.</span>
@@ -136,33 +172,20 @@
       }
 
       @if (generalError) {
-        <div class="form-error-msg">
-          <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
+        <div class="form-error-msg" role="alert">
+          <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
             <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/>
           </svg>
           <span>{{ generalError }}</span>
         </div>
       }
-
-      @if (showError) {
-        <div class="form-error-msg">
-          <svg class="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 24 24">
-            <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd"/>
-          </svg>
-          <span>Sva obavezna polja moraju biti popunjena pre čuvanja.</span>
-        </div>
-      }
     </div>
 
-    <!-- DESNA KOLONA: Izbor saradnika -->
+    <!-- DESNA KOLONA: izbor saradnika -->
     @if (hasSaradniciColumn) {
       <div class="modal-saradnici-col">
         <h3 class="col-title">Dostupni saradnici</h3>
-
-        <div class="search-wrap">
-          <input type="text" [(ngModel)]="searchQuery" placeholder="Pretraži saradnike..." class="saradnici-search-input">
-        </div>
-
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Pretraži saradnike..." class="saradnici-search-input">
         <div class="saradnici-scroll-list">
           @for (saradnik of dostupniSaradnici; track saradnik.id) {
             <div (click)="dodajSaradnika(saradnik.id)" class="saradnik-pick-card">
@@ -178,9 +201,11 @@
     }
   </div>
 
-  <!-- PODNOŽJE (DUGMAD ZA AKCIJU) -->
-  <div class="modal-footer">
+  <footer class="modal-footer">
+    <span class="footer-note">
+      @if (napredak.gotovo === napredak.ukupno && napredak.ukupno > 0) { ✓ Spremno za čuvanje } @else { Popunite obavezna polja (*) }
+    </span>
     <button class="btn-cancel" (click)="onCancel()">Otkaži</button>
-    <button class="btn-save" [disabled]="saving" (click)="onSave()">{{ saving ? 'Čuvanje…' : 'Sačuvaj' }}</button>
-  </div>
+    <button class="btn-save" [disabled]="saving" (click)="onSave()">{{ saving ? 'Čuvanje…' : (jeIzmena ? 'Sačuvaj izmene' : 'Dodaj') }}</button>
+  </footer>
 </div>

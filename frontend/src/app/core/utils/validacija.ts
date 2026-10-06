@@ -76,3 +76,18 @@ export function procitajGresku(err: any, rezerva = 'Došlo je do greške.'): { o
     polja: telo?.polja || {},
   };
 }
+
+export function validirajIspit(b: any): Polja {
+  const polja: Polja = {};
+  if (prazno(b.predmet_id)) polja['predmet_id'] = 'Izaberite predmet.';
+  if (prazno(b.datum)) polja['datum'] = 'Datum je obavezan.';
+  else if (Number.isNaN(new Date(String(b.datum)).getTime())) polja['datum'] = 'Datum nije ispravan.';
+  const vreme = /^\d{2}:\d{2}/;
+  if (prazno(b.vreme)) polja['vreme'] = 'Vreme početka je obavezno.';
+  else if (!vreme.test(String(b.vreme))) polja['vreme'] = 'Vreme mora biti u formatu SS:MM.';
+  if (!prazno(b.vreme_kraja)) {
+    if (!vreme.test(String(b.vreme_kraja))) polja['vreme_kraja'] = 'Vreme mora biti u formatu SS:MM.';
+    else if (!prazno(b.vreme) && String(b.vreme_kraja).substring(0, 5) <= String(b.vreme).substring(0, 5)) polja['vreme_kraja'] = 'Kraj mora biti posle početka.';
+  }
+  return polja;
+}

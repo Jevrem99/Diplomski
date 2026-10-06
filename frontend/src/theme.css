@@ -1018,3 +1018,36 @@ body[data-design="mekano"]:not(#_) .fc .fc-daygrid-day.fc-day-in-range,
 body[data-design="organski"]:not(#_) .fc .fc-daygrid-day.fc-day-range-edge,
 body[data-design="organski"]:not(#_) .fc .fc-daygrid-day.fc-day-in-range { background: transparent !important; }
 
+
+/* ===== KLASIK: kartice termina (samo podrazumevani dizajn) ===== */
+body:not([data-design]):not(#_) .clean-cal-card {
+  border-radius: 9px !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+body:not([data-design]):not(#_) .clean-cal-card:hover { transform: translateY(-1px); }
+body:not([data-design]):not(#_) .clean-cal-card.is-ispit {
+  background: linear-gradient(135deg, var(--ev), color-mix(in srgb, var(--ev) 68%, #000)) !important;
+  box-shadow: 0 3px 8px color-mix(in srgb, var(--ev) 45%, transparent) !important;
+}
+body:not([data-design]):not(#_) .clean-cal-card.is-ispit:hover { box-shadow: 0 6px 14px color-mix(in srgb, var(--ev) 55%, transparent) !important; }
+body:not([data-design]):not(#_) .clean-cal-card.is-ispit .cal-card-time {
+  background: rgba(255, 255, 255, 0.22) !important;
+  border-right: none !important;
+  border-radius: 6px;
+  margin: 3px;
+  height: 24px !important;
+  letter-spacing: 0.02em;
+}
+body:not([data-design]):not(#_) .clean-cal-card.is-kolokvijum {
+  background: color-mix(in srgb, var(--ev) 9%, var(--surface)) !important;
+  border: 1px solid color-mix(in srgb, var(--ev) 38%, var(--surface)) !important;
+  border-left: 4px solid var(--ev) !important;
+}
+body:not([data-design]):not(#_) .clean-cal-card.is-kolokvijum .cal-card-time {
+  background: var(--ev) !important;
+  color: #ffffff !important;
+  border-right: none !important;
+  border-radius: 6px;
+  margin: 2px 3px;
+  height: 22px !important;
+}
