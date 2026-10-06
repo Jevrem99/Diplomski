@@ -500,12 +500,15 @@ export class Main implements OnInit, AfterViewInit {
       const vreme = arg.event.extendedProps['vreme'] || '00:00';
       const godina = arg.event.extendedProps['godina'] || 1;
       const boja = this.getGodinaColor(godina);
+      const salaProp = arg.event.extendedProps['sala'];
+      const salaNaziv = (typeof salaProp === 'object' ? salaProp?.naziv : salaProp) || '';
+      const salaTag = salaNaziv && salaNaziv !== 'Bez sale' ? `<small class="cal-card-sala">${salaNaziv}</small>` : '';
 
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
           <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}" style="--ev: ${boja};">
-            <div class="cal-card-time">${vreme}</div>
+            <div class="cal-card-time">${vreme}${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>

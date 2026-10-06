@@ -51,7 +51,7 @@
 
   --radius: 14px;
   --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow: none;
   --shadow-pop: 0 20px 40px -12px rgba(15, 23, 42, 0.3);
   --ink: #0f172a;
 }
@@ -93,7 +93,7 @@ body.dark-theme {
   --tint-sky-bg: rgba(14, 165, 233, 0.16);    --tint-sky-fg: #7dd3fc;
   --tint-indigo-bg: rgba(99, 102, 241, 0.18); --tint-indigo-fg: #a5b4fc; --tint-indigo-bd: rgba(129, 140, 248, 0.4);
 
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow: none;
   --shadow-pop: 0 20px 40px -12px rgba(0, 0, 0, 0.7);
   --ink: #f1f5f9;
 }
@@ -236,7 +236,7 @@ body[data-design="staklo"]:not(#_) {
   --tint-green-bg: rgba(220, 252, 231, 0.75);
   --radius: 22px;
   --radius-sm: 12px;
-  --shadow: 0 8px 32px rgba(31, 38, 135, 0.16);
+  --shadow: none;
   --shadow-pop: 0 24px 60px rgba(31, 38, 135, 0.32);
 }
 body.dark-theme[data-design="staklo"]:not(#_) {
@@ -261,7 +261,7 @@ body.dark-theme[data-design="staklo"]:not(#_) {
   --tint-emerald-bg: rgba(16, 185, 129, 0.18);
   --tint-sky-bg: rgba(14, 165, 233, 0.18);
   --tint-green-bg: rgba(34, 197, 94, 0.16);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow: none;
   --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.7);
 }
 body[data-design="staklo"]:not(#_) {
@@ -288,16 +288,12 @@ body[data-design="staklo"]:not(#_) :is(
   .calendar-container-card, aside.left-bank-aside, .top-ctrl-header, .db-header, .table-wrapper, .tabs-group,
   .predmet-card, .settings-card, .design-popover, .dialog-card-box, .statistika-dropdown-card, .filteri-dropdown-card,
   .info-box, .crud-modal-container, [class~="bg-white"]) {
-  -webkit-backdrop-filter: blur(18px) saturate(165%) !important;
-  backdrop-filter: blur(18px) saturate(165%) !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--shadow) !important;
 }
 body[data-design="staklo"]:not(#_) .bank-items-scroll { background-color: transparent !important; }
 body[data-design="staklo"]:not(#_) .mat-mdc-dialog-surface {
   background: var(--surface) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  backdrop-filter: blur(22px) saturate(170%);
   border: 1px solid var(--border);
 }
 /* Plutajuća gornja traka */
@@ -306,8 +302,6 @@ body[data-design="staklo"]:not(#_) .top-bar-imi {
   width: calc(100% - 32px) !important;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  backdrop-filter: blur(16px) saturate(160%);
   box-shadow: var(--shadow) !important;
 }
 body[data-design="staklo"]:not(#_) .design-popover { top: 84px; }
@@ -809,7 +803,7 @@ body[data-design="organski"]:not(#_) {
   --accent-hover: #ad5a1b;
   --radius: 26px;
   --radius-sm: 16px;
-  --shadow: 0 6px 18px rgba(90, 70, 30, 0.10);
+  --shadow: none;
   --shadow-pop: 0 24px 48px rgba(70, 50, 20, 0.25);
   --tint-blue-bg: #e4eadb; --tint-blue-bd: #cfdabf;
   --tint-amber-bg: #fbecc9; --tint-rose-bg: #f6ddd0; --tint-green-bg: #dfeccf; --tint-emerald-bg: #dfeccf; --tint-sky-bg: #dcecef;
@@ -836,7 +830,7 @@ body.dark-theme[data-design="organski"]:not(#_) {
   --accent: #c46a22;
   --tint-blue-bg: #2a3326; --tint-blue-bd: #3d4a37;
   --tint-amber-bg: #3d3318; --tint-rose-bg: #3d2a22; --tint-green-bg: #26361f; --tint-emerald-bg: #26361f; --tint-sky-bg: #213538;
-  --shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --shadow: none;
 }
 body[data-design="organski"]:not(#_) {
   background:
@@ -895,7 +889,7 @@ body[data-design="organski"]:not(#_) .cal-day-num.is-today { background: var(--p
 body[data-design="organski"]:not(#_) .clean-cal-card {
   height: 30px !important; border-radius: 999px !important; border: none !important;
   background: color-mix(in srgb, var(--ev) 24%, var(--surface)) !important;
-  box-shadow: 0 2px 6px rgba(90, 70, 30, 0.12) !important;
+  box-shadow: none !important;
 }
 body[data-design="organski"]:not(#_) .clean-cal-card.is-kolokvijum { background: var(--surface) !important; border: 2px solid color-mix(in srgb, var(--ev) 60%, var(--surface)) !important; }
 body[data-design="organski"]:not(#_) .clean-cal-card .cal-card-time { background: var(--ev) !important; color: #fff !important; border-radius: 999px; margin: 3px 0 3px 3px; height: 22px !important; border-right: none !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
@@ -935,8 +929,7 @@ body[data-design="staklo"]:not(#_) .clean-cal-card {
   height: 30px !important; border-radius: 14px !important;
   background: color-mix(in srgb, var(--ev) 32%, rgba(255, 255, 255, 0.4)) !important;
   border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(31, 38, 135, 0.15) !important;
+  box-shadow: none !important;
 }
 body[data-design="staklo"]:not(#_) .clean-cal-card.is-kolokvijum { background: rgba(255, 255, 255, 0.5) !important; border: 1.5px solid color-mix(in srgb, var(--ev) 70%, white) !important; }
 body.dark-theme[data-design="staklo"]:not(#_) .clean-cal-card { background: color-mix(in srgb, var(--ev) 38%, rgba(20, 28, 70, 0.55)) !important; border-color: rgba(255, 255, 255, 0.25) !important; }
@@ -1017,37 +1010,3 @@ body[data-design="mekano"]:not(#_) .fc .fc-daygrid-day.fc-day-range-edge,
 body[data-design="mekano"]:not(#_) .fc .fc-daygrid-day.fc-day-in-range,
 body[data-design="organski"]:not(#_) .fc .fc-daygrid-day.fc-day-range-edge,
 body[data-design="organski"]:not(#_) .fc .fc-daygrid-day.fc-day-in-range { background: transparent !important; }
-
-
-/* ===== KLASIK: kartice termina (samo podrazumevani dizajn) ===== */
-body:not([data-design]):not(#_) .clean-cal-card {
-  border-radius: 9px !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-}
-body:not([data-design]):not(#_) .clean-cal-card:hover { transform: translateY(-1px); }
-body:not([data-design]):not(#_) .clean-cal-card.is-ispit {
-  background: linear-gradient(135deg, var(--ev), color-mix(in srgb, var(--ev) 68%, #000)) !important;
-  box-shadow: 0 3px 8px color-mix(in srgb, var(--ev) 45%, transparent) !important;
-}
-body:not([data-design]):not(#_) .clean-cal-card.is-ispit:hover { box-shadow: 0 6px 14px color-mix(in srgb, var(--ev) 55%, transparent) !important; }
-body:not([data-design]):not(#_) .clean-cal-card.is-ispit .cal-card-time {
-  background: rgba(255, 255, 255, 0.22) !important;
-  border-right: none !important;
-  border-radius: 6px;
-  margin: 3px;
-  height: 24px !important;
-  letter-spacing: 0.02em;
-}
-body:not([data-design]):not(#_) .clean-cal-card.is-kolokvijum {
-  background: color-mix(in srgb, var(--ev) 9%, var(--surface)) !important;
-  border: 1px solid color-mix(in srgb, var(--ev) 38%, var(--surface)) !important;
-  border-left: 4px solid var(--ev) !important;
-}
-body:not([data-design]):not(#_) .clean-cal-card.is-kolokvijum .cal-card-time {
-  background: var(--ev) !important;
-  color: #ffffff !important;
-  border-right: none !important;
-  border-radius: 6px;
-  margin: 2px 3px;
-  height: 22px !important;
-}

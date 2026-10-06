@@ -38,7 +38,6 @@
   border: 1px solid rgba(255, 255, 255, 0.35);
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 .hdr-badge svg { width: 24px; height: 24px; }
 
@@ -198,7 +197,6 @@
   background: linear-gradient(120deg, var(--primary), color-mix(in srgb, var(--primary) 70%, #7c5cff));
   border-color: transparent;
   color: #ffffff;
-  box-shadow: 0 6px 14px color-mix(in srgb, var(--primary) 35%, transparent);
 }
 .field.is-invalid .pills { outline: 1.5px dashed #ef4444; outline-offset: 5px; border-radius: 12px; }
 
@@ -331,10 +329,9 @@
   font-size: 0.9rem;
   font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 8px 18px color-mix(in srgb, var(--accent) 38%, transparent);
   transition: transform 0.1s, box-shadow 0.1s;
 }
-.btn-save:hover { transform: translateY(-1px); box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 45%, transparent); }
+.btn-save:hover { filter: brightness(1.06); }
 .btn-save:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
 @media (max-width: 760px) {

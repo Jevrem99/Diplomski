@@ -501,7 +501,7 @@ aside .fc-event ::ng-deep .fc-event-main {
   border-radius: 6px !important;
   display: flex !important;
   align-items: center !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: none !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
@@ -551,7 +551,7 @@ aside .fc-event ::ng-deep .fc-event-main {
   border-radius: 6px !important;
   display: flex !important;
   align-items: center !important;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+  box-shadow: none !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
   width: 100% !important;
@@ -570,6 +570,24 @@ aside .fc-event ::ng-deep .fc-event-main {
   align-items: center !important;
   border-right: 1px solid rgba(255, 255, 255, 0.2) !important;
   z-index: 5 !important;
+}
+
+:host ::ng-deep .cal-card-time:has(.cal-card-sala) {
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0 !important;
+  line-height: 1.1 !important;
+}
+:host ::ng-deep .cal-card-sala {
+  display: block;
+  max-width: 54px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 700;
+  opacity: 0.85;
 }
 
 :host ::ng-deep .cal-ticker-wrap {
