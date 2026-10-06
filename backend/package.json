@@ -9,6 +9,7 @@
         "dev": "node --watch src/server.js",
         "seed": "node src/db/ensureAdmin.js",
         "test": "node --test tests/backend.test.js",
+        "test:roles": "node --test tests/roles.test.js",
         "backup": "node scripts/backup.js"
     },
     "keywords": [

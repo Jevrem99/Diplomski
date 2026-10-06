@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const config = require('../config/config');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -47,7 +48,7 @@ const sendGrupniDezurstvoEmail = async (asistentEmail, asistentIme, dezurstvaNiz
                     </table>
                     
                     <p style="margin-top: 25px; font-size: 14px; color: #555;">
-                        Sve obaveze možeš pratiti na <a href="http://localhost:4200" style="color: #34b9f7;">Korisničkom portalu</a>.
+                        Sve obaveze možeš pratiti na <a href="${config.frontendUrl}" style="color: #34b9f7;">Korisničkom portalu</a>.
                     </p>
                 </div>
             `
@@ -90,7 +91,7 @@ const sendIzmenaDezurstvaEmail = async (asistentEmail, asistentIme, predmetNaziv
                             <td style="padding: 8px; border: 1px solid #ddd;">${salaNaziv}</td>
                         </tr>
                     </table>
-                    <p style="margin-top: 20px;">Detalje možeš pogledati na <a href="http://localhost:4200" style="color: #34b9f7;">portalu</a>.</p>
+                    <p style="margin-top: 20px;">Detalje možeš pogledati na <a href="${config.frontendUrl}" style="color: #34b9f7;">portalu</a>.</p>
                 </div>
             `
         };
