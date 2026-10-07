@@ -213,3 +213,13 @@ body > .fc-event-dragging .bank-card-color-bar {
 .fc .fc-toolbar-title { cursor: pointer; user-select: none; }
 .fc .fc-toolbar-title::after { content: ' ▾'; font-size: 0.7em; opacity: 0.6; }
 .fc .fc-toolbar-title:hover { opacity: 0.85; }
+
+/* Dugmad Mesec / Nedelja / Dan: razmak između njih umesto spojenih ivica */
+.fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 24px; }
+.fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group > .fc-button {
+  margin-left: 0 !important;
+  border-radius: 8px !important;
+}
+@media (max-width: 640px) {
+  .fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 8px; }
+}

@@ -1178,7 +1178,7 @@ body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum {
   border-style: solid !important;
 }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-time {
-  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important; font-size: 13.5px !important;
+  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important; font-size: clamp(11.5px, 0.62vw, 13.5px) !important;
 }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: var(--ev-ink, #ffffff) !important; opacity: 0.95; }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: clamp(12.5px, 0.68vw, 15px) !important; font-weight: 700 !important; }
