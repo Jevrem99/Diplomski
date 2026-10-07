@@ -77,17 +77,22 @@ html, body {
   margin: 0 !important;
 }
 
-.fc .fc-daygrid-day-bottom { margin: 0 !important; padding: 0 3px 3px !important; }
+.fc .fc-daygrid-day-frame { display: flex; flex-direction: column; }
+.fc .fc-daygrid-day-frame > .fc-daygrid-day-events { flex: 1 1 auto; }
+.fc .fc-daygrid-day-bottom { margin: 0 !important; padding: 0 !important; position: static !important; }
 .fc .fc-daygrid-more-link {
   display: block !important;
+  width: 100%;
+  box-sizing: border-box;
   text-align: center;
-  font-size: 11px;
+  font-size: 12.5px;
   font-weight: 800;
   font-family: 'Montserrat', sans-serif;
   color: var(--primary-text);
   background: var(--primary-soft);
-  border-radius: 6px;
-  padding: 2px 0;
+  border-top: 1px solid var(--border);
+  border-radius: 0;
+  padding: 5px 0;
   cursor: pointer;
 }
 .fc .fc-daygrid-more-link:hover { background: var(--tint-blue-bd); }
@@ -215,11 +220,11 @@ body > .fc-event-dragging .bank-card-color-bar {
 .fc .fc-toolbar-title:hover { opacity: 0.85; }
 
 /* Dugmad Mesec / Nedelja / Dan: razmak između njih umesto spojenih ivica */
-.fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 24px; }
+.fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 8px; }
 .fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group > .fc-button {
   margin-left: 0 !important;
   border-radius: 8px !important;
 }
 @media (max-width: 640px) {
-  .fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 8px; }
+  .fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 6px; }
 }

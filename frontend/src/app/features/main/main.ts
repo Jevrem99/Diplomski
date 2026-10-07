@@ -520,8 +520,9 @@ export class Main implements OnInit, AfterViewInit {
       const krajSirov = String(arg.event.extendedProps['vremeKraja'] || arg.event.extendedProps['vreme_kraja'] || '').substring(0, 5);
       const vremeTekst = krajSirov && krajSirov !== '00:00' && krajSirov !== '0:00' ? `${String(vreme).substring(0, 5)}<span class="cal-card-kraj">–${krajSirov}</span>` : String(vreme).substring(0, 5);
       const { ink, chip } = bojaTeksta(boja);
-      const tipTekst = jeNastava ? 'Nastava' : (isIspit ? 'Ispit' : 'Kol.');
-      const tipTag = `<span class="cal-card-tip" title="${jeNastava ? 'Redovna nastava' : (isIspit ? 'Ispit' : 'Kolokvijum')}">${tipTekst}</span>`;
+      const tipPun = jeNastava ? 'Nastava' : (isIspit ? 'Ispit' : 'Kolokvijum');
+      const tipKratko = jeNastava ? 'Nast.' : (isIspit ? 'Ispit' : 'Kol.');
+      const tipTag = `<span class="cal-card-tip" title="${tipPun}"><span class="tip-pun">${tipPun}</span><span class="tip-kratko">${tipKratko}</span></span>`;
 
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {

@@ -1139,6 +1139,11 @@ body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
   border-radius: 0 !important; border-right: none !important; font-size: clamp(11.5px, 0.62vw, 13.5px) !important; font-weight: 700 !important; line-height: 1.1;
 }
 body:not(#_):not(#__) .clean-cal-card .cal-card-vreme { flex-shrink: 0; white-space: nowrap; }
+body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: none; }
+@media (min-width: 1700px) {
+  body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: inline; }
+  body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-kratko { display: none; }
+}
 body:not(#_):not(#__) .clean-cal-card .cal-card-tip {
   flex-shrink: 0; font-size: clamp(9.5px, 0.5vw, 10.5px); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.8;
 }
