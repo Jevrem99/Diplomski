@@ -348,7 +348,7 @@ export class Main implements OnInit, AfterViewInit {
           return dStr === eventDate && e.id !== originalEvent.id;
         })
         .map(e => ({
-          sala: e.extendedProps['sala'], vreme: e.extendedProps['vreme'], vremeKraja: e.extendedProps['vremeKraja']
+          sala: e.extendedProps['sala'], vreme: e.extendedProps['vreme'], vremeKraja: e.extendedProps['vremeKraja'] || e.extendedProps['vreme_kraja']
         }));
 
       const dialogRef = this.dialog.open(EventModal, {
@@ -652,14 +652,14 @@ export class Main implements OnInit, AfterViewInit {
         const noviStart = stari.start.replace(izvorniDan, ciljniDatum);
         const noviEnd = stari.end ? stari.end.replace(izvorniDan, ciljniDatum) : undefined;
 
-        this.allLoadedEvents.push({ ...stari, id: tempId, start: noviStart, end: noviEnd });
+        this.allLoadedEvents.push({ ...stari, id: tempId, start: noviStart, end: noviEnd, extendedProps: { ...stari.extendedProps, vreme_kraja: stari.extendedProps?.vreme_kraja || stari.extendedProps?.vremeKraja || '', vremeKraja: stari.extendedProps?.vremeKraja || stari.extendedProps?.vreme_kraja || '' } });
         this.unsavedEvents.push({
           tempId: tempId,
           predmet_id: stari.extendedProps.predmetId,
           title: stari.title.split(' (')[0],
           datum: ciljniDatum,
           vreme: stari.extendedProps.vreme,
-          vreme_kraja: stari.extendedProps.vremeKraja,
+          vreme_kraja: stari.extendedProps.vreme_kraja || stari.extendedProps.vremeKraja || '',
           sala: stari.extendedProps.sala,
           is_ispit: stari.extendedProps.is_ispit,
           dezurni_ids: stari.extendedProps.dezurni?.map((d: any) => d.id) || []
@@ -702,14 +702,14 @@ export class Main implements OnInit, AfterViewInit {
         const noviStart = stari.start.replace(danStr, noviDanStr);
         const noviEnd = stari.end ? stari.end.replace(danStr, noviDanStr) : undefined;
 
-        this.allLoadedEvents.push({ ...stari, id: tempId, start: noviStart, end: noviEnd });
+        this.allLoadedEvents.push({ ...stari, id: tempId, start: noviStart, end: noviEnd, extendedProps: { ...stari.extendedProps, vreme_kraja: stari.extendedProps?.vreme_kraja || stari.extendedProps?.vremeKraja || '', vremeKraja: stari.extendedProps?.vremeKraja || stari.extendedProps?.vreme_kraja || '' } });
         this.unsavedEvents.push({
           tempId: tempId,
           predmet_id: stari.extendedProps.predmetId,
           title: stari.title.split(' (')[0],
           datum: noviDanStr,
           vreme: stari.extendedProps.vreme,
-          vreme_kraja: stari.extendedProps.vremeKraja,
+          vreme_kraja: stari.extendedProps.vreme_kraja || stari.extendedProps.vremeKraja || '',
           sala: stari.extendedProps.sala,
           is_ispit: stari.extendedProps.is_ispit,
           dezurni_ids: stari.extendedProps.dezurni?.map((d: any) => d.id) || []

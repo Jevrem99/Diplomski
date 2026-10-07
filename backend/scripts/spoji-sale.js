@@ -1,5 +1,5 @@
 // npm run sale:spoji            -> pokaže šta bi se spojilo (ništa ne menja)
-// npm run sale:spoji -- --yes   -> pravi rezervnu kopiju, pa spaja duple sale
+// npm run sale:spoji:primeni    -> pravi rezervnu kopiju, pa spaja duple sale (isto što i: npm run sale:spoji -- --yes)
 // Duple sale su iste učionice zapisane na više načina ("A-0-15" i "A-0-15 RS", "A-II-24R" i "A-II-24r").
 // Ispiti i redovna nastava se prebacuju na jednu salu, a višak se briše. Bezbedno je pokrenuti ponovo.
 require('../src/config/config');
@@ -27,7 +27,7 @@ const { napraviBackup, zatvori } = require('../src/services/backupService');
         });
         plan.forEach((p) => console.log(`${p.visak.map((s) => `"${s.naziv}"`).join(', ') || '(samo preimenovanje)'} -> "${p.cilj}"`));
 
-        if (!primeni) { console.log('\nSamo pregled. Za izvršenje: npm run sale:spoji -- --yes'); return; }
+        if (!primeni) { console.log('\nSamo pregled. Za izvršenje: npm run sale:spoji:primeni'); return; }
 
         console.log('Rezervna kopija:', await napraviBackup('pre-spajanje-sala'));
         await prisma.$transaction(async (tx) => {
