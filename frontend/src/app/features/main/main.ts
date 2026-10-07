@@ -82,7 +82,8 @@ export class Main implements OnInit, AfterViewInit {
   ];
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
-  filterLevoOsoba: string = ''; // tekst: ime profesora ili saradnika (latinica i ćirilica se ne razlikuju)
+  filterLevoOsoba: string = ''; // ono što je ukucano u polju (latinica i ćirilica se ne razlikuju)
+  izabranaOsobaId: number | null = null; // osoba izabrana iz ponuđene liste
   searchPredmet: string = '';
   prikazaniBrojPredmeta: number = 5;
   filterSaradnici: number[] = [];
@@ -931,17 +932,55 @@ export class Main implements OnInit, AfterViewInit {
     }, 100);
   }
 
+  // Profesori i saradnici sa predmeta koji se poklapaju sa ukucanim tekstom
+  get ponudjeneOsobe(): { id: number; ime: string; prezime: string; uloga: string; brojPredmeta: number }[] {
+    const q = presloviULatinicu(this.filterLevoOsoba.trim());
+    if (!q) return [];
+    const mapa = new Map<number, { id: number; ime: string; prezime: string; uloga: string; brojPredmeta: number }>();
+    const dodaj = (o: any, uloga: string) => {
+      if (!o || o.id === undefined) return;
+      const unos = mapa.get(o.id) ?? { id: o.id, ime: o.ime, prezime: o.prezime, uloga, brojPredmeta: 0 };
+      unos.brojPredmeta++;
+      mapa.set(o.id, unos);
+    };
+    this.predmeti.forEach(p => {
+      dodaj(p.profesor, 'Profesor');
+      (p.saradnici || []).forEach((x: any) => dodaj(x, 'Saradnik'));
+    });
+    return [...mapa.values()]
+      .filter(o => presloviULatinicu(`${o.ime} ${o.prezime}`).includes(q) || presloviULatinicu(`${o.prezime} ${o.ime}`).includes(q))
+      .sort((a, b) => `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`))
+      .slice(0, 30);
+  }
+
+  promenaOsobe(tekst: string): void {
+    this.filterLevoOsoba = tekst;
+    this.izabranaOsobaId = null; // izmena teksta poništava prethodni izbor
+  }
+
+  izaberiOsobu(o: { id: number; ime: string; prezime: string }): void {
+    this.izabranaOsobaId = o.id;
+    this.filterLevoOsoba = `${o.ime} ${o.prezime}`;
+  }
+
+  izaberiPrvuOsobu(): void {
+    const prva = this.ponudjeneOsobe[0];
+    if (prva && this.izabranaOsobaId === null) this.izaberiOsobu(prva);
+  }
+
+  ocistiOsobu(): void {
+    this.filterLevoOsoba = '';
+    this.izabranaOsobaId = null;
+  }
+
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }
-    const osoba = presloviULatinicu(this.filterLevoOsoba.trim());
-    if (osoba) {
-      filtrirano = filtrirano.filter(p => {
-        const imena = [p.profesor, ...(p.saradnici || [])].filter(Boolean).map((x: any) => `${x.ime} ${x.prezime}`);
-        return imena.some(ime => presloviULatinicu(ime).includes(osoba));
-      });
+    if (this.izabranaOsobaId !== null) {
+      const id = this.izabranaOsobaId;
+      filtrirano = filtrirano.filter(p => p.profesor_id === id || (p.saradnici || []).some((x: any) => x.id === id));
     }
     if (this.searchPredmet) {
       const q = presloviULatinicu(this.searchPredmet);

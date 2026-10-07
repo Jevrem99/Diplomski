@@ -12,7 +12,7 @@ export interface DesignInfo {
 }
 
 const SVI_DIZAJNI: DesignInfo[] = [
-  { id: 'klasik', naziv: 'Klasik', opis: 'Trenutni izgled: plava gornja traka, ravne kartice.' },
+  { id: 'klasik', naziv: 'Podrazumevano', opis: 'Trenutni izgled: plava gornja traka, ravne kartice.' },
   { id: 'panel', naziv: 'Panel', skriven: true, opis: 'Bočni meni levo, pregledan i kompaktan raspored; termini kao čipovi sa trakom u boji godine.' },
   { id: 'minimal', naziv: 'Minimal', skriven: true, opis: 'Samo tipografija i tanke linije: bez senki i punih ploča, termini kao tanki redovi.' },
   { id: 'studio', naziv: 'Studio', opis: 'Profesionalan, miran izgled: svetla traka, indigo akcenat, tanke linije bez senki.' },

@@ -815,3 +815,33 @@ div[class*="fc-event-dragging"] {
 :host ::ng-deep .clean-cal-card.is-kolokvijum .cal-ticker-text {
   color: var(--text) !important;
 }
+
+/* Lista ponuđenih osoba u filteru banke predmeta */
+.osoba-lista {
+  max-height: 190px;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 4px;
+}
+.osoba-opt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  font-family: 'Montserrat', sans-serif;
+}
+.osoba-opt:hover { background: #eef4fb; }
+.osoba-ime { font-size: 13px; font-weight: 700; color: #0f172a; }
+.osoba-meta { font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap; }
+.osoba-prazno { padding: 8px 10px; font-size: 12px; font-weight: 600; color: #64748b; }
+:host-context(body.dark-theme) .osoba-lista { background: #16224d; }
+:host-context(body.dark-theme) .osoba-opt:hover { background: #1e2d63; }
+:host-context(body.dark-theme) .osoba-ime { color: #f1f5f9; }
