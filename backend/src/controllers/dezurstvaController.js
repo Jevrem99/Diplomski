@@ -73,6 +73,9 @@ const exportRasporedDezurstava = async (req, res) => {
             orderBy: [{ datum: 'asc' }, { vreme: 'asc' }],
         });
 
+        // Raspored dežurstava je samo za saradnike (asistente): profesori se ne prikazuju ni ne računaju
+        ispiti.forEach((ispit) => { ispit.dezurstva = ispit.dezurstva.filter((d) => d.saradnik && d.saradnik.is_saradnik); });
+
         // Jedinstveni asistenti, sortirani po prezimenu pa imenu
         const asistentiMap = new Map();
         ispiti.forEach((ispit) => {

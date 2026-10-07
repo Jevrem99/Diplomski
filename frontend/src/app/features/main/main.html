@@ -38,25 +38,19 @@
       <div class="overflow-hidden transition-all duration-300 ease-in-out"
         [ngClass]="prikaziLevoFiltere ? 'max-h-60 opacity-100 mt-3' : 'max-h-0 opacity-0 m-0'">
         <div class="bank-filters-panel flex flex-col gap-2.5 p-3 rounded-xl">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full custom-filter-select">
-            <mat-select [(ngModel)]="filterLevoProfesor" placeholder="Profesor ili saradnik">
-              <mat-option value="svi">Svi profesori i saradnici</mat-option>
-              <mat-optgroup label="Profesori">
-                @for (prof of jedinstveniProfesori; track prof.id) {
-                <mat-option [value]="prof.id.toString()">
-                  {{ prof.ime }} {{ prof.prezime }}
-                </mat-option>
-                }
-              </mat-optgroup>
-              <mat-optgroup label="Saradnici">
-                @for (sar of jedinstveniSaradniciPredmeta; track sar.id) {
-                <mat-option [value]="sar.id.toString()">
-                  {{ sar.ime }} {{ sar.prezime }}
-                </mat-option>
-                }
-              </mat-optgroup>
-            </mat-select>
-          </mat-form-field>
+          <div class="relative flex items-center">
+            <input type="text" [(ngModel)]="filterLevoOsoba" placeholder="Profesor ili saradnik (npr. djordje)"
+              class="bank-search-input w-full pl-9 pr-8 h-[38px] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F63A0]/50 transition-all">
+            <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none"
+              stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            @if (filterLevoOsoba) {
+            <button type="button" (click)="filterLevoOsoba = ''" title="Obriši"
+              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer text-sm font-bold leading-none">✕</button>
+            }
+          </div>
 
           <div class="flex flex-col gap-1.5 mt-1">
             <div class="flex items-center justify-between px-0.5">

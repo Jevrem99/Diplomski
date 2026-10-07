@@ -82,7 +82,7 @@ export class Main implements OnInit, AfterViewInit {
   ];
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
-  filterLevoProfesor: string = 'svi';
+  filterLevoOsoba: string = ''; // tekst: ime profesora ili saradnika (latinica i ćirilica se ne razlikuju)
   searchPredmet: string = '';
   prikazaniBrojPredmeta: number = 5;
   filterSaradnici: number[] = [];
@@ -931,31 +931,17 @@ export class Main implements OnInit, AfterViewInit {
     }, 100);
   }
 
-  get jedinstveniProfesori() {
-    const map = new Map<string, any>();
-    this.predmeti.forEach(p => {
-      if (p.profesor && p.profesor.id !== undefined) {
-        map.set(String(p.profesor.id), p.profesor);
-      }
-    });
-    return Array.from(map.values());
-  }
-
-  get jedinstveniSaradniciPredmeta() {
-    const map = new Map<string, any>();
-    this.predmeti.forEach(p => (p.saradnici || []).forEach((s: any) => map.set(String(s.id), s)));
-    return Array.from(map.values()).sort((a, b) => `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`));
-  }
-
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }
-    if (this.filterLevoProfesor !== 'svi') {
-      const izabran = String(this.filterLevoProfesor);
-      filtrirano = filtrirano.filter(p =>
-        String(p.profesor_id) === izabran || (p.saradnici || []).some((s: any) => String(s.id) === izabran));
+    const osoba = presloviULatinicu(this.filterLevoOsoba.trim());
+    if (osoba) {
+      filtrirano = filtrirano.filter(p => {
+        const imena = [p.profesor, ...(p.saradnici || [])].filter(Boolean).map((x: any) => `${x.ime} ${x.prezime}`);
+        return imena.some(ime => presloviULatinicu(ime).includes(osoba));
+      });
     }
     if (this.searchPredmet) {
       const q = presloviULatinicu(this.searchPredmet);
