@@ -17,7 +17,7 @@ import { environment } from '../../../environments/environment';
         <header class="p-4 sm:p-5 flex flex-col xl:flex-row items-stretch xl:items-center justify-between bg-[#1F63A0] rounded-2xl shadow-md border border-[#164f82] gap-4">
           <div>
             <h1 class="text-xl sm:text-2xl font-extrabold text-white tracking-tight">Pregled Zaduženja</h1>
-            <p class="text-xs text-blue-100/80 font-medium mt-0.5">Analitika sati i angažovanja nastavnog osoblja</p>
+            <p class="text-xs text-blue-100/80 font-medium mt-0.5">Analitika sati i angažovanja saradnika</p>
           </div>
           
           <!-- FILTERI I AKCIJA -->
@@ -70,7 +70,7 @@ import { environment } from '../../../environments/environment';
             <table class="w-full text-left text-sm">
               <thead class="bg-[#1F63A0] text-white uppercase text-[11px] font-extrabold tracking-wider">
                 <tr>
-                  <th class="px-6 py-3.5 border-r border-white/10">Saradnik / Profesor</th>
+                  <th class="px-6 py-3.5 border-r border-white/10">Saradnik</th>
                   <th class="px-6 py-3.5 text-center border-r border-white/10">Broj ispita / kolokvijuma</th>
                   <th class="px-6 py-3.5 text-right">Ukupno zaduženje</th>
                 </tr>
@@ -119,7 +119,7 @@ export class ZaduzenjaComponent implements OnInit {
 
   ucitajPodatke() {
     forkJoin({
-      saradnici: this.http.get<any[]>(`${this.API_URL}/profesors`),
+      saradnici: this.http.get<any[]>(`${this.API_URL}/profesors/saradnici`), // samo saradnici (asistenti), bez profesora
       ispiti: this.http.get<any[]>(`${this.API_URL}/ispit`)
     }).subscribe({
       next: ({ saradnici, ispiti }) => {

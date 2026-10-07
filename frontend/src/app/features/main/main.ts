@@ -941,19 +941,27 @@ export class Main implements OnInit, AfterViewInit {
     return Array.from(map.values());
   }
 
+  get jedinstveniSaradniciPredmeta() {
+    const map = new Map<string, any>();
+    this.predmeti.forEach(p => (p.saradnici || []).forEach((s: any) => map.set(String(s.id), s)));
+    return Array.from(map.values()).sort((a, b) => `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`));
+  }
+
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }
     if (this.filterLevoProfesor !== 'svi') {
-      filtrirano = filtrirano.filter(p => String(p.profesor_id) === String(this.filterLevoProfesor));
+      const izabran = String(this.filterLevoProfesor);
+      filtrirano = filtrirano.filter(p =>
+        String(p.profesor_id) === izabran || (p.saradnici || []).some((s: any) => String(s.id) === izabran));
     }
     if (this.searchPredmet) {
       const q = presloviULatinicu(this.searchPredmet);
       filtrirano = filtrirano.filter(p => {
         const nazivLat = presloviULatinicu(p.naziv);
-        const profLat = presloviULatinicu(p.profesorImePrezime || '');
+        const profLat = presloviULatinicu(`${p.profesorImePrezime || ''} ${(p.saradnici || []).map((s: any) => `${s.ime} ${s.prezime}`).join(' ')}`);
         const sifraLat = presloviULatinicu(p.sifra || '');
         return nazivLat.includes(q) || profLat.includes(q) || sifraLat.includes(q);
       });

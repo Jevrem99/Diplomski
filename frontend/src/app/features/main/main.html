@@ -39,13 +39,22 @@
         [ngClass]="prikaziLevoFiltere ? 'max-h-60 opacity-100 mt-3' : 'max-h-0 opacity-0 m-0'">
         <div class="bank-filters-panel flex flex-col gap-2.5 p-3 rounded-xl">
           <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full custom-filter-select">
-            <mat-select [(ngModel)]="filterLevoProfesor" placeholder="Izaberi profesora">
-              <mat-option value="svi">Svi profesori</mat-option>
-              @for (prof of jedinstveniProfesori; track prof.id) {
-              <mat-option [value]="prof.id.toString()">
-                {{ prof.ime }} {{ prof.prezime }}
-              </mat-option>
-              }
+            <mat-select [(ngModel)]="filterLevoProfesor" placeholder="Profesor ili saradnik">
+              <mat-option value="svi">Svi profesori i saradnici</mat-option>
+              <mat-optgroup label="Profesori">
+                @for (prof of jedinstveniProfesori; track prof.id) {
+                <mat-option [value]="prof.id.toString()">
+                  {{ prof.ime }} {{ prof.prezime }}
+                </mat-option>
+                }
+              </mat-optgroup>
+              <mat-optgroup label="Saradnici">
+                @for (sar of jedinstveniSaradniciPredmeta; track sar.id) {
+                <mat-option [value]="sar.id.toString()">
+                  {{ sar.ime }} {{ sar.prezime }}
+                </mat-option>
+                }
+              </mat-optgroup>
             </mat-select>
           </mat-form-field>
 
