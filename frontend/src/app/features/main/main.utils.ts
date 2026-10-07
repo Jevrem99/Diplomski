@@ -38,3 +38,15 @@ export function timeToMins(timeStr: string): number {
   const [h, m] = timeStr.split(':').map(Number);
   return (h * 60) + m;
 }
+
+
+// Boja teksta koja se čita na zadatoj pozadini: tamna na svetlim bojama, bela na tamnim
+export function bojaTeksta(hex: string): { ink: string; chip: string } {
+  const h = (hex || '').replace('#', '');
+  const v = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+  const r = parseInt(v.substring(0, 2), 16), g = parseInt(v.substring(2, 4), 16), b = parseInt(v.substring(4, 6), 16);
+  const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return lum > 0.6
+    ? { ink: '#1f2937', chip: 'rgba(0, 0, 0, 0.13)' }
+    : { ink: '#ffffff', chip: 'rgba(0, 0, 0, 0.25)' };
+}

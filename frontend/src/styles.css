@@ -208,3 +208,8 @@ body > .fc-event-dragging .bank-card-color-bar {
   .fc .clean-cal-card .cal-card-time { width: 100%; justify-content: center; border-right: none !important; margin: 0 !important; padding: 0 !important; }
   .fc .fc-daygrid-day-frame { min-height: 70px !important; }
 }
+
+/* Naslov kalendara se klikom otvara birač meseca i godine */
+.fc .fc-toolbar-title { cursor: pointer; user-select: none; }
+.fc .fc-toolbar-title::after { content: ' ▾'; font-size: 0.7em; opacity: 0.6; }
+.fc .fc-toolbar-title:hover { opacity: 0.85; }

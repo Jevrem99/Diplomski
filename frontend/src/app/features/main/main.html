@@ -5,7 +5,7 @@
   <!-- LIJEVI PANEL: BANKA PREDMETA I FILTERI                     -->
   <!-- ========================================================= -->
   <aside
-    class="left-bank-aside order-last lg:order-first w-full lg:w-[320px] flex flex-col rounded-2xl shadow-sm overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
+    class="left-bank-aside order-last lg:order-first w-full lg:w-[350px] flex flex-col rounded-2xl shadow-sm overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
 
     <!-- Zaglavlje banke predmeta: Plava podloga i bijeli tekst -->
     <div class="bank-header-box text-white">
@@ -110,9 +110,9 @@
           </p>
           <div class="mt-1.5">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold"
-              [style.color]="getGodinaColor(predmet.godina)"
-              [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
-              {{ predmet.godina }}. Godina
+              [style.color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 45%, var(--text))'"
+              [style.background-color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 28%, transparent)'">
+              {{ predmet.godina == 5 ? 'MAS' : predmet.godina + '. Godina' }}
             </span>
           </div>
         </div>
@@ -492,5 +492,34 @@
       </button>
     </div>
   </div>
+</div>
+}
+
+<!-- Birač meseca i godine (otvara se klikom na naslov kalendara) -->
+@if (biracOtvoren) {
+<div class="birac-pozadina" (click)="zatvoriBirac()"></div>
+<div class="birac" [style.top.px]="biracPozicija.top" [style.left.px]="biracPozicija.left">
+  <div class="birac-zaglavlje">
+    <button type="button" class="birac-strelica" (click)="biracGodina = biracGodina - (biracPrikazGodina ? 12 : 1)" aria-label="Prethodna">‹</button>
+    <button type="button" class="birac-godina" (click)="biracPrikazGodina = !biracPrikazGodina">
+      {{ biracPrikazGodina ? biracGodineMreza[0] + ' – ' + biracGodineMreza[11] : biracGodina }}
+    </button>
+    <button type="button" class="birac-strelica" (click)="biracGodina = biracGodina + (biracPrikazGodina ? 12 : 1)" aria-label="Sledeća">›</button>
+  </div>
+  @if (biracPrikazGodina) {
+  <div class="birac-mreza">
+    @for (g of biracGodineMreza; track g) {
+    <button type="button" class="birac-opcija" [class.aktivna]="g === biracGodina" (click)="izaberiGodinuBirac(g)">{{ g }}</button>
+    }
+  </div>
+  } @else {
+  <div class="birac-mreza">
+    @for (naziv of mesecNazivi; track naziv; let m = $index) {
+    <button type="button" class="birac-opcija" [class.aktivna]="jeTrenutniMesec(m)" [class.ovaj]="jeOvajMesec(m)"
+      (click)="izaberiMesecBirac(m)">{{ naziv.substring(0, 3) }}</button>
+    }
+  </div>
+  }
+  <button type="button" class="birac-danas" (click)="biracDanas()">Danas</button>
 </div>
 }

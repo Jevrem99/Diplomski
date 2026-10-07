@@ -17,7 +17,8 @@ import { FormsModule } from '@angular/forms';
 import { ExportModalComponent, ExportDataResult } from '../../shared/components/export-modal/export-modal.component';
 import { ExcelIzvozService } from './services/excel-izvoz.service';
 import { Predmet, Profesor } from './main.models';
-import { presloviULatinicu, formatDatumKonflikta, tipKonflikta, timeToMins } from './main.utils';
+import { presloviULatinicu, formatDatumKonflikta, tipKonflikta, timeToMins, bojaTeksta } from './main.utils';
+import { MESECI } from './calendar-config';
 import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
@@ -74,12 +75,17 @@ export class Main implements OnInit, AfterViewInit {
 
   // --- FILTERI ---
   izabraneGodine: number[] = [];
-  godineOpcije = [
-    { id: 1, label: '1. God' },
-    { id: 2, label: '2. God' },
-    { id: 3, label: '3. God' },
-    { id: 4, label: '4. God' }
-  ];
+  // Dugme "MAS" (master, godina 5) se pojavljuje samo ako takvi predmeti postoje
+  get godineOpcije() {
+    const opcije = [
+      { id: 1, label: '1. God' },
+      { id: 2, label: '2. God' },
+      { id: 3, label: '3. God' },
+      { id: 4, label: '4. God' }
+    ];
+    if (this.predmeti.some(p => Number(p.godina) === 5)) opcije.push({ id: 5, label: 'MAS' });
+    return opcije;
+  }
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
   filterLevoOsoba: string = ''; // ono što je ukucano u polju (latinica i ćirilica se ne razlikuju)
@@ -511,12 +517,15 @@ export class Main implements OnInit, AfterViewInit {
       const salaProp = arg.event.extendedProps['sala'];
       const salaNaziv = (typeof salaProp === 'object' ? salaProp?.naziv : salaProp) || '';
       const salaTag = salaNaziv && salaNaziv !== 'Bez sale' ? `<small class="cal-card-sala">${salaNaziv}</small>` : '';
+      const krajSirov = String(arg.event.extendedProps['vremeKraja'] || arg.event.extendedProps['vreme_kraja'] || '').substring(0, 5);
+      const vremeTekst = krajSirov && krajSirov !== '00:00' && krajSirov !== '0:00' ? `${String(vreme).substring(0, 5)}<span class="cal-card-kraj">–${krajSirov}</span>` : String(vreme).substring(0, 5);
+      const { ink, chip } = bojaTeksta(boja);
 
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
-          <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja};">
-            <div class="cal-card-time">${vreme}${salaTag}</div>
+          <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja}; --ev-ink: ${ink}; --ev-chip: ${chip};">
+            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>
@@ -905,6 +914,63 @@ export class Main implements OnInit, AfterViewInit {
 
   private hoverRaf = 0;
 
+  // ---- Birač meseca i godine (klik na naslov kalendara) ----
+  biracOtvoren = false;
+  biracGodina = new Date().getFullYear();
+  biracPrikazGodina = false;
+  biracPozicija = { top: 0, left: 0 };
+  readonly mesecNazivi = MESECI;
+
+  get biracGodineMreza(): number[] {
+    const pocetak = this.biracGodina - 5;
+    return Array.from({ length: 12 }, (_, i) => pocetak + i);
+  }
+
+  otvoriBirac(naslov: HTMLElement): void {
+    const datum = this.calendarComponent.getApi().getDate();
+    this.biracGodina = datum.getFullYear();
+    this.biracPrikazGodina = false;
+    const r = naslov.getBoundingClientRect();
+    const sirina = 320;
+    this.biracPozicija = {
+      top: r.bottom + 8,
+      left: Math.max(8, Math.min(r.left + r.width / 2 - sirina / 2, window.innerWidth - sirina - 8))
+    };
+    this.biracOtvoren = true;
+    this.cdr.detectChanges();
+  }
+
+  zatvoriBirac(): void {
+    this.biracOtvoren = false;
+    this.cdr.detectChanges();
+  }
+
+  jeTrenutniMesec(m: number): boolean {
+    const d = this.calendarComponent?.getApi().getDate();
+    return !!d && d.getFullYear() === this.biracGodina && d.getMonth() === m;
+  }
+
+  jeOvajMesec(m: number): boolean {
+    const d = new Date();
+    return d.getFullYear() === this.biracGodina && d.getMonth() === m;
+  }
+
+  izaberiMesecBirac(m: number): void {
+    this.calendarComponent.getApi().gotoDate(new Date(this.biracGodina, m, 1));
+    this.zatvoriBirac();
+  }
+
+  izaberiGodinuBirac(g: number): void {
+    this.biracGodina = g;
+    this.biracPrikazGodina = false;
+    this.cdr.detectChanges();
+  }
+
+  biracDanas(): void {
+    this.calendarComponent.getApi().today();
+    this.zatvoriBirac();
+  }
+
   ngAfterViewInit(): void {
     this.initDraggable();
 
@@ -912,6 +978,10 @@ export class Main implements OnInit, AfterViewInit {
     setTimeout(() => {
       const calEl = this.calendarComponent?.getApi()?.el || document.querySelector('full-calendar');
       if (calEl) {
+        calEl.addEventListener('click', (e: Event) => {
+          const naslov = (e.target as HTMLElement).closest('.fc-toolbar-title') as HTMLElement | null;
+          if (naslov) this.otvoriBirac(naslov);
+        });
         calEl.addEventListener('mouseover', (e: Event) => {
           if (!this.rezimBiranjaOpsegaIzvoza || !this.exportStartPickedDate) return;
           const cell = (e.target as HTMLElement).closest('.fc-daygrid-day') as HTMLElement;
@@ -1329,10 +1399,13 @@ export class Main implements OnInit, AfterViewInit {
         for (let j = i + 1; j < evts.length; j++) {
           const e1 = evts[i];
           const e2 = evts[j];
+          const kraj1 = String(e1.extendedProps['vremeKraja'] || e1.extendedProps['vreme_kraja'] || '').trim();
+          const kraj2 = String(e2.extendedProps['vremeKraja'] || e2.extendedProps['vreme_kraja'] || '').trim();
           const start1 = timeToMins(String(e1.extendedProps['vreme'] || '').trim());
-          const end1 = timeToMins(String(e1.extendedProps['vremeKraja'] || '').trim()) || (start1 + 120);
+          const end1 = timeToMins(kraj1) || (start1 + 120);
           const start2 = timeToMins(String(e2.extendedProps['vreme'] || '').trim());
-          const end2 = timeToMins(String(e2.extendedProps['vremeKraja'] || '').trim()) || (start2 + 120);
+          const end2 = timeToMins(kraj2) || (start2 + 120);
+          const opseg = (e: any, kraj: string) => kraj ? `${e.extendedProps['vreme']}–${kraj.substring(0, 5)}` : `${e.extendedProps['vreme']}`;
 
           if (start1 < end2 && start2 < end1) {
             const s1 = String(e1.extendedProps['sala'] || '').trim();
@@ -1340,7 +1413,7 @@ export class Main implements OnInit, AfterViewInit {
             if (s1 && s2 && s1 === s2 && s1 !== 'Bez sale' && s1 !== 'undefined') {
               const n1 = String(e1.title).split(' (')[0];
               const n2 = String(e2.title).split(' (')[0];
-              razlozi.push(`Sala ${s1}: „${n1}“ (${e1.extendedProps['vreme']}–${e1.extendedProps['vremeKraja'] || '?'}) i „${n2}“ (${e2.extendedProps['vreme']}–${e2.extendedProps['vremeKraja'] || '?'}) se preklapaju.`);
+              razlozi.push(`Sala ${s1}: „${n1}“ (${opseg(e1, kraj1)}) i „${n2}“ (${opseg(e2, kraj2)}) se preklapaju.`);
             }
             const dezurni1: any[] = e1.extendedProps['dezurni'] || [];
             const dezurni2: any[] = e2.extendedProps['dezurni'] || [];
@@ -1348,7 +1421,7 @@ export class Main implements OnInit, AfterViewInit {
               if (dezurni2.some(d2 => d2.id === d1.id)) {
                 const m1 = String(e1.title).split(' (')[0];
                 const m2 = String(e2.title).split(' (')[0];
-                razlozi.push(`Saradnik ${d1.ime} ${d1.prezime} je istovremeno dežuran na „${m1}“ (${e1.extendedProps['vreme']}) i „${m2}“ (${e2.extendedProps['vreme']}).`);
+                razlozi.push(`Saradnik ${d1.ime} ${d1.prezime} je istovremeno dežuran na „${m1}“ (${opseg(e1, kraj1)}) i „${m2}“ (${opseg(e2, kraj2)}).`);
               }
             });
           }

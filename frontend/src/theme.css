@@ -892,7 +892,7 @@ body[data-design="organski"]:not(#_) .clean-cal-card {
   box-shadow: none !important;
 }
 body[data-design="organski"]:not(#_) .clean-cal-card.is-kolokvijum { background: var(--surface) !important; border: 2px solid color-mix(in srgb, var(--ev) 60%, var(--surface)) !important; }
-body[data-design="organski"]:not(#_) .clean-cal-card .cal-card-time { background: var(--ev) !important; color: #fff !important; border-radius: 999px; margin: 3px 0 3px 3px; height: 22px !important; border-right: none !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+body[data-design="organski"]:not(#_) .clean-cal-card .cal-card-time { background: var(--ev) !important; color: var(--ev-ink, #fff) !important; border-radius: 999px; margin: 3px 0 3px 3px; height: 22px !important; border-right: none !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 body[data-design="organski"]:not(#_) .clean-cal-card.is-kolokvijum .cal-card-time { background: color-mix(in srgb, var(--ev) 22%, var(--surface)) !important; color: var(--text) !important; text-shadow: none; }
 body[data-design="organski"]:not(#_) .clean-cal-card .cal-ticker-text { color: var(--text) !important; font-weight: 700 !important; line-height: 30px !important; }
 
@@ -1065,7 +1065,7 @@ body.dark-theme[data-design="studio"]:not(#_) {
   --tint-blue-bg: #1d2142;  --tint-blue-bd: #323a5c;
 }
 body[data-design="studio"]:not(#_) *:not(.material-icons):not(mat-icon):not(.fc-icon) {
-  font-family: "Open Sans", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif !important;
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif !important;
 }
 /* Svetla gornja traka sa tankom linijom */
 body[data-design="studio"]:not(#_) .top-bar-imi { background-color: var(--surface) !important; border-bottom: 1px solid var(--border); box-shadow: none !important; }
@@ -1125,7 +1125,7 @@ body[data-design="studio"]:not(#_) .clean-cal-card {
   border-left: 4px solid var(--ev) !important;
 }
 body[data-design="studio"]:not(#_) .clean-cal-card.is-kolokvijum { background: var(--surface) !important; border-style: dashed !important; border-left-style: solid !important; }
-body[data-design="studio"]:not(#_) .clean-cal-card .cal-card-time { background: transparent !important; color: color-mix(in srgb, var(--ev) 75%, var(--text)) !important; font-weight: 800 !important; font-size: 11px !important; border-right: none !important; padding: 0 5px !important; }
+body[data-design="studio"]:not(#_) .clean-cal-card .cal-card-time { background: transparent !important; color: color-mix(in srgb, var(--ev) 40%, var(--text)) !important; font-weight: 800 !important; font-size: 11px !important; border-right: none !important; padding: 0 5px !important; }
 body[data-design="studio"]:not(#_) .clean-cal-card .cal-ticker-text { color: var(--text) !important; font-weight: 600 !important; font-size: 12px !important; line-height: 28px !important; }
 
 /* ===== Čitljiviji termini u kalendaru (svi dizajni) =====
@@ -1135,10 +1135,11 @@ body:not(#_):not(#__) .clean-cal-card { height: auto !important; min-height: 0 !
 body:not(#_):not(#__) .clean-cal-card .cal-card-time,
 body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
   flex-direction: row !important; justify-content: space-between !important; align-items: center !important;
-  height: 26px !important; width: 100% !important; margin: 0 !important; padding: 0 8px !important;
-  border-radius: 0 !important; border-right: none !important; font-size: 14.5px !important; font-weight: 800 !important;
+  height: 26px !important; width: 100% !important; margin: 0 !important; padding: 0 6px !important; gap: 4px;
+  border-radius: 0 !important; border-right: none !important; font-size: 12.5px !important; font-weight: 800 !important;
 }
-body:not(#_):not(#__) .clean-cal-card .cal-card-sala { font-size: 12.5px !important; max-width: none !important; opacity: 0.9; }
+body:not(#_):not(#__) .clean-cal-card .cal-card-sala { font-size: 10px !important; max-width: none !important; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.9; }
+body:not(#_):not(#__) .clean-cal-card .cal-card-vreme { flex-shrink: 0; }
 body:not(#_):not(#__) .clean-cal-card .cal-ticker-wrap { white-space: normal !important; overflow: hidden !important; padding: 4px 6px 6px !important; display: block !important; width: 100%; }
 body:not(#_):not(#__) .clean-cal-card .cal-ticker-text {
   font-size: 15px !important; line-height: 1.22 !important; font-weight: 700 !important;
@@ -1156,6 +1157,7 @@ body:not(#_):not(#__) .bank-items-scroll { gap: 8px !important; padding: 10px !i
 body[data-design="studio"]:not(#_):not(.dark-theme) { --muted: #4b5578; --faint: #6b7496; }
 @media (max-width: 640px) {
   body:not(#_):not(#__) .fc .clean-cal-card { height: 30px !important; }
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-kraj { display: none; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time:has(.cal-card-sala) { height: 100% !important; flex-direction: column !important; justify-content: center !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time { font-size: 12px !important; }
 }
@@ -1167,9 +1169,9 @@ body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum {
   border-style: solid !important;
 }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-time {
-  background: var(--ev) !important; color: #ffffff !important; font-size: 13.5px !important;
+  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important; font-size: 13.5px !important;
 }
-body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: #ffffff !important; opacity: 0.95; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: var(--ev-ink, #ffffff) !important; opacity: 0.95; }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: 15px !important; font-weight: 700 !important; }
 
 /* Studio: najdeblja slova (800/900) se teško čitaju, pa se spuštaju na 700; običan "bold" na 600 */

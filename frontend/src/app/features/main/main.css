@@ -798,11 +798,11 @@ div[class*="fc-event-dragging"] {
   border: none !important;
 }
 :host ::ng-deep .clean-cal-card.is-ispit .cal-card-time {
-  background-color: rgba(0, 0, 0, 0.25) !important;
-  color: #ffffff !important;
+  background-color: var(--ev-chip, rgba(0, 0, 0, 0.25)) !important;
+  color: var(--ev-ink, #ffffff) !important;
 }
 :host ::ng-deep .clean-cal-card.is-ispit .cal-ticker-text {
-  color: #ffffff !important;
+  color: var(--ev-ink, #ffffff) !important;
 }
 :host ::ng-deep .clean-cal-card.is-kolokvijum {
   background-color: var(--surface) !important;
@@ -810,7 +810,7 @@ div[class*="fc-event-dragging"] {
 }
 :host ::ng-deep .clean-cal-card.is-kolokvijum .cal-card-time {
   background-color: var(--surface-3) !important;
-  color: var(--ev) !important;
+  color: color-mix(in srgb, var(--ev) 50%, var(--text)) !important;
 }
 :host ::ng-deep .clean-cal-card.is-kolokvijum .cal-ticker-text {
   color: var(--text) !important;
@@ -845,3 +845,36 @@ div[class*="fc-event-dragging"] {
 :host-context(body.dark-theme) .osoba-lista { background: #16224d; }
 :host-context(body.dark-theme) .osoba-opt:hover { background: #1e2d63; }
 :host-context(body.dark-theme) .osoba-ime { color: #f1f5f9; }
+
+.cal-card-vreme { white-space: nowrap; }
+
+/* Birač meseca i godine */
+.birac-pozadina { position: fixed; inset: 0; z-index: 999990; }
+.birac {
+  position: fixed; z-index: 999991; width: 320px; box-sizing: border-box;
+  background: var(--surface); color: var(--text);
+  border: 1px solid var(--border-strong); border-radius: var(--radius, 12px);
+  box-shadow: var(--shadow-pop); padding: 14px;
+  font-family: 'Montserrat', sans-serif;
+}
+.birac-zaglavlje { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.birac-strelica, .birac-godina {
+  border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text);
+  border-radius: var(--radius-sm, 8px); cursor: pointer; font: inherit; font-weight: 700;
+}
+.birac-strelica { width: 38px; height: 38px; font-size: 22px; line-height: 1; }
+.birac-godina { flex: 1; height: 38px; font-size: 17px; }
+.birac-strelica:hover, .birac-godina:hover { background: var(--primary-soft); border-color: var(--primary); color: var(--primary-text); }
+.birac-mreza { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.birac-opcija {
+  height: 42px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+  border-radius: var(--radius-sm, 8px); cursor: pointer; font: inherit; font-size: 15px; font-weight: 600;
+}
+.birac-opcija:hover { background: var(--primary-soft); border-color: var(--primary); }
+.birac-opcija.ovaj { border-color: var(--primary); color: var(--primary-text); }
+.birac-opcija.aktivna { background: var(--primary); border-color: var(--primary); color: #ffffff; }
+.birac-danas {
+  width: 100%; margin-top: 10px; height: 38px; border: none; border-radius: var(--radius-sm, 8px);
+  background: var(--primary-soft); color: var(--primary-text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
+}
+.birac-danas:hover { background: var(--tint-blue-bd); }
