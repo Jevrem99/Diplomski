@@ -2,6 +2,7 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const prisma = require('../db/prisma');
 const { mapLimit } = require('../utils/mapLimit');
+const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
 
 const IMI_DAY_URL = 'https://imi.pmf.kg.ac.rs/cp/rs/day.php';
 const PARALELNIH_ZAHTEVA = 5;
@@ -57,7 +58,7 @@ async function preuzmiDan(dan) {
 
             const predmet = $(aTag).text().replace(vremeTekst, '').trim().replace(/^"/, '').replace(/"$/, '').trim();
             const [pocetak, kraj] = vremeTekst.split('-');
-            termini.push({ salaNaziv, datum, vreme_pocetka: pocetak.trim(), vreme_kraja: kraj.trim(), predmet });
+            termini.push({ salaNaziv: normalizujNazivSale(salaNaziv), datum, vreme_pocetka: pocetak.trim(), vreme_kraja: kraj.trim(), predmet });
         });
     });
 
@@ -67,7 +68,7 @@ async function preuzmiDan(dan) {
 // Sinhronizacija redovne nastave sa IMI sajta.
 // Opciono: { od: 'YYYY-MM-DD', do: 'YYYY-MM-DD' }. Stari podaci iz tog perioda se menjaju tek
 // kada je bar jedan dan uspešno preuzet, i to u jednoj transakciji.
-const syncZauzetostSala = async ({ od, do: doDatum } = {}) => {
+const izvrsiSync = async ({ od, do: doDatum } = {}) => {
     const period = podrazumevaniPeriod();
     const startDate = parsirajDatum(od) || period.od;
     const endDate = parsirajDatum(doDatum) || period.do;
@@ -103,9 +104,12 @@ const syncZauzetostSala = async ({ od, do: doDatum } = {}) => {
 
     // Sale: jedan upit za sve postojeće + kreiranje samo nedostajućih
     const nazivi = [...new Set(termini.map((t) => t.salaNaziv))];
-    await prisma.sala.createMany({ data: nazivi.map((naziv) => ({ naziv })), skipDuplicates: true });
-    const sale = await prisma.sala.findMany({ where: { naziv: { in: nazivi } } });
-    const salaId = new Map(sale.map((s) => [s.naziv, s.id]));
+    const salaCache = new Map();
+    const salaId = new Map();
+    for (const naziv of nazivi) {
+        const sala = await nadjiIliNapraviSalu(prisma, naziv, salaCache);
+        if (sala) salaId.set(naziv, sala.id);
+    }
 
     const redovi = termini
         .filter((t) => salaId.has(t.salaNaziv))
@@ -129,6 +133,18 @@ const syncZauzetostSala = async ({ od, do: doDatum } = {}) => {
         success: true,
         poruka: `Sinhronizovano ${redovi.length} termina redovne nastave (${uspelih} dana preuzeto${neuspelih ? `, ${neuspelih} neuspelo` : ''}).`
     };
+};
+
+// Jedna sinhronizacija u isto vreme (ručna i noćna se ne preklapaju)
+let uToku = false;
+const syncZauzetostSala = async (opcije = {}) => {
+    if (uToku) throw new Error('Sinhronizacija je već u toku, pokušajte kasnije.');
+    uToku = true;
+    try {
+        return await izvrsiSync(opcije);
+    } finally {
+        uToku = false;
+    }
 };
 
 module.exports = { syncZauzetostSala };

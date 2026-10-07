@@ -4,6 +4,7 @@ const isoWeek = require('dayjs/plugin/isoWeek');
 dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
+const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
@@ -304,11 +305,8 @@ const tekstovi = (konflikti) => [...new Set(konflikti.map((k) => k.tekst))];
 const odrediSalaId = async (sala, cache = new Map(), db = prisma) => {
     const naziv = typeof sala === 'object' && sala !== null ? sala.naziv : sala;
     if (!naziv || naziv === 'Bez sale') return null;
-    if (cache.has(naziv)) return cache.get(naziv);
-    let postojeca = await db.sala.findUnique({ where: { naziv } });
-    if (!postojeca) postojeca = await db.sala.create({ data: { naziv } });
-    cache.set(naziv, postojeca.id);
-    return postojeca.id;
+    const nadjena = await nadjiIliNapraviSalu(db, naziv, cache);
+    return nadjena ? nadjena.id : null;
 };
 
 const createIspit = async (req, res) => {
@@ -444,7 +442,7 @@ const updateIspit = async (req, res) => {
       salaConnect = { connect: { id: Number(body.sala_id) } };
     } else if (body.sala && typeof body.sala === 'string' && body.sala !== 'Bez sale') {
       const pronadjenaSala = await prisma.sala.findFirst({
-        where: { naziv: body.sala.trim() }
+        where: { naziv: { equals: normalizujNazivSale(body.sala), mode: 'insensitive' } }
       });
       if (pronadjenaSala) {
         salaConnect = { connect: { id: pronadjenaSala.id } };
@@ -614,11 +612,12 @@ const proveriRaspored = async (req, res) => {
         const trazi = async (sala) => {
             const naziv = typeof sala === 'object' && sala !== null ? sala.naziv : sala;
             if (!naziv || naziv === 'Bez sale') return { id: null, naziv: '' };
-            if (!salaCache.has(naziv)) {
-                const nadjena = await prisma.sala.findUnique({ where: { naziv } });
-                salaCache.set(naziv, nadjena ? nadjena.id : null);
+            const kljuc = normalizujNazivSale(naziv).toLowerCase();
+            if (!salaCache.has(kljuc)) {
+                const nadjena = await prisma.sala.findFirst({ where: { naziv: { equals: normalizujNazivSale(naziv), mode: 'insensitive' } } });
+                salaCache.set(kljuc, nadjena ? nadjena.id : null);
             }
-            return { id: salaCache.get(naziv), naziv };
+            return { id: salaCache.get(kljuc), naziv };
         };
 
         // Normalizacija jednog termina iz tela zahteva (isti oblici kao u bulk/update)

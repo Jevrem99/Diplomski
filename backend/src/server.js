@@ -7,6 +7,7 @@ const config = require('./config/config');
 const prisma = require('./db/prisma');
 const { ensureAdmin } = require('./db/ensureAdmin');
 const { startUcioniceSync } = require('./controllers/ucionicaController');
+const { startNocniSync } = require('./services/nocniSync');
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profesorRoutes = require('./routes/profesorRoutes');
@@ -82,6 +83,7 @@ const server = app.listen(config.port, async () => {
         console.error('Neuspelo proveravanje admin naloga (da li je baza dostupna?):', err.message);
     }
     startUcioniceSync(); // pozadinski, ne blokira pokretanje
+    startNocniSync(); // automatska noćna sinhronizacija redovne nastave (vidi services/nocniSync.js)
 });
 
 const ugasi = async () => {

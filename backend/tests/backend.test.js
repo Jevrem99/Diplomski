@@ -104,3 +104,14 @@ test('validirajOsobu i validirajPredmet', () => {
     assert.ok(validirajPredmet({ sifra: '', naziv: 'N', godina: 9, semestar: 'Zimski' }).godina);
     assert.deepEqual(validirajPredmet({ sifra: 'S1', naziv: 'N', godina: 2, semestar: 'Letnji', broj_studenata: 40 }), {});
 });
+
+test('normalizujNazivSale spaja zapise iste sale, a razlikuje A-II-24 i A-II-24R', () => {
+    const { normalizujNazivSale: n } = require('../src/utils/sale');
+    assert.equal(n('A-0-15 RS'), 'A-0-15');
+    assert.equal(n('  A-II-28   RS '), 'A-II-28');
+    assert.equal(n('A-II-24r'), 'A-II-24R');
+    assert.equal(n('A-II-24R'), 'A-II-24R');
+    assert.equal(n('A-II-24'), 'A-II-24');
+    assert.notEqual(n('A-II-24'), n('A-II-24R'));
+    assert.equal(n(null), '');
+});
