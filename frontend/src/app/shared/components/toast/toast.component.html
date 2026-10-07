@@ -19,5 +19,9 @@
     }
     
     <span class="text-xs sm:text-sm font-bold text-slate-800">{{ toastService.message() }}</span>
+    @if (toastService.action(); as akcija) {
+      <button type="button" (click)="toastService.pokreniAkciju()"
+        class="ml-2 px-3 py-1 rounded-lg bg-[#1F63A0] text-white text-xs font-bold cursor-pointer border-none hover:bg-[#164f82]">{{ akcija.label }}</button>
+    }
   </div>
 }

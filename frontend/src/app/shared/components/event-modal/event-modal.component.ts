@@ -164,7 +164,17 @@ export class EventModal implements OnInit {
     this.dialogRef.close();
   }
   
+  // Kraj termina mora biti posle početka (isto pravilo proverava i server)
+  get vremeGreska(): string {
+    const { startTime, endTime } = this.formData;
+    if (startTime && endTime && this.timeToMins(endTime) <= this.timeToMins(startTime)) {
+      return 'Vreme kraja mora biti posle vremena početka.';
+    }
+    return '';
+  }
+
   onSave(): void {
+    if (this.vremeGreska) return;
     const imaOdsutnih = this.izabraniSaradnici.some(s => this.odsutniSaradniciMap.has(s.id));
     if (imaOdsutnih) {
       this.odsustvoErrorPoruka = 'Jedan ili više izabranih saradnika su odsutni u ovom terminu!';

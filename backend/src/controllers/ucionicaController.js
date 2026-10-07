@@ -2,6 +2,7 @@ const axios = require('axios');
 const https = require('https');
 const prisma = require('../db/prisma');
 const { mapLimit } = require('../utils/mapLimit');
+const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
 
 let cachedUcionice = [];
 let isFetching = false;
@@ -127,9 +128,10 @@ async function syncUcioniceCache() {
       fetchUcioniceIzDnevnihRezervacija()
     ]);
 
-    const nazivi = [...new Set([...redovne, ...dnevne])];
+    const nazivi = [...new Set([...redovne, ...dnevne].map(normalizujNazivSale).filter(Boolean))];
     if (nazivi.length > 0) {
-      await prisma.sala.createMany({ data: nazivi.map((naziv) => ({ naziv })), skipDuplicates: true });
+      const salaCache = new Map();
+      for (const naziv of nazivi) await nadjiIliNapraviSalu(prisma, naziv, salaCache);
       await ucitajIzBaze();
       console.log(`[Keš Osvežen] ${nazivi.length} učionica sa PMF sajta, ukupno u bazi ${cachedUcionice.length}.`);
     } else {

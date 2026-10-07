@@ -51,7 +51,7 @@
 
   --radius: 14px;
   --radius-sm: 8px;
-  --shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+  --shadow: none;
   --shadow-pop: 0 20px 40px -12px rgba(15, 23, 42, 0.3);
   --ink: #0f172a;
 }
@@ -93,7 +93,7 @@ body.dark-theme {
   --tint-sky-bg: rgba(14, 165, 233, 0.16);    --tint-sky-fg: #7dd3fc;
   --tint-indigo-bg: rgba(99, 102, 241, 0.18); --tint-indigo-fg: #a5b4fc; --tint-indigo-bd: rgba(129, 140, 248, 0.4);
 
-  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow: none;
   --shadow-pop: 0 20px 40px -12px rgba(0, 0, 0, 0.7);
   --ink: #f1f5f9;
 }
@@ -236,7 +236,7 @@ body[data-design="staklo"]:not(#_) {
   --tint-green-bg: rgba(220, 252, 231, 0.75);
   --radius: 22px;
   --radius-sm: 12px;
-  --shadow: 0 8px 32px rgba(31, 38, 135, 0.16);
+  --shadow: none;
   --shadow-pop: 0 24px 60px rgba(31, 38, 135, 0.32);
 }
 body.dark-theme[data-design="staklo"]:not(#_) {
@@ -261,7 +261,7 @@ body.dark-theme[data-design="staklo"]:not(#_) {
   --tint-emerald-bg: rgba(16, 185, 129, 0.18);
   --tint-sky-bg: rgba(14, 165, 233, 0.18);
   --tint-green-bg: rgba(34, 197, 94, 0.16);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  --shadow: none;
   --shadow-pop: 0 24px 60px rgba(0, 0, 0, 0.7);
 }
 body[data-design="staklo"]:not(#_) {
@@ -288,16 +288,12 @@ body[data-design="staklo"]:not(#_) :is(
   .calendar-container-card, aside.left-bank-aside, .top-ctrl-header, .db-header, .table-wrapper, .tabs-group,
   .predmet-card, .settings-card, .design-popover, .dialog-card-box, .statistika-dropdown-card, .filteri-dropdown-card,
   .info-box, .crud-modal-container, [class~="bg-white"]) {
-  -webkit-backdrop-filter: blur(18px) saturate(165%) !important;
-  backdrop-filter: blur(18px) saturate(165%) !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--shadow) !important;
 }
 body[data-design="staklo"]:not(#_) .bank-items-scroll { background-color: transparent !important; }
 body[data-design="staklo"]:not(#_) .mat-mdc-dialog-surface {
   background: var(--surface) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(170%);
-  backdrop-filter: blur(22px) saturate(170%);
   border: 1px solid var(--border);
 }
 /* Plutajuća gornja traka */
@@ -306,8 +302,6 @@ body[data-design="staklo"]:not(#_) .top-bar-imi {
   width: calc(100% - 32px) !important;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.35);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
-  backdrop-filter: blur(16px) saturate(160%);
   box-shadow: var(--shadow) !important;
 }
 body[data-design="staklo"]:not(#_) .design-popover { top: 84px; }
@@ -809,7 +803,7 @@ body[data-design="organski"]:not(#_) {
   --accent-hover: #ad5a1b;
   --radius: 26px;
   --radius-sm: 16px;
-  --shadow: 0 6px 18px rgba(90, 70, 30, 0.10);
+  --shadow: none;
   --shadow-pop: 0 24px 48px rgba(70, 50, 20, 0.25);
   --tint-blue-bg: #e4eadb; --tint-blue-bd: #cfdabf;
   --tint-amber-bg: #fbecc9; --tint-rose-bg: #f6ddd0; --tint-green-bg: #dfeccf; --tint-emerald-bg: #dfeccf; --tint-sky-bg: #dcecef;
@@ -836,7 +830,7 @@ body.dark-theme[data-design="organski"]:not(#_) {
   --accent: #c46a22;
   --tint-blue-bg: #2a3326; --tint-blue-bd: #3d4a37;
   --tint-amber-bg: #3d3318; --tint-rose-bg: #3d2a22; --tint-green-bg: #26361f; --tint-emerald-bg: #26361f; --tint-sky-bg: #213538;
-  --shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --shadow: none;
 }
 body[data-design="organski"]:not(#_) {
   background:
@@ -895,10 +889,10 @@ body[data-design="organski"]:not(#_) .cal-day-num.is-today { background: var(--p
 body[data-design="organski"]:not(#_) .clean-cal-card {
   height: 30px !important; border-radius: 999px !important; border: none !important;
   background: color-mix(in srgb, var(--ev) 24%, var(--surface)) !important;
-  box-shadow: 0 2px 6px rgba(90, 70, 30, 0.12) !important;
+  box-shadow: none !important;
 }
 body[data-design="organski"]:not(#_) .clean-cal-card.is-kolokvijum { background: var(--surface) !important; border: 2px solid color-mix(in srgb, var(--ev) 60%, var(--surface)) !important; }
-body[data-design="organski"]:not(#_) .clean-cal-card .cal-card-time { background: var(--ev) !important; color: #fff !important; border-radius: 999px; margin: 3px 0 3px 3px; height: 22px !important; border-right: none !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
+body[data-design="organski"]:not(#_) .clean-cal-card .cal-card-time { background: var(--ev) !important; color: var(--ev-ink, #fff) !important; border-radius: 999px; margin: 3px 0 3px 3px; height: 22px !important; border-right: none !important; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3); }
 body[data-design="organski"]:not(#_) .clean-cal-card.is-kolokvijum .cal-card-time { background: color-mix(in srgb, var(--ev) 22%, var(--surface)) !important; color: var(--text) !important; text-shadow: none; }
 body[data-design="organski"]:not(#_) .clean-cal-card .cal-ticker-text { color: var(--text) !important; font-weight: 700 !important; line-height: 30px !important; }
 
@@ -935,8 +929,7 @@ body[data-design="staklo"]:not(#_) .clean-cal-card {
   height: 30px !important; border-radius: 14px !important;
   background: color-mix(in srgb, var(--ev) 32%, rgba(255, 255, 255, 0.4)) !important;
   border: 1px solid rgba(255, 255, 255, 0.75) !important;
-  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
-  box-shadow: 0 4px 12px rgba(31, 38, 135, 0.15) !important;
+  box-shadow: none !important;
 }
 body[data-design="staklo"]:not(#_) .clean-cal-card.is-kolokvijum { background: rgba(255, 255, 255, 0.5) !important; border: 1.5px solid color-mix(in srgb, var(--ev) 70%, white) !important; }
 body.dark-theme[data-design="staklo"]:not(#_) .clean-cal-card { background: color-mix(in srgb, var(--ev) 38%, rgba(20, 28, 70, 0.55)) !important; border-color: rgba(255, 255, 255, 0.25) !important; }
@@ -1018,3 +1011,220 @@ body[data-design="mekano"]:not(#_) .fc .fc-daygrid-day.fc-day-in-range,
 body[data-design="organski"]:not(#_) .fc .fc-daygrid-day.fc-day-range-edge,
 body[data-design="organski"]:not(#_) .fc .fc-daygrid-day.fc-day-in-range { background: transparent !important; }
 
+
+/* ============================ STUDIO (profesionalan, miran) ============================ */
+body[data-design="studio"]:not(#_) {
+  --bg: #f5f6fa;
+  --bg-main: #f5f6fa;
+  --shell-bg: #f5f6fa;
+  --surface: #ffffff;
+  --surface-2: #f8f9fc;
+  --surface-3: #eef0f6;
+  --border: #e3e6ef;
+  --border-strong: #cfd4e3;
+  --text: #151a2d;
+  --text-2: #3a4160;
+  --muted: #667090;
+  --faint: #8a93b0;
+  --primary: #4f46e5;
+  --primary-dark: #4338ca;
+  --primary-text: #4338ca;
+  --primary-soft: #eef0ff;
+  --header-bg: #ffffff;
+  --header-border: #e3e6ef;
+  --accent: #4f46e5;
+  --accent-dark: #4338ca;
+  --accent-hover: #4338ca;
+  --tint-blue-bg: #eef0ff;  --tint-blue-bd: #cfd4f7;
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: none;
+}
+body.dark-theme[data-design="studio"]:not(#_) {
+  --bg: #0c0f1c;
+  --bg-main: #0c0f1c;
+  --shell-bg: #0c0f1c;
+  --surface: #121627;
+  --surface-2: #0f1322;
+  --surface-3: #1a1f36;
+  --border: #232942;
+  --border-strong: #323a5c;
+  --text: #eef0fa;
+  --text-2: #cdd2e8;
+  --muted: #98a0c0;
+  --faint: #6c7498;
+  --primary: #6366f1;
+  --primary-dark: #818cf8;
+  --primary-text: #a5b4fc;
+  --primary-soft: #1d2142;
+  --header-bg: #121627;
+  --header-border: #232942;
+  --accent: #6366f1;
+  --accent-dark: #818cf8;
+  --accent-hover: #818cf8;
+  --tint-blue-bg: #1d2142;  --tint-blue-bd: #323a5c;
+}
+body[data-design="studio"]:not(#_) *:not(.material-icons):not(mat-icon):not(.fc-icon) {
+  font-family: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif !important;
+}
+/* Svetla gornja traka sa tankom linijom */
+body[data-design="studio"]:not(#_) .top-bar-imi { background-color: var(--surface) !important; border-bottom: 1px solid var(--border); box-shadow: none !important; }
+body[data-design="studio"]:not(#_) .nav-item-link,
+body[data-design="studio"]:not(#_) .imi-main-title { color: var(--text) !important; }
+body[data-design="studio"]:not(#_) .imi-subtitle { color: var(--muted) !important; }
+body[data-design="studio"]:not(#_) .nav-item-link { font-weight: 600 !important; opacity: 0.75; border-radius: 8px; }
+body[data-design="studio"]:not(#_) .nav-item-link:hover { background: var(--surface-3) !important; opacity: 1; }
+body[data-design="studio"]:not(#_) .nav-item-link.active,
+body[data-design="studio"]:not(#_) .nav-item-link.router-link-active { background: var(--primary-soft) !important; color: var(--primary-text) !important; opacity: 1; }
+body[data-design="studio"]:not(#_):not(.dark-theme) .imi-logo-img { filter: brightness(0); }
+body[data-design="studio"]:not(#_) :is(.design-btn, .desktop-logout-btn, .toggle-topbar) { background: transparent !important; color: var(--text) !important; border: 1px solid var(--border-strong) !important; }
+body[data-design="studio"]:not(#_) .desktop-logout-btn:hover { background: var(--surface-3) !important; }
+/* Kartice */
+body[data-design="studio"]:not(#_) :is(
+  .calendar-container-card, aside.left-bank-aside, .top-ctrl-header, .db-header, .table-wrapper, .tabs-group,
+  .predmet-card, .settings-card, .dialog-card-box, .statistika-dropdown-card, .filteri-dropdown-card, .info-box) {
+  border: 1px solid var(--border) !important; box-shadow: none !important; border-radius: var(--radius) !important;
+}
+body[data-design="studio"]:not(#_) :is(.db-header, .settings-header) { background: var(--surface) !important; border: 1px solid var(--border) !important; }
+body[data-design="studio"]:not(#_) :is(.db-title, .settings-title) { color: var(--text) !important; }
+body[data-design="studio"]:not(#_) :is(.db-subtitle, .settings-subtitle) { color: var(--muted) !important; }
+body[data-design="studio"]:not(#_) :is(h1, h2, .top-title-text, .db-title, .settings-title) { font-weight: 700 !important; letter-spacing: -0.01em; }
+body[data-design="studio"]:not(#_) .styled-table thead th { background: var(--surface-2) !important; color: var(--muted) !important; border-color: var(--border) !important; font-weight: 700; }
+/* Dugmad */
+body[data-design="studio"]:not(#_) :is(.header-btn, .fc .fc-button-primary, .tab-btn) { border-radius: var(--radius-sm) !important; box-shadow: none !important; font-weight: 600 !important; }
+body[data-design="studio"]:not(#_) :is(.btn-save-draft, .btn-action-primary) { background: var(--primary) !important; border-color: var(--primary) !important; color: #fff !important; }
+body[data-design="studio"]:not(#_) .btn-publish { background: var(--tint-green-bg) !important; border: 1px solid var(--tint-green-bd) !important; color: var(--tint-green-fg) !important; }
+body[data-design="studio"]:not(#_) .btn-publish svg { color: var(--tint-green-fg) !important; }
+body[data-design="studio"]:not(#_) .tab-btn.active { background: var(--primary) !important; color: #fff !important; }
+body[data-design="studio"]:not(#_) .btn-action-secondary { color: var(--text) !important; background: transparent !important; border-color: var(--border-strong) !important; }
+body[data-design="studio"]:not(#_) .btn-action-danger { color: var(--danger-text) !important; border-color: var(--danger-border) !important; background: var(--danger-soft) !important; }
+/* Banka predmeta */
+body[data-design="studio"]:not(#_) .bank-header-box, body[data-design="studio"]:not(#_) aside > div:first-child { background: var(--surface) !important; border-bottom: 1px solid var(--border) !important; }
+body[data-design="studio"]:not(#_) .bank-header-box :is(h2, p, span), body[data-design="studio"]:not(#_) aside > div:first-child :is(h2, p) { color: var(--text) !important; }
+body[data-design="studio"]:not(#_) .bank-header-box p { color: var(--muted) !important; }
+body[data-design="studio"]:not(#_) .bank-search-input { background: var(--surface-2) !important; border-color: var(--border) !important; }
+body[data-design="studio"]:not(#_) .year-tag-btn.aktivna-godina { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; box-shadow: none !important; }
+body[data-design="studio"]:not(#_) :is(.bank-card-item, aside .fc-event) { border-radius: var(--radius-sm) !important; box-shadow: none !important; border: 1px solid var(--border) !important; background: var(--surface) !important; }
+/* Kalendar */
+body[data-design="studio"]:not(#_) .fc .fc-col-header-cell { background: var(--surface-2) !important; border-color: var(--border) !important; }
+body[data-design="studio"]:not(#_) .fc .fc-col-header-cell-cushion { color: var(--muted) !important; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.08em; }
+body[data-design="studio"]:not(#_) .fc .fc-toolbar-title { border: none !important; background: transparent !important; color: var(--text) !important; font-size: 1.25rem !important; font-weight: 700 !important; }
+body[data-design="studio"]:not(#_) .fc .fc-button-primary { background: var(--surface) !important; color: var(--text-2) !important; border-color: var(--border-strong) !important; }
+body[data-design="studio"]:not(#_) .fc .fc-button-primary:hover { background: var(--surface-3) !important; }
+body[data-design="studio"]:not(#_) .fc .fc-button-primary.fc-button-active,
+body[data-design="studio"]:not(#_) .fc .fc-button-primary:not(:disabled).fc-button-active { background: var(--primary) !important; color: #fff !important; border-color: var(--primary) !important; }
+body[data-design="studio"]:not(#_) .fc .fc-day-other { background: var(--surface-2) !important; }
+body[data-design="studio"]:not(#_) .fc .fc-day-today { background: var(--primary-soft) !important; }
+body[data-design="studio"]:not(#_) .cal-day-num { font-weight: 600; color: var(--muted); font-size: 12px; }
+body[data-design="studio"]:not(#_) .cal-day-num.is-today { background: var(--primary) !important; color: #fff !important; box-shadow: none; }
+/* Termini: svetla pločica sa trakom u boji godine */
+body[data-design="studio"]:not(#_) .clean-cal-card {
+  height: 30px !important; border-radius: 6px !important; box-shadow: none !important;
+  background: color-mix(in srgb, var(--ev) 13%, var(--surface)) !important;
+  border: 1px solid color-mix(in srgb, var(--ev) 30%, var(--surface)) !important;
+  border-left: 4px solid var(--ev) !important;
+}
+body[data-design="studio"]:not(#_) .clean-cal-card.is-kolokvijum { background: var(--surface) !important; border-style: dashed !important; border-left-style: solid !important; }
+body[data-design="studio"]:not(#_) .clean-cal-card .cal-card-time { background: transparent !important; color: color-mix(in srgb, var(--ev) 40%, var(--text)) !important; font-weight: 800 !important; font-size: 11px !important; border-right: none !important; padding: 0 5px !important; }
+body[data-design="studio"]:not(#_) .clean-cal-card .cal-ticker-text { color: var(--text) !important; font-weight: 600 !important; font-size: 12px !important; line-height: 28px !important; }
+
+/* ===== Dizajn sistem: razmaci, veličine i težine slova (jedno mesto za sve kartice) =====
+   Razmaci su umnošci od 4 px; tri težine slova: 400 (običan), 600 (srednji), 700 (naglašen). */
+:root {
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --fs-card-title: clamp(12.5px, 0.68vw, 15px);
+  --fs-card-time: clamp(11.5px, 0.62vw, 13.5px);
+  --fs-card-meta: clamp(10px, 0.54vw, 12px);
+  --fw-regular: 400; --fw-medium: 600; --fw-bold: 700;
+}
+
+/* ===== Čitljiviji termini u kalendaru (svi dizajni) =====
+   Dva :not(#_) daju veću specifičnost od pravila pojedinačnih dizajna.
+   Hijerarhija: naslov i vreme su glavni (700), tip i sala su pomoćni (600, bleđi).
+   Kartica: gore traka (godina, vreme, tip, sala), ispod naslov u do dva reda. */
+body:not(#_):not(#__) .clean-cal-card { height: auto !important; min-height: 0 !important; border-radius: var(--sp-2) !important; flex-direction: column !important; align-items: stretch !important; }
+body:not(#_):not(#__) .clean-cal-card .cal-card-time,
+body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
+  flex-direction: row !important; flex-wrap: wrap !important; justify-content: flex-start !important; align-items: center !important; gap: var(--sp-1) var(--sp-2) !important;
+  height: auto !important; width: 100% !important; margin: 0 !important; padding: var(--sp-1) var(--sp-2) !important;
+  border-radius: 0 !important; border-right: none !important; font-size: var(--fs-card-time) !important; font-weight: var(--fw-bold) !important; line-height: 1.1;
+}
+body:not(#_):not(#__) .clean-cal-card .cal-card-vreme { flex-shrink: 0; white-space: nowrap; }
+body:not(#_):not(#__) .clean-cal-card .cal-card-sala {
+  display: inline-block; margin-left: auto; font-size: var(--fs-card-meta) !important; font-weight: var(--fw-medium) !important; max-width: 100% !important;
+  padding: 2px var(--sp-2); border-radius: var(--sp-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.85 !important;
+  background: color-mix(in srgb, currentColor 10%, transparent); color: inherit;
+}
+body:not(#_):not(#__) .clean-cal-card .cal-ticker-wrap { white-space: normal !important; overflow: hidden !important; padding: var(--sp-1) var(--sp-2) var(--sp-2) !important; display: block !important; width: 100%; }
+body:not(#_):not(#__) .clean-cal-card .cal-ticker-text {
+  font-size: var(--fs-card-title) !important; line-height: 1.2 !important; font-weight: var(--fw-bold) !important;
+  white-space: normal !important; overflow: hidden; display: -webkit-box !important;
+  -webkit-line-clamp: 2; -webkit-box-orient: vertical; animation: none !important; transform: none !important;
+  overflow-wrap: normal; word-break: normal; hyphens: manual;
+}
+body:not(#_):not(#__) .fc .cal-day-num { font-size: 16px !important; font-weight: var(--fw-bold); }
+body:not(#_):not(#__) .fc .fc-col-header-cell-cushion { font-size: 0.85rem !important; }
+body:not(#_):not(#__) .bank-card-title { font-size: 16px !important; line-height: 1.3; }
+body:not(#_):not(#__) .bank-card-prof { font-size: 14px !important; }
+body:not(#_):not(#__) .bank-card-item { padding-top: var(--sp-2) !important; padding-bottom: var(--sp-2) !important; }
+body:not(#_):not(#__) .bank-items-scroll { gap: var(--sp-2) !important; padding: var(--sp-2) !important; }
+/* Studio: tamniji sporedni tekst radi kontrasta */
+body[data-design="studio"]:not(#_):not(.dark-theme) { --muted: #4b5578; --faint: #6b7496; }
+@media (max-width: 640px) {
+  body:not(#_):not(#__) .fc .clean-cal-card { height: 30px !important; }
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-kraj { display: none; }
+  
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time:has(.cal-card-sala) { height: 100% !important; align-items: center !important; padding: 0 !important; gap: 0 !important; }
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-sala { font-size: 10px !important; padding: 0 3px; }
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time { font-size: 12px !important; }
+}
+
+/* Studio: kolokvijum je prepoznatljiv po punoj traci u boji godine i obojenoj ivici */
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum {
+  background: color-mix(in srgb, var(--ev) 12%, var(--surface)) !important;
+  border: 1.5px solid var(--ev) !important;
+  border-style: solid !important;
+}
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-time {
+  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important; font-size: var(--fs-card-time) !important;
+}
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: var(--ev-ink, #ffffff) !important; opacity: 0.95; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: var(--fs-card-title) !important; font-weight: 700 !important; }
+
+/* Studio: najdeblja slova (800/900) se teško čitaju, pa se spuštaju na 700; običan "bold" na 600 */
+body[data-design="studio"]:not(#_):not(#__) :is(.font-extrabold, .font-black, [class*="font-extrabold"], [class*="font-black"]) { font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) :is(.font-bold, [class*="font-bold"], strong, b) { font-weight: 600 !important; }
+body[data-design="studio"]:not(#_):not(#__) :is(h1, h2, h3, th, .db-title, .bank-card-title, .imi-main-title) { font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card .cal-card-time { font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card .cal-ticker-text,
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-weight: 600 !important; }
+body[data-design="studio"]:not(#_):not(#__) :is(.header-btn, .tab-btn, .fc .fc-button, .btn-action-primary, .btn-action-secondary, .btn-action-danger, .year-tag-btn) { font-weight: 600 !important; }
+
+/* ===== Kartice termina: Studio i podrazumevani dizajn (Klasik) ===== */
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card {
+  background: color-mix(in srgb, var(--ev) 16%, var(--surface)) !important;
+  border: 1.5px solid color-mix(in srgb, var(--ev) 55%, var(--surface)) !important;
+  border-left: 6px solid var(--ev) !important;
+  border-radius: 8px !important; box-shadow: none !important;
+}
+/* Kolokvijum: debela ivica u boji godine i puna traka sa vremenom */
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card.is-kolokvijum {
+  background: color-mix(in srgb, var(--ev) 24%, var(--surface)) !important;
+  border: 3px solid var(--ev) !important;
+}
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card .cal-card-time {
+  background: transparent !important;
+  color: color-mix(in srgb, var(--ev) 35%, var(--text)) !important;
+}
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-time {
+  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important;
+}
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card .cal-card-sala {
+  background: color-mix(in srgb, var(--ev) 32%, var(--surface)); color: var(--text) !important;
+}
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala {
+  background: rgba(255, 255, 255, 0.7); color: #1f2937 !important;
+}
+body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card .cal-ticker-text {
+  color: var(--text) !important; font-weight: 700 !important;
+}

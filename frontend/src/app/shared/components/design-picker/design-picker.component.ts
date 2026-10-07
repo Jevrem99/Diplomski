@@ -87,6 +87,12 @@ import { ThemeService } from '../../../core/services/theme';
     .dp-kontrast .dp-side, .dp-kontrast .dp-main i { border: 2px solid #111; border-radius: 3px; box-shadow: 2px 2px 0 #111; }
     .dp-kontrast .dp-main i:nth-child(2) { background: #8ec5ff; }
 
+    .dp-studio { background: #f5f6fa; }
+    .dp-studio .dp-nav { background: #fff; border-bottom: 1px solid #dfe3ee; }
+    .dp-studio .dp-side { background: #fff; border: 1px solid #dfe3ee; border-radius: 4px; }
+    .dp-studio .dp-main i { background: #fff; border: 1px solid #dfe3ee; border-radius: 4px; border-left: 3px solid #4f46e5; }
+    .dp-studio .dp-main i:nth-child(2) { border-left-color: #0ea5e9; }
+
     .dp-theme { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; font-size: .9rem; color: var(--text); cursor: pointer;
       padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
     .dp-theme input { width: 38px; height: 20px; accent-color: var(--primary); cursor: pointer; }

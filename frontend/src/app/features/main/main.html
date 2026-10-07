@@ -1,11 +1,11 @@
 <div
-  class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full p-3 sm:p-4 md:p-6 gap-4 md:gap-6 font-montserrat">
+  class="main-wrapper flex flex-col lg:flex-row min-h-screen w-full p-2 sm:p-3 md:p-4 gap-3 md:gap-4 font-montserrat">
 
   <!-- ========================================================= -->
   <!-- LIJEVI PANEL: BANKA PREDMETA I FILTERI                     -->
   <!-- ========================================================= -->
   <aside
-    class="left-bank-aside w-full lg:w-[380px] flex flex-col rounded-2xl shadow-sm overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
+    class="left-bank-aside order-last lg:order-first w-full lg:w-[clamp(300px,19vw,400px)] flex flex-col rounded-2xl shadow-sm overflow-hidden shrink-0 max-h-[340px] lg:max-h-none lg:h-[calc(100vh-2rem)]">
 
     <!-- Zaglavlje banke predmeta: Plava podloga i bijeli tekst -->
     <div class="bank-header-box text-white">
@@ -36,18 +36,38 @@
 
       <!-- FILTERI LIJEVO -->
       <div class="overflow-hidden transition-all duration-300 ease-in-out"
-        [ngClass]="prikaziLevoFiltere ? 'max-h-60 opacity-100 mt-3' : 'max-h-0 opacity-0 m-0'">
+        [ngClass]="prikaziLevoFiltere ? 'max-h-[30rem] opacity-100 mt-3' : 'max-h-0 opacity-0 m-0'">
         <div class="bank-filters-panel flex flex-col gap-2.5 p-3 rounded-xl">
-          <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full custom-filter-select">
-            <mat-select [(ngModel)]="filterLevoProfesor" placeholder="Izaberi profesora">
-              <mat-option value="svi">Svi profesori</mat-option>
-              @for (prof of jedinstveniProfesori; track prof.id) {
-              <mat-option [value]="prof.id.toString()">
-                {{ prof.ime }} {{ prof.prezime }}
-              </mat-option>
+          <div class="flex flex-col gap-1.5">
+            <div class="relative flex items-center">
+              <input type="text" [ngModel]="filterLevoOsoba" (ngModelChange)="promenaOsobe($event)"
+                (keydown.enter)="izaberiPrvuOsobu()" placeholder="Profesor ili saradnik (npr. andric)"
+                class="bank-search-input w-full pl-9 pr-8 h-[38px] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F63A0]/50 transition-all">
+              <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none"
+                stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              @if (filterLevoOsoba) {
+              <button type="button" (click)="ocistiOsobu()" title="Obriši"
+                class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer text-sm font-bold leading-none">✕</button>
               }
-            </mat-select>
-          </mat-form-field>
+            </div>
+
+            <!-- Ponuđene osobe: izaberi tačno onu koju tražiš (npr. dva Andrića) -->
+            @if (filterLevoOsoba.trim() && izabranaOsobaId === null) {
+            <div class="osoba-lista">
+              @for (o of ponudjeneOsobe; track o.id) {
+              <button type="button" class="osoba-opt" (click)="izaberiOsobu(o)">
+                <span class="osoba-ime">{{ o.ime }} {{ o.prezime }}</span>
+                <span class="osoba-meta">{{ o.uloga }} · {{ o.brojPredmeta }}</span>
+              </button>
+              } @empty {
+              <div class="osoba-prazno">Nema rezultata.</div>
+              }
+            </div>
+            }
+          </div>
 
           <div class="flex flex-col gap-1.5 mt-1">
             <div class="flex items-center justify-between px-0.5">
@@ -90,9 +110,9 @@
           </p>
           <div class="mt-1.5">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold"
-              [style.color]="getGodinaColor(predmet.godina)"
-              [style.background-color]="getGodinaColor(predmet.godina) + '1A'">
-              {{ predmet.godina }}. Godina
+              [style.color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 45%, var(--text))'"
+              [style.background-color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 28%, transparent)'">
+              {{ predmet.godina == 5 ? 'MAS' : predmet.godina + '. Godina' }}
             </span>
           </div>
         </div>
@@ -246,6 +266,11 @@
                   class="w-4 h-4 text-[#27AE60] rounded">
                 Prikaži kolokvijume
               </label>
+              <label class="flex items-center gap-2 text-xs font-bold cursor-pointer">
+                <input type="checkbox" [(ngModel)]="prikaziNastavu" (change)="applyFilters()"
+                  class="w-4 h-4 rounded">
+                Prikaži redovnu nastavu
+              </label>
             </div>
 
             <div class="flex flex-col gap-1">
@@ -327,6 +352,9 @@
     <!-- FULLCALENDAR KONTEJNER -->
     <div
       class="calendar-container-card flex-1 p-3 sm:p-3.5 flex flex-col h-[520px] lg:h-[calc(100vh-8.5rem)] min-h-[420px] shadow-xs">
+      @if (nemaTermina) {
+      <div class="prazno-obavestenje">Nema ispita ni kolokvijuma u ovom mesecu. Prevucite predmet iz banke na željeni datum ili izaberite drugi mesec.</div>
+      }
       <full-calendar #calendar [options]="calendarOptions" class="h-full w-full flex-1"></full-calendar>
     </div>
   </main>
@@ -467,5 +495,34 @@
       </button>
     </div>
   </div>
+</div>
+}
+
+<!-- Birač meseca i godine (otvara se klikom na naslov kalendara) -->
+@if (biracOtvoren) {
+<div class="birac-pozadina" (click)="zatvoriBirac()"></div>
+<div class="birac" [style.top.px]="biracPozicija.top" [style.left.px]="biracPozicija.left">
+  <div class="birac-zaglavlje">
+    <button type="button" class="birac-strelica" (click)="biracGodina = biracGodina - (biracPrikazGodina ? 12 : 1)" aria-label="Prethodna">‹</button>
+    <button type="button" class="birac-godina" (click)="biracPrikazGodina = !biracPrikazGodina">
+      {{ biracPrikazGodina ? biracGodineMreza[0] + ' – ' + biracGodineMreza[11] : biracGodina }}
+    </button>
+    <button type="button" class="birac-strelica" (click)="biracGodina = biracGodina + (biracPrikazGodina ? 12 : 1)" aria-label="Sledeća">›</button>
+  </div>
+  @if (biracPrikazGodina) {
+  <div class="birac-mreza">
+    @for (g of biracGodineMreza; track g) {
+    <button type="button" class="birac-opcija" [class.aktivna]="g === biracGodina" (click)="izaberiGodinuBirac(g)">{{ g }}</button>
+    }
+  </div>
+  } @else {
+  <div class="birac-mreza">
+    @for (naziv of mesecNazivi; track naziv; let m = $index) {
+    <button type="button" class="birac-opcija" [class.aktivna]="jeTrenutniMesec(m)" [class.ovaj]="jeOvajMesec(m)"
+      (click)="izaberiMesecBirac(m)">{{ naziv.substring(0, 3) }}</button>
+    }
+  </div>
+  }
+  <button type="button" class="birac-danas" (click)="biracDanas()">Danas</button>
 </div>
 }

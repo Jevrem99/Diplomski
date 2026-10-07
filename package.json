@@ -1,0 +1,11 @@
+{
+    "name": "raspored-ispita",
+    "version": "1.0.0",
+    "private": true,
+    "description": "Platforma za raspored ispita - pokretanje cele aplikacije jednom komandom",
+    "scripts": {
+        "setup": "npm install --prefix backend && npm install --prefix frontend",
+        "start": "node start.js",
+        "test": "npm test --prefix backend"
+    }
+}

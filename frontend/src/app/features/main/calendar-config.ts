@@ -7,6 +7,9 @@ export const DANI_PUNO = ['Nedelja', 'Ponedeljak', 'Utorak', 'Sreda', 'Četvrtak
 
 // Podešavanja kalendara koja ne zavise od stanja stranice (naslovi, zaglavlja dana, dugmad)
 export const KALENDAR_STATICKA_PODESAVANJA: Partial<CalendarOptions> = {
+  // Dani prethodnog/sledećeg meseca se ne prikazuju (ni ne crtaju njihovi termini): brži kalendar
+  showNonCurrentDates: false,
+  fixedWeekCount: false,
   titleFormat: (arg) => `${MESECI[arg.date.month]} ${arg.date.year}.`,
   dayHeaderContent: (arg) => DANI_KRATKO[arg.date.getDay()],
   views: {

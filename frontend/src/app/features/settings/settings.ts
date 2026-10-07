@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { environment } from '../../../environments/environment';
 import { DesignPickerComponent } from '../../shared/components/design-picker/design-picker.component';
 
+import { proveriLozinku } from '../../core/utils/validacija';
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -37,10 +38,11 @@ export class Settings implements OnInit {
 
   // --- LOGIKA ZA BOJE GODINA ---
   defaultGodinaColors: Record<number, string> = {
-    1: '#34b9f7',
-    2: '#ef4444',
-    3: '#eab308',
-    4: '#10b981'
+    1: '#8EA9DB',
+    2: '#F4B183',
+    3: '#FFD966',
+    4: '#A9D18E',
+    5: '#00B0F0'
   };
 
   godinaColors: Record<number, string> = { ...this.defaultGodinaColors };
@@ -58,6 +60,10 @@ export class Settings implements OnInit {
   }
 
   loadSavedColors(): void {
+    if (localStorage.getItem('app_godina_colors_v') !== '2') {
+      localStorage.removeItem('app_godina_colors');
+      localStorage.setItem('app_godina_colors_v', '2');
+    }
     const saved = localStorage.getItem('app_godina_colors');
     if (saved) {
       try {
@@ -93,8 +99,9 @@ export class Settings implements OnInit {
       return;
     }
 
-    if (this.passwordData.newPassword.length < 6) {
-      this.toast.show('Nova lozinka mora imati bar 6 karaktera!', 'error');
+    const greskaLozinke = proveriLozinku(this.passwordData.newPassword);
+    if (greskaLozinke) {
+      this.toast.show(greskaLozinke, 'error');
       return;
     }
 

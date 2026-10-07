@@ -4,6 +4,8 @@ const isoWeek = require('dayjs/plugin/isoWeek');
 dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
+const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
+const { proveriVremena } = require('../utils/validators');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
@@ -304,11 +306,8 @@ const tekstovi = (konflikti) => [...new Set(konflikti.map((k) => k.tekst))];
 const odrediSalaId = async (sala, cache = new Map(), db = prisma) => {
     const naziv = typeof sala === 'object' && sala !== null ? sala.naziv : sala;
     if (!naziv || naziv === 'Bez sale') return null;
-    if (cache.has(naziv)) return cache.get(naziv);
-    let postojeca = await db.sala.findUnique({ where: { naziv } });
-    if (!postojeca) postojeca = await db.sala.create({ data: { naziv } });
-    cache.set(naziv, postojeca.id);
-    return postojeca.id;
+    const nadjena = await nadjiIliNapraviSalu(db, naziv, cache);
+    return nadjena ? nadjena.id : null;
 };
 
 const createIspit = async (req, res) => {
@@ -323,6 +322,8 @@ const createIspit = async (req, res) => {
     if (!finalDatum || Number.isNaN(new Date(finalDatum).getTime()) || !finalVreme) {
         return res.status(400).json({ error: 'Datum i vreme početka su obavezni.' });
     }
+    const greskaVremena = proveriVremena(finalVreme, finalVremeKraja);
+    if (greskaVremena) return res.status(400).json({ error: greskaVremena, polja: { vreme_kraja: greskaVremena } });
     try {
         let finalDezurni = dezurni_ids || [];
 
@@ -437,6 +438,10 @@ const updateIspit = async (req, res) => {
       body.vreme_kraja !== undefined ? body.vreme_kraja : body.vremeKraja, 
       postojeciIspit.vreme_kraja
     );
+    if (novoVreme && novoVremeKraja && new Date(novoVremeKraja).getTime() <= new Date(novoVreme).getTime()) {
+      const g = 'Vreme kraja mora biti posle vremena početka.';
+      return res.status(400).json({ error: g, polja: { vreme_kraja: g } });
+    }
 
     // 3. Sala
     let salaConnect = undefined;
@@ -444,7 +449,7 @@ const updateIspit = async (req, res) => {
       salaConnect = { connect: { id: Number(body.sala_id) } };
     } else if (body.sala && typeof body.sala === 'string' && body.sala !== 'Bez sale') {
       const pronadjenaSala = await prisma.sala.findFirst({
-        where: { naziv: body.sala.trim() }
+        where: { naziv: { equals: normalizujNazivSale(body.sala), mode: 'insensitive' } }
       });
       if (pronadjenaSala) {
         salaConnect = { connect: { id: pronadjenaSala.id } };
@@ -561,6 +566,8 @@ const saveBulkIspiti = async (req, res) => {
             if (!datum || !vreme || Number.isNaN(new Date(datum).getTime())) {
                 return res.status(400).json({ error: 'Svaki termin mora imati datum i vreme početka.' });
             }
+            const greskaVremena = proveriVremena(vreme, vremeKraja);
+            if (greskaVremena) return res.status(400).json({ error: `${greskaVremena} (termin: ${ispit.title || ispit.naziv || datum})` });
             const salaId = await odrediSalaId(ispit.sala || ispit.room, salaCache);
             const dezurni = ispit.dezurni_ids || [];
             const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId });
@@ -614,11 +621,12 @@ const proveriRaspored = async (req, res) => {
         const trazi = async (sala) => {
             const naziv = typeof sala === 'object' && sala !== null ? sala.naziv : sala;
             if (!naziv || naziv === 'Bez sale') return { id: null, naziv: '' };
-            if (!salaCache.has(naziv)) {
-                const nadjena = await prisma.sala.findUnique({ where: { naziv } });
-                salaCache.set(naziv, nadjena ? nadjena.id : null);
+            const kljuc = normalizujNazivSale(naziv).toLowerCase();
+            if (!salaCache.has(kljuc)) {
+                const nadjena = await prisma.sala.findFirst({ where: { naziv: { equals: normalizujNazivSale(naziv), mode: 'insensitive' } } });
+                salaCache.set(kljuc, nadjena ? nadjena.id : null);
             }
-            return { id: salaCache.get(naziv), naziv };
+            return { id: salaCache.get(kljuc), naziv };
         };
 
         // Normalizacija jednog termina iz tela zahteva (isti oblici kao u bulk/update)

@@ -104,3 +104,38 @@ test('validirajOsobu i validirajPredmet', () => {
     assert.ok(validirajPredmet({ sifra: '', naziv: 'N', godina: 9, semestar: 'Zimski' }).godina);
     assert.deepEqual(validirajPredmet({ sifra: 'S1', naziv: 'N', godina: 2, semestar: 'Letnji', broj_studenata: 40 }), {});
 });
+
+test('normalizujNazivSale spaja zapise iste sale, a razlikuje A-II-24 i A-II-24R', () => {
+    const { normalizujNazivSale: n } = require('../src/utils/sale');
+    assert.equal(n('A-0-15 RS'), 'A-0-15');
+    assert.equal(n('  A-II-28   RS '), 'A-II-28');
+    assert.equal(n('A-II-24r'), 'A-II-24R');
+    assert.equal(n('A-II-24R'), 'A-II-24R');
+    assert.equal(n('A-II-24'), 'A-II-24');
+    assert.notEqual(n('A-II-24'), n('A-II-24R'));
+    assert.equal(n(null), '');
+});
+
+
+test('proveriVremena: kraj mora biti posle početka', () => {
+    const { proveriVremena, proveriEmail } = require('../src/utils/validators');
+    assert.equal(proveriVremena('09:00', '10:15'), null);
+    assert.equal(proveriVremena('09:00:00', '2026-10-06T10:15:00'), null);
+    assert.equal(proveriVremena('09:00', null), null);
+    assert.ok(proveriVremena('09:00', '08:00'));
+    assert.ok(proveriVremena('09:00', '09:00'));
+    assert.ok(proveriVremena('09:00', 'abc'));
+    assert.equal(proveriEmail('ime.prezime@pmf.kg.ac.rs'), null);
+    assert.ok(proveriEmail('ime@'));
+    assert.ok(proveriEmail('bez-monkeya.rs'));
+});
+
+test('sabloni mejlova ne propuštaju HTML iz podataka', () => {
+    const { _sabloni } = require('../src/services/emailService');
+    const html = _sabloni.gradiPregledDezurstava('<script>x</script>', [
+        { predmet: '<img src=x onerror=alert(1)>', datum: '1.1.2026.', vreme: '09:00', vremeKraja: '10:00', sala: 'A-0-1', isIzmenjen: false }
+    ]);
+    assert.ok(!html.includes('<script>x</script>'));
+    assert.ok(!html.includes('<img src=x'));
+    assert.ok(html.includes('&lt;img src=x'));
+});

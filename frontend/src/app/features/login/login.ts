@@ -11,6 +11,7 @@ import { AuthService } from '../../core/services/auth';
 import { ToastService } from '../../core/services/toast.service';
 import { SpinnerComponent } from '../../shared/components/spinner/spinner.component';
 import { environment } from '../../../environments/environment';
+import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
 @Component({
   selector: 'app-login',
   standalone: true,
@@ -87,6 +88,11 @@ export class Login implements OnInit {
       this.toast.show('Unesite vašu email adresu!', 'error');
       return;
     }
+    const greskaEmaila = proveriEmail(this.forgotEmail);
+    if (greskaEmaila) {
+      this.toast.show(greskaEmaila, 'error');
+      return;
+    }
 
     this.loading = true;
 
@@ -110,6 +116,11 @@ export class Login implements OnInit {
     }
     if (this.newPassword !== this.confirmNewPassword) {
       this.toast.show('Lozinke se ne poklapaju!', 'error');
+      return;
+    }
+    const greskaLozinke = proveriLozinku(this.newPassword);
+    if (greskaLozinke) {
+      this.toast.show(greskaLozinke, 'error');
       return;
     }
 
