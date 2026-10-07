@@ -1150,13 +1150,6 @@ body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
   border-radius: 0 !important; border-right: none !important; font-size: var(--fs-card-time) !important; font-weight: var(--fw-bold) !important; line-height: 1.1;
 }
 body:not(#_):not(#__) .clean-cal-card .cal-card-vreme { flex-shrink: 0; white-space: nowrap; }
-/* Oznaka godine: mali obojen kvadrat sa brojem (MAS = M), da godina ne zavisi samo od boje */
-body:not(#_):not(#__) .clean-cal-card .cal-card-god {
-  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-  width: calc(var(--fs-card-time) + var(--sp-2)); height: calc(var(--fs-card-time) + var(--sp-2)); border-radius: var(--sp-1);
-  background: var(--ev); color: var(--ev-ink, #fff); font-size: var(--fs-card-meta); font-weight: var(--fw-bold); line-height: 1;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
-}
 body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: none; }
 @media (min-width: 2100px) {
   body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: inline; }
@@ -1188,7 +1181,7 @@ body[data-design="studio"]:not(#_):not(.dark-theme) { --muted: #4b5578; --faint:
 @media (max-width: 640px) {
   body:not(#_):not(#__) .fc .clean-cal-card { height: 30px !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-kraj { display: none; }
-  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-tip, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-god { display: none; }
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-tip { display: none; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time:has(.cal-card-sala) { height: 100% !important; align-items: center !important; padding: 0 !important; gap: 0 !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-sala { font-size: 10px !important; padding: 0 3px; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time { font-size: 12px !important; }
