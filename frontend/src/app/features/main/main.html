@@ -352,6 +352,9 @@
     <!-- FULLCALENDAR KONTEJNER -->
     <div
       class="calendar-container-card flex-1 p-3 sm:p-3.5 flex flex-col h-[520px] lg:h-[calc(100vh-8.5rem)] min-h-[420px] shadow-xs">
+      @if (nemaTermina) {
+      <div class="prazno-obavestenje">Nema ispita ni kolokvijuma u ovom mesecu. Prevucite predmet iz banke na željeni datum ili izaberite drugi mesec.</div>
+      }
       <full-calendar #calendar [options]="calendarOptions" class="h-full w-full flex-1"></full-calendar>
     </div>
   </main>

@@ -820,7 +820,7 @@ div[class*="fc-event-dragging"] {
 .osoba-lista {
   max-height: 190px;
   overflow-y: auto;
-  background: #ffffff;
+  background: var(--surface);
   border-radius: 10px;
   padding: 4px;
 }
@@ -838,13 +838,10 @@ div[class*="fc-event-dragging"] {
   text-align: left;
   font-family: 'Montserrat', sans-serif;
 }
-.osoba-opt:hover { background: #eef4fb; }
-.osoba-ime { font-size: 13px; font-weight: 700; color: #0f172a; }
-.osoba-meta { font-size: 11px; font-weight: 700; color: #64748b; white-space: nowrap; }
-.osoba-prazno { padding: 8px 10px; font-size: 12px; font-weight: 600; color: #64748b; }
-:host-context(body.dark-theme) .osoba-lista { background: #16224d; }
-:host-context(body.dark-theme) .osoba-opt:hover { background: #1e2d63; }
-:host-context(body.dark-theme) .osoba-ime { color: #f1f5f9; }
+.osoba-opt:hover { background: var(--primary-soft); }
+.osoba-ime { font-size: 13px; font-weight: 700; color: var(--text); }
+.osoba-meta { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.osoba-prazno { padding: 8px 10px; font-size: 12px; font-weight: 600; color: var(--muted); }
 
 .cal-card-vreme { white-space: nowrap; }
 
@@ -878,3 +875,8 @@ div[class*="fc-event-dragging"] {
   background: var(--primary-soft); color: var(--primary-text); font: inherit; font-size: 14px; font-weight: 700; cursor: pointer;
 }
 .birac-danas:hover { background: var(--tint-blue-bd); }
+
+.prazno-obavestenje {
+  margin-bottom: 8px; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 600;
+  background: var(--primary-soft); color: var(--primary-text); border: 1px dashed var(--tint-blue-bd);
+}

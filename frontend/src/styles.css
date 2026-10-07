@@ -228,3 +228,23 @@ body > .fc-event-dragging .bank-card-color-bar {
 @media (max-width: 640px) {
   .fc .fc-header-toolbar .fc-toolbar-chunk:last-child .fc-button-group { gap: 6px; }
 }
+
+/* Vidljiv fokus za tastaturu (pristupačnost) */
+:is(button, a, [role="button"], [tabindex]):focus-visible,
+:is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* Povlačenje termina: kartica koja se vuče i ciljni dan se jasno vide (bez senki, zbog brzine) */
+.fc .fc-event-mirror .clean-cal-card,
+.fc .fc-event-dragging .clean-cal-card {
+  outline: 2px dashed var(--primary);
+  outline-offset: 2px;
+  opacity: 0.92;
+}
+.fc .fc-highlight {
+  background: color-mix(in srgb, var(--primary) 16%, transparent) !important;
+  outline: 2px dashed var(--primary);
+  outline-offset: -2px;
+}

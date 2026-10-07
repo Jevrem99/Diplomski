@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
@@ -120,6 +120,7 @@ export class Main implements OnInit, AfterViewInit {
     firstDay: 1,
     displayEventEnd: false,
     dayMaxEvents: 4,
+    datesSet: () => { setTimeout(() => this.azurirajPrazno(), 0); },
     // ispiti i kolokvijumi uvek ispred redovne nastave, da ih "+N još" nikad ne sakrije
     eventOrder: (a: any, b: any) => (a.extendedProps?.isNastava ? 1 : 0) - (b.extendedProps?.isNastava ? 1 : 0) || String(a.start).localeCompare(String(b.start)),
     moreLinkContent: (arg) => `+${arg.num} još`,
@@ -503,6 +504,23 @@ export class Main implements OnInit, AfterViewInit {
 
       this.detectConflicts();
       this.cdr.detectChanges();
+
+      if (this.ponistavanje) {
+        this.ponistavanje = false;
+        this.toastService.show('Pomeranje je poništeno.', 'success');
+      } else {
+        this.toastService.show('Termin je pomeren.', 'success', {
+          label: 'Poništi',
+          fn: () => {
+            // Termin se vraća na stari datum, pa isti obrađivač ažurira i podatke za čuvanje
+            const ev = this.calendarComponent.getApi().getEventById(String(info.event.id));
+            if (!ev || !info.oldEvent.start) return;
+            ev.setDates(info.oldEvent.start, info.oldEvent.end, { allDay: false });
+            this.ponistavanje = true;
+            (this.calendarOptions.eventDrop as any)({ ...info, event: ev, revert: () => {} });
+          }
+        });
+      }
     },
 
     eventContent: (arg) => {
@@ -520,6 +538,7 @@ export class Main implements OnInit, AfterViewInit {
       const krajSirov = String(arg.event.extendedProps['vremeKraja'] || arg.event.extendedProps['vreme_kraja'] || '').substring(0, 5);
       const vremeTekst = krajSirov && krajSirov !== '00:00' && krajSirov !== '0:00' ? `${String(vreme).substring(0, 5)}<span class="cal-card-kraj">–${krajSirov}</span>` : String(vreme).substring(0, 5);
       const { ink, chip } = bojaTeksta(boja);
+      const godBadge = jeNastava ? '' : `<span class="cal-card-god" title="${godina == 5 ? 'MAS' : godina + '. godina'}">${godina == 5 ? 'M' : godina}</span>`;
       const tipPun = jeNastava ? 'Nastava' : (isIspit ? 'Ispit' : 'Kolokvijum');
       const tipKratko = jeNastava ? 'Nast.' : (isIspit ? 'Ispit' : 'Kol.');
       const tipTag = `<span class="cal-card-tip" title="${tipPun}"><span class="tip-pun">${tipPun}</span><span class="tip-kratko">${tipKratko}</span></span>`;
@@ -528,7 +547,7 @@ export class Main implements OnInit, AfterViewInit {
       return {
         html: `
           <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja}; --ev-ink: ${ink}; --ev-chip: ${chip};">
-            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${tipTag}${salaTag}</div>
+            <div class="cal-card-time">${godBadge}<span class="cal-card-vreme">${vremeTekst}</span>${tipTag}${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>
@@ -916,6 +935,32 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   private hoverRaf = 0;
+  private ponistavanje = false;
+
+  // Prazan mesec: kratko uputstvo umesto praznog kalendara
+  nemaTermina = false;
+
+  azurirajPrazno(): void {
+    const api = this.calendarComponent?.getApi();
+    if (!api) return;
+    const { currentStart, currentEnd } = api.view;
+    const ima = api.getEvents().some(e =>
+      e.display !== 'background' && !e.extendedProps['isNastava'] && !!e.start && e.start >= currentStart && e.start < currentEnd);
+    if (this.nemaTermina === ima) {
+      this.nemaTermina = !ima;
+      this.cdr.detectChanges();
+    }
+  }
+
+  // Escape zatvara iskačuće prozore (birač datuma, konflikti, padajuće menije)
+  @HostListener('document:keydown.escape')
+  naEscape(): void {
+    document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => el.style.setProperty('display', 'none', 'important'));
+    this.biracOtvoren = false;
+    this.prikaziDesnoFiltere = false;
+    this.isDashboardOpen = false;
+    this.cdr.detectChanges();
+  }
 
   // ---- Birač meseca i godine (klik na naslov kalendara) ----
   biracOtvoren = false;
@@ -1170,6 +1215,7 @@ export class Main implements OnInit, AfterViewInit {
     this.calendarOptions.events = [...filtered, ...backgroundEvents];
 
     this.cdr.detectChanges();
+    setTimeout(() => this.azurirajPrazno(), 50);
   }
 
   fetchStats(): void {
@@ -1458,7 +1504,7 @@ export class Main implements OnInit, AfterViewInit {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 22px; height: 22px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
                 <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
               </svg>
-              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 14px; width: min(620px, 94vw); max-height: 75vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 2147483000; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
+              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: var(--surface); color: var(--text); border: 1px solid var(--border-strong); border-radius: 14px; width: min(620px, 94vw); max-height: 75vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 2147483000; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
                 <div style="background:#1F63A0; color:#fff; padding:16px 24px; font-weight:800; font-size:19px; border-radius:14px 14px 0 0;">
                   ⚠ Konflikti – ${naslovDatuma}
                 </div>

@@ -1128,49 +1128,67 @@ body[data-design="studio"]:not(#_) .clean-cal-card.is-kolokvijum { background: v
 body[data-design="studio"]:not(#_) .clean-cal-card .cal-card-time { background: transparent !important; color: color-mix(in srgb, var(--ev) 40%, var(--text)) !important; font-weight: 800 !important; font-size: 11px !important; border-right: none !important; padding: 0 5px !important; }
 body[data-design="studio"]:not(#_) .clean-cal-card .cal-ticker-text { color: var(--text) !important; font-weight: 600 !important; font-size: 12px !important; line-height: 28px !important; }
 
+/* ===== Dizajn sistem: razmaci, veličine i težine slova (jedno mesto za sve kartice) =====
+   Razmaci su umnošci od 4 px; tri težine slova: 400 (običan), 600 (srednji), 700 (naglašen). */
+:root {
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --fs-card-title: clamp(12.5px, 0.68vw, 15px);
+  --fs-card-time: clamp(11.5px, 0.62vw, 13.5px);
+  --fs-card-meta: clamp(10px, 0.54vw, 12px);
+  --fw-regular: 400; --fw-medium: 600; --fw-bold: 700;
+}
+
 /* ===== Čitljiviji termini u kalendaru (svi dizajni) =====
    Dva :not(#_) daju veću specifičnost od pravila pojedinačnih dizajna.
-   Kartica: gore traka sa vremenom i salom, ispod naslov u do dva reda (prelama se, bez klizanja). */
-body:not(#_):not(#__) .clean-cal-card { height: auto !important; min-height: 0 !important; border-radius: 8px !important; flex-direction: column !important; align-items: stretch !important; }
+   Hijerarhija: naslov i vreme su glavni (700), tip i sala su pomoćni (600, bleđi).
+   Kartica: gore traka (godina, vreme, tip, sala), ispod naslov u do dva reda. */
+body:not(#_):not(#__) .clean-cal-card { height: auto !important; min-height: 0 !important; border-radius: var(--sp-2) !important; flex-direction: column !important; align-items: stretch !important; }
 body:not(#_):not(#__) .clean-cal-card .cal-card-time,
 body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
-  flex-direction: row !important; flex-wrap: wrap !important; justify-content: flex-start !important; align-items: center !important; gap: 2px 6px !important;
-  height: auto !important; width: 100% !important; margin: 0 !important; padding: 3px 7px !important;
-  border-radius: 0 !important; border-right: none !important; font-size: clamp(11.5px, 0.62vw, 13.5px) !important; font-weight: 700 !important; line-height: 1.1;
+  flex-direction: row !important; flex-wrap: wrap !important; justify-content: flex-start !important; align-items: center !important; gap: var(--sp-1) var(--sp-2) !important;
+  height: auto !important; width: 100% !important; margin: 0 !important; padding: var(--sp-1) var(--sp-2) !important;
+  border-radius: 0 !important; border-right: none !important; font-size: var(--fs-card-time) !important; font-weight: var(--fw-bold) !important; line-height: 1.1;
 }
 body:not(#_):not(#__) .clean-cal-card .cal-card-vreme { flex-shrink: 0; white-space: nowrap; }
+/* Oznaka godine: mali obojen kvadrat sa brojem (MAS = M), da godina ne zavisi samo od boje */
+body:not(#_):not(#__) .clean-cal-card .cal-card-god {
+  flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+  width: calc(var(--fs-card-time) + var(--sp-2)); height: calc(var(--fs-card-time) + var(--sp-2)); border-radius: var(--sp-1);
+  background: var(--ev); color: var(--ev-ink, #fff); font-size: var(--fs-card-meta); font-weight: var(--fw-bold); line-height: 1;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+}
 body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: none; }
-@media (min-width: 1700px) {
+@media (min-width: 2100px) {
   body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: inline; }
   body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-kratko { display: none; }
 }
 body:not(#_):not(#__) .clean-cal-card .cal-card-tip {
-  flex-shrink: 0; font-size: clamp(9.5px, 0.5vw, 10.5px); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.8;
+  flex-shrink: 0; font-size: var(--fs-card-meta); font-weight: var(--fw-medium); letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6;
 }
 body:not(#_):not(#__) .clean-cal-card .cal-card-sala {
-  display: inline-block; margin-left: auto; font-size: clamp(10px, 0.54vw, 12px) !important; font-weight: 700 !important; max-width: 100% !important;
-  padding: 1px 7px; border-radius: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 1 !important;
-  background: color-mix(in srgb, currentColor 16%, transparent); color: inherit;
+  display: inline-block; margin-left: auto; font-size: var(--fs-card-meta) !important; font-weight: var(--fw-medium) !important; max-width: 100% !important;
+  padding: 2px var(--sp-2); border-radius: var(--sp-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.85 !important;
+  background: color-mix(in srgb, currentColor 10%, transparent); color: inherit;
 }
-body:not(#_):not(#__) .clean-cal-card .cal-ticker-wrap { white-space: normal !important; overflow: hidden !important; padding: 3px 7px 5px !important; display: block !important; width: 100%; }
+body:not(#_):not(#__) .clean-cal-card .cal-ticker-wrap { white-space: normal !important; overflow: hidden !important; padding: var(--sp-1) var(--sp-2) var(--sp-2) !important; display: block !important; width: 100%; }
 body:not(#_):not(#__) .clean-cal-card .cal-ticker-text {
-  font-size: clamp(12.5px, 0.68vw, 15px) !important; line-height: 1.2 !important; font-weight: 700 !important;
+  font-size: var(--fs-card-title) !important; line-height: 1.2 !important; font-weight: var(--fw-bold) !important;
   white-space: normal !important; overflow: hidden; display: -webkit-box !important;
   -webkit-line-clamp: 2; -webkit-box-orient: vertical; animation: none !important; transform: none !important;
   overflow-wrap: normal; word-break: normal; hyphens: manual;
 }
-body:not(#_):not(#__) .fc .cal-day-num { font-size: 16px !important; font-weight: 700; }
+body:not(#_):not(#__) .fc .cal-day-num { font-size: 16px !important; font-weight: var(--fw-bold); }
 body:not(#_):not(#__) .fc .fc-col-header-cell-cushion { font-size: 0.85rem !important; }
 body:not(#_):not(#__) .bank-card-title { font-size: 16px !important; line-height: 1.3; }
 body:not(#_):not(#__) .bank-card-prof { font-size: 14px !important; }
-body:not(#_):not(#__) .bank-card-item { padding-top: 8px !important; padding-bottom: 8px !important; }
-body:not(#_):not(#__) .bank-items-scroll { gap: 8px !important; padding: 10px !important; }
+body:not(#_):not(#__) .bank-card-item { padding-top: var(--sp-2) !important; padding-bottom: var(--sp-2) !important; }
+body:not(#_):not(#__) .bank-items-scroll { gap: var(--sp-2) !important; padding: var(--sp-2) !important; }
 /* Studio: tamniji sporedni tekst radi kontrasta */
 body[data-design="studio"]:not(#_):not(.dark-theme) { --muted: #4b5578; --faint: #6b7496; }
 @media (max-width: 640px) {
   body:not(#_):not(#__) .fc .clean-cal-card { height: 30px !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-kraj { display: none; }
-  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-tip { display: none; }
+  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-tip, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-god { display: none; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time:has(.cal-card-sala) { height: 100% !important; align-items: center !important; padding: 0 !important; gap: 0 !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-sala { font-size: 10px !important; padding: 0 3px; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time { font-size: 12px !important; }
@@ -1183,10 +1201,10 @@ body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum {
   border-style: solid !important;
 }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-time {
-  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important; font-size: clamp(11.5px, 0.62vw, 13.5px) !important;
+  background: var(--ev) !important; color: var(--ev-ink, #ffffff) !important; font-size: var(--fs-card-time) !important;
 }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: var(--ev-ink, #ffffff) !important; opacity: 0.95; }
-body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: clamp(12.5px, 0.68vw, 15px) !important; font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: var(--fs-card-title) !important; font-weight: 700 !important; }
 
 /* Studio: najdeblja slova (800/900) se teško čitaju, pa se spuštaju na 700; običan "bold" na 600 */
 body[data-design="studio"]:not(#_):not(#__) :is(.font-extrabold, .font-black, [class*="font-extrabold"], [class*="font-black"]) { font-weight: 700 !important; }
@@ -1207,7 +1225,7 @@ body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal
 /* Kolokvijum: debela ivica u boji godine i puna traka sa vremenom */
 body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card.is-kolokvijum {
   background: color-mix(in srgb, var(--ev) 24%, var(--surface)) !important;
-  border: 3.5px solid var(--ev) !important;
+  border: 3px solid var(--ev) !important;
 }
 body:is([data-design="studio"], :not([data-design])):not(#_):not(#__) .clean-cal-card .cal-card-time {
   background: transparent !important;
