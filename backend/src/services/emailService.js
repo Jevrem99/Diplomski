@@ -9,99 +9,140 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-const sendGrupniDezurstvoEmail = async (asistentEmail, asistentIme, dezurstvaNiz) => {
+const POSILJALAC = () => `"Raspored ispita - PMF Kragujevac" <${process.env.EMAIL_USER}>`;
+
+// Sve što dolazi iz baze (nazivi predmeta, imena) ide kroz esc(): sprečava ubacivanje HTML-a u mejl
+const esc = (v) => String(v ?? '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+const BOJE = {
+    primarna: '#1F63A0', primarnaTamna: '#164f82', akcent: '#F39C12',
+    tekst: '#1e293b', sporedni: '#64748b', linija: '#e2e8f0', pozadina: '#eef2f7',
+    izmenaPoz: '#fff7ed', izmenaTekst: '#c2410c', svetla: '#f8fafc'
+};
+const FONT = "'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+
+// Zajednički okvir svih mejlova (tabele i inline stilovi: tako ga čitaju i Gmail i Outlook)
+const okvir = ({ naslov, uvod, sadrzaj, dugme, napomena, preheader }) => `<!DOCTYPE html>
+<html lang="sr">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(naslov)}</title></head>
+<body style="margin:0; padding:0; background-color:${BOJE.pozadina};">
+  <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">${esc(preheader || naslov)}</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${BOJE.pozadina}; padding:24px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px; background-color:#ffffff; border-radius:14px; overflow:hidden; border:1px solid ${BOJE.linija};">
+        <tr><td style="background-color:${BOJE.primarna}; padding:22px 28px; font-family:${FONT};">
+          <div style="font-size:11px; letter-spacing:1.2px; text-transform:uppercase; color:#cfe3f5; font-weight:600;">Prirodno-matematički fakultet · Kragujevac</div>
+          <div style="font-size:20px; font-weight:700; color:#ffffff; margin-top:4px;">Raspored ispita</div>
+        </td></tr>
+        <tr><td style="padding:28px; font-family:${FONT}; color:${BOJE.tekst}; font-size:15px; line-height:1.6;">
+          <h1 style="margin:0 0 12px 0; font-size:22px; line-height:1.3; color:${BOJE.primarnaTamna};">${esc(naslov)}</h1>
+          ${uvod ? `<p style="margin:0 0 18px 0;">${uvod}</p>` : ''}
+          ${sadrzaj || ''}
+          ${dugme ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0 8px 0;"><tr><td style="background-color:${BOJE.akcent}; border-radius:10px;">
+            <a href="${esc(dugme.url)}" style="display:inline-block; padding:13px 26px; font-family:${FONT}; font-size:15px; font-weight:700; color:#ffffff; text-decoration:none;">${esc(dugme.tekst)}</a>
+          </td></tr></table>` : ''}
+          ${napomena ? `<p style="margin:18px 0 0 0; font-size:13px; color:${BOJE.sporedni};">${napomena}</p>` : ''}
+        </td></tr>
+        <tr><td style="background-color:${BOJE.svetla}; padding:16px 28px; font-family:${FONT}; font-size:12px; color:${BOJE.sporedni}; border-top:1px solid ${BOJE.linija};">
+          Ovo je automatska poruka sistema za raspored ispita, na nju nije potrebno odgovarati.<br>
+          <a href="${esc(config.frontendUrl)}" style="color:${BOJE.primarna}; text-decoration:none; font-weight:600;">Otvori portal</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+
+const vremeTekst = (vreme, kraj) => `${esc(vreme)}${kraj ? '–' + esc(kraj) : ''}h`;
+
+const gradiPregledDezurstava = (ime, dezurstva) => {
+    const imaIzmena = dezurstva.some((d) => d.isIzmenjen);
+    const redovi = dezurstva.map((d, i) => {
+        const poz = d.isIzmenjen ? BOJE.izmenaPoz : (i % 2 ? BOJE.svetla : '#ffffff');
+        const celija = `padding:12px 10px; border-bottom:1px solid ${BOJE.linija}; background-color:${poz}; font-size:14px;`;
+        return `<tr>
+          <td style="${celija} font-weight:600;">${esc(d.predmet)}${d.isIzmenjen ? `<br><span style="display:inline-block; margin-top:4px; padding:2px 8px; border-radius:6px; background-color:#ffedd5; color:${BOJE.izmenaTekst}; font-size:11px; font-weight:700; letter-spacing:0.4px;">IZMENA RASPOREDA</span>` : ''}</td>
+          <td style="${celija} text-align:center; white-space:nowrap;">${esc(d.datum)}</td>
+          <td style="${celija} text-align:center; white-space:nowrap;">${vremeTekst(d.vreme, d.vremeKraja)}</td>
+          <td style="${celija} text-align:center; white-space:nowrap;">${esc(d.sala)}</td>
+        </tr>`;
+    }).join('');
+    const glava = `padding:10px; background-color:${BOJE.primarnaTamna}; color:#ffffff; font-size:12px; text-transform:uppercase; letter-spacing:0.6px;`;
+    const tabela = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; border:1px solid ${BOJE.linija}; border-radius:10px; overflow:hidden;">
+        <thead><tr>
+          <th align="left" style="${glava}">Predmet</th>
+          <th style="${glava}">Datum</th><th style="${glava}">Vreme</th><th style="${glava}">Sala</th>
+        </tr></thead>
+        <tbody>${redovi}</tbody></table>`;
+    return okvir({
+        naslov: 'Pregled vaših dežurstava',
+        preheader: `Imate ${dezurstva.length} ${dezurstva.length === 1 ? 'dežurstvo' : 'dežurstava'} u rasporedu.`,
+        uvod: `Poštovani/a <strong>${esc(ime)}</strong>, u nastavku je ažuran pregled vaših zaduženja${imaIzmena ? '. Termini koji su naknadno menjani označeni su narandžastom bojom' : ''}.`,
+        sadrzaj: tabela,
+        dugme: { tekst: 'Otvori portal', url: config.frontendUrl },
+        napomena: 'Sva zaduženja možete pratiti i u svom nalogu na portalu.'
+    });
+};
+
+const gradiIzmenuDezurstva = (ime, predmet, datum, vreme, vremeKraja, sala) => {
+    const red = (naziv, vrednost) => `<tr>
+        <td style="padding:12px 14px; border-bottom:1px solid ${BOJE.linija}; background-color:${BOJE.svetla}; width:34%; font-size:13px; color:${BOJE.sporedni}; font-weight:600;">${naziv}</td>
+        <td style="padding:12px 14px; border-bottom:1px solid ${BOJE.linija}; font-size:15px; font-weight:600;">${vrednost}</td></tr>`;
+    return okvir({
+        naslov: 'Izmena vašeg dežurstva',
+        preheader: `Izmenjen je termin: ${predmet}`,
+        uvod: `Poštovani/a <strong>${esc(ime)}</strong>, došlo je do izmene termina za dežurstvo na kojem ste raspoređeni.`,
+        sadrzaj: `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate; border-spacing:0; border:1px solid ${BOJE.linija}; border-radius:10px; overflow:hidden; border-left:5px solid ${BOJE.izmenaTekst};">
+            ${red('Predmet', esc(predmet))}${red('Datum', esc(datum))}${red('Vreme', vremeTekst(vreme, vremeKraja))}${red('Sala', esc(sala))}</table>`,
+        dugme: { tekst: 'Pogledaj detalje', url: config.frontendUrl }
+    });
+};
+
+const gradiResetLozinke = (korisnik, resetUrl) => okvir({
+    naslov: 'Postavite novu lozinku',
+    preheader: 'Link za novu lozinku važi 15 minuta.',
+    uvod: `Primili smo zahtev za resetovanje lozinke za nalog <strong>${esc(korisnik)}</strong>. Kliknite na dugme ispod i izaberite novu lozinku. Link važi <strong>15 minuta</strong>.`,
+    sadrzaj: `<p style="margin:0; font-size:13px; color:${BOJE.sporedni};">Nova lozinka mora imati najmanje 8 karaktera, bar jedno slovo i jednu cifru.</p>`,
+    dugme: { tekst: 'Postavi novu lozinku', url: resetUrl },
+    napomena: `Ako dugme ne radi, kopirajte ovaj link u pregledač:<br><a href="${esc(resetUrl)}" style="color:${BOJE.primarna}; word-break:break-all;">${esc(resetUrl)}</a><br><br>Ako niste vi poslali zahtev, slobodno ignorišite ovu poruku: lozinka ostaje nepromenjena.`
+});
+
+const posalji = async (opcije, opis) => {
     try {
-        const redoviTabele = dezurstvaNiz.map(d => `
-            <tr>
-                <td style="padding: 10px; border: 1px solid #ddd; background-color: ${d.isIzmenjen ? '#fff5f5' : '#ffffff'};">
-                    <strong>${d.predmet}</strong>
-                    ${d.isIzmenjen ? '<br><span style="color: #dc2626; font-size: 12px; font-weight: bold;">Izmena rasporeda</span>' : ''}
-                </td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: ${d.isIzmenjen ? '#fff5f5' : '#ffffff'};">${d.datum}</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: ${d.isIzmenjen ? '#fff5f5' : '#ffffff'};">${d.vreme}${d.vremeKraja ? ' - ' + d.vremeKraja : ''}h</td>
-                <td style="padding: 10px; border: 1px solid #ddd; text-align: center; background-color: ${d.isIzmenjen ? '#fff5f5' : '#ffffff'};">${d.sala}</td>
-            </tr>
-        `).join('');
-
-        const mailOptions = {
-            from: `"Sistem za Raspored Ispita" <${process.env.EMAIL_USER}>`,
-            to: asistentEmail,
-            subject: `Raspored dežurstava - Ažurirano`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333; max-width: 650px; margin: auto;">
-                    <h2 style="color: #34b9f7; margin-top: 0;">Pregled dežurstava</h2>
-                    <p>Poštovani/a <strong>${asistentIme}</strong>,</p>
-                    <p>U nastavku je pregled Vaših zaduženja. Termini koji su naknadno menjani označeni su crvenim slovima:</p>
-                    
-                    <table style="border-collapse: collapse; width: 100%; margin-top: 15px;">
-                        <thead>
-                            <tr style="background-color: #f8fafc;">
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: left;">Predmet</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Datum</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Vreme</th>
-                                <th style="padding: 10px; border: 1px solid #ddd; text-align: center;">Sala</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${redoviTabele}
-                        </tbody>
-                    </table>
-                    
-                    <p style="margin-top: 25px; font-size: 14px; color: #555;">
-                        Sve obaveze možeš pratiti na <a href="${config.frontendUrl}" style="color: #34b9f7;">Korisničkom portalu</a>.
-                    </p>
-                </div>
-            `
-        };
-
-        await transporter.sendMail(mailOptions);
+        await transporter.sendMail({ from: POSILJALAC(), ...opcije });
         return true;
     } catch (error) {
-        console.error(`Greška pri slanju mejla za ${asistentEmail}:`, error);
+        console.error(`Greška pri slanju mejla (${opis}):`, error.message);
         return false;
     }
 };
 
-const sendIzmenaDezurstvaEmail = async (asistentEmail, asistentIme, predmetNaziv, datum, vreme, vremeKraja, salaNaziv) => {
-    try {
-        const mailOptions = {
-            from: `"Sistem za Raspored Ispita" <${process.env.EMAIL_USER}>`,
-            to: asistentEmail,
-            subject: `Izmena rasporeda: ${predmetNaziv}`,
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
-                    <h2 style="color: #ef4444;">Izmena dežurstva</h2>
-                    <p>Poštovani/a <strong>${asistentIme}</strong>,</p>
-                    <p>Došlo je do izmene termina za dežurstvo:</p>
-                    <table style="border-collapse: collapse; width: 100%; max-width: 400px; margin-top: 15px;">
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f8fafc;"><strong>Predmet:</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${predmetNaziv}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f8fafc;"><strong>Datum:</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${datum}</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f8fafc;"><strong>Vreme:</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${vreme}${vremeKraja ? ' - ' + vremeKraja : ''}h</td>
-                        </tr>
-                        <tr>
-                            <td style="padding: 8px; border: 1px solid #ddd; background-color: #f8fafc;"><strong>Sala:</strong></td>
-                            <td style="padding: 8px; border: 1px solid #ddd;">${salaNaziv}</td>
-                        </tr>
-                    </table>
-                    <p style="margin-top: 20px;">Detalje možeš pogledati na <a href="${config.frontendUrl}" style="color: #34b9f7;">portalu</a>.</p>
-                </div>
-            `
-        };
+const sendGrupniDezurstvoEmail = (asistentEmail, asistentIme, dezurstvaNiz) =>
+    posalji({
+        to: asistentEmail,
+        subject: 'Raspored dežurstava - ažurirano',
+        html: gradiPregledDezurstava(asistentIme, dezurstvaNiz),
+        text: `Poštovani/a ${asistentIme}, ažuran je raspored vaših dežurstava (${dezurstvaNiz.length}). Pogledajte ga na portalu: ${config.frontendUrl}`
+    }, asistentEmail);
 
-        await transporter.sendMail(mailOptions);
-        return true;
-    } catch (error) {
-        console.error(`Greška pri slanju emaila o izmeni za ${asistentEmail}:`, error);
-        return false;
-    }
+const sendIzmenaDezurstvaEmail = (asistentEmail, asistentIme, predmetNaziv, datum, vreme, vremeKraja, salaNaziv) =>
+    posalji({
+        to: asistentEmail,
+        subject: `Izmena rasporeda: ${predmetNaziv}`,
+        html: gradiIzmenuDezurstva(asistentIme, predmetNaziv, datum, vreme, vremeKraja, salaNaziv),
+        text: `Izmena dežurstva: ${predmetNaziv}, ${datum}, ${vreme}${vremeKraja ? '-' + vremeKraja : ''}h, sala ${salaNaziv}. Detalji: ${config.frontendUrl}`
+    }, asistentEmail);
+
+const sendResetLozinkeEmail = (email, korisnik, resetUrl) =>
+    posalji({
+        to: email,
+        subject: 'Resetovanje lozinke - Raspored ispita',
+        html: gradiResetLozinke(korisnik, resetUrl),
+        text: `Zahtev za novu lozinku za nalog ${korisnik}. Link (važi 15 minuta): ${resetUrl}`
+    }, email);
+
+module.exports = {
+    sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail, sendResetLozinkeEmail,
+    _sabloni: { gradiPregledDezurstava, gradiIzmenuDezurstva, gradiResetLozinke, esc }
 };
-
-module.exports = { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail };

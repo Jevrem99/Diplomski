@@ -129,3 +129,13 @@ test('proveriVremena: kraj mora biti posle početka', () => {
     assert.ok(proveriEmail('ime@'));
     assert.ok(proveriEmail('bez-monkeya.rs'));
 });
+
+test('sabloni mejlova ne propuštaju HTML iz podataka', () => {
+    const { _sabloni } = require('../src/services/emailService');
+    const html = _sabloni.gradiPregledDezurstava('<script>x</script>', [
+        { predmet: '<img src=x onerror=alert(1)>', datum: '1.1.2026.', vreme: '09:00', vremeKraja: '10:00', sala: 'A-0-1', isIzmenjen: false }
+    ]);
+    assert.ok(!html.includes('<script>x</script>'));
+    assert.ok(!html.includes('<img src=x'));
+    assert.ok(html.includes('&lt;img src=x'));
+});

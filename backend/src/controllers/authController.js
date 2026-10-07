@@ -1,18 +1,10 @@
 const { logAction } = require('../services/auditService');
 const authService = require('../services/authService');
 const userModel = require('../models/userModel');
-const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const config = require('../config/config');
 const { jeValidnaUloga, proveriLozinku, proveriEmail } = require('../utils/validators');
-
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-    }
-});
+const { sendResetLozinkeEmail } = require('../services/emailService');
 
 const loginUser = async (req, res) => {
     const { username, password } = req.body;
@@ -38,44 +30,23 @@ const forgotPassword = async (req, res) => {
     const greskaEmaila = proveriEmail(email);
     if (greskaEmaila) return res.status(400).json({ error: greskaEmaila, polja: { email: greskaEmaila } });
 
+    // Odgovor ide ODMAH i uvek je isti, bez obzira da li nalog postoji: korisnik ne čeka slanje mejla,
+    // a po brzini odgovora se ne može saznati koji e-mail adrese postoje u sistemu.
+    res.status(200).json({ message: 'Ako email postoji, link za resetovanje je poslat.' });
+
     try {
         const user = await userModel.getUserByUsername(email.trim().toLowerCase());
-        
-        // Zbog bezbednosti uvek vraćamo 200 poruku
-        if (!user) {
-            return res.status(200).json({ message: 'Ako email postoji, link za resetovanje je poslat.' });
-        }
+        if (!user) return;
 
         // Generišemo siguran heksadecimalni token
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minuta
-
         await userModel.setResetToken(user.email, resetToken, expiresAt);
 
         const resetUrl = `${config.frontendUrl}/login?resetToken=${resetToken}`;
-
-        const mailOptions = {
-            from: `"Sistem za Raspored Ispita" <${process.env.EMAIL_USER}>`,
-            to: user.email,
-            subject: 'Resetovanje lozinke - Raspored Ispita',
-            html: `
-                <div style="font-family: Arial, sans-serif; padding: 20px; color: #1e293b; max-width: 500px; margin: auto;">
-                    <h2 style="color: #34b9f7;">Zahtev za novu lozinku</h2>
-                    <p>Poštovani, primili smo zahtev za resetovanje lozinke za korisnički nalog: <strong>${user.username}</strong>.</p>
-                    <p>Kliknite na dugme ispod kako biste postavili novu lozinku (link važi 15 minuta):</p>
-                    <div style="margin: 25px 0;">
-                        <a href="${resetUrl}" style="background-color: #34b9f7; color: #ffffff; padding: 12px 24px; text-decoration: none; font-weight: bold; border-radius: 10px; display: inline-block;">Postavi novu lozinku</a>
-                    </div>
-                    <p style="font-size: 12px; color: #64748b;">Ako niste poslali ovaj zahtev, možete bezbedno ignorisati ovaj mejl.</p>
-                </div>
-            `
-        };
-
-        await transporter.sendMail(mailOptions);
-        return res.status(200).json({ message: 'Ako email postoji, link za resetovanje je poslat.' });
+        await sendResetLozinkeEmail(user.email, user.username, resetUrl);
     } catch (error) {
         console.error('Greška u forgotPassword:', error);
-        return res.status(500).json({ error: 'Greška pri slanju emaila.' });
     }
 };
 
