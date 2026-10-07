@@ -1,3 +1,6 @@
+/* Osnovna veličina slova: sve što je u rem jedinicama (Tailwind, Material) je ~9% krupnije */
+html { font-size: 17.5px; }
+
 
 html, body, :host {
   font-family: "Open Sans", Roboto, sans-serif !important;

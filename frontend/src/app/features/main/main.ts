@@ -553,18 +553,18 @@ export class Main implements OnInit, AfterViewInit {
         box-shadow: 0 15px 30px -5px rgba(15, 23, 42, 0.2), 0 0 0 1px var(--border-strong);
         pointer-events: none;
         font-family: 'Montserrat', sans-serif;
-        min-width: 220px;
-        max-width: 320px;
+        min-width: 260px;
+        max-width: 380px;
       `;
 
       tooltip.innerHTML = `
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px;">
-          <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 2.5px 8px; border-radius: 6px; background: ${jeNastava ? NASTAVA_BOJA : (props['is_ispit'] === false ? 'var(--tint-amber-bg)' : 'var(--tint-sky-bg)')}; color: ${jeNastava ? '#fff' : (props['is_ispit'] === false ? 'var(--tint-amber-fg)' : 'var(--primary-text)')};">${tip}</span>
-          <span style="font-size: 11px; font-weight: 700; color: var(--muted);">${sala}</span>
+          <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; padding: 3px 10px; border-radius: 6px; background: ${jeNastava ? NASTAVA_BOJA : (props['is_ispit'] === false ? 'var(--tint-amber-bg)' : 'var(--tint-sky-bg)')}; color: ${jeNastava ? '#fff' : (props['is_ispit'] === false ? 'var(--tint-amber-fg)' : 'var(--primary-text)')};">${tip}</span>
+          <span style="font-size: 13px; font-weight: 700; color: var(--muted);">${sala}</span>
         </div>
-        <div style="font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 6px; line-height: 1.3;">${naslov}</div>
-        <div style="font-size: 12px; font-weight: 700; color: var(--primary-text); margin-bottom: 7px;">Termin: ${vremePocetka}${vremeKraja}</div>
-        ${jeNastava ? '' : `<div style="font-size: 11px; font-weight: 600; color: var(--muted); border-top: 1px solid var(--border); padding-top: 7px;">Dežurni: <strong style="color: var(--text-2);">${dezurniImena}</strong></div>`}
+        <div style="font-size: 16px; font-weight: 800; color: var(--text); margin-bottom: 8px; line-height: 1.3;">${naslov}</div>
+        <div style="font-size: 14.5px; font-weight: 700; color: var(--primary-text); margin-bottom: 8px;">Termin: ${vremePocetka}${vremeKraja}</div>
+        ${jeNastava ? '' : `<div style="font-size: 13.5px; font-weight: 600; color: var(--muted); border-top: 1px solid var(--border); padding-top: 8px;">Dežurni: <strong style="color: var(--text-2);">${dezurniImena}</strong></div>`}
       `;
       document.body.appendChild(tooltip);
 
@@ -1373,19 +1373,19 @@ export class Main implements OnInit, AfterViewInit {
           warning.className = 'conflict-warning';
           warning.style.cssText = 'display:inline-flex; align-items:center; cursor:pointer; z-index:50; flex-shrink:0;';
           const stavke = conflictsByDate.get(date)!
-            .map((r) => `<li style="margin:0 0 8px 0;">${r}</li>`)
+            .map((r) => `<li style="margin:0 0 12px 0;">${r}</li>`)
             .join('');
           const naslovDatuma = this.formatDatumKonflikta(date);
           warning.innerHTML = `
             <div style="position: relative; display: inline-flex; align-items: center;">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 18px; height: 18px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 22px; height: 22px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
                 <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
               </svg>
-              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 14px; width: min(440px, 92vw); max-height: 70vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 999999; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
-                <div style="background:#1F63A0; color:#fff; padding:12px 18px; font-weight:800; font-size:14px; border-radius:14px 14px 0 0;">
+              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 14px; width: min(620px, 94vw); max-height: 75vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 999999; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
+                <div style="background:#1F63A0; color:#fff; padding:16px 24px; font-weight:800; font-size:19px; border-radius:14px 14px 0 0;">
                   ⚠ Konflikti – ${naslovDatuma}
                 </div>
-                <ul style="margin:0; padding:14px 18px 8px 34px; font-size:13px; font-weight:500; line-height:1.55; list-style:disc;">${stavke}</ul>
+                <ul style="margin:0; padding:18px 24px 10px 44px; font-size:17px; font-weight:500; line-height:1.55; list-style:disc;">${stavke}</ul>
               </div>
             </div>`;
 

@@ -1159,3 +1159,15 @@ body[data-design="studio"]:not(#_):not(.dark-theme) { --muted: #4b5578; --faint:
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time:has(.cal-card-sala) { height: 100% !important; flex-direction: column !important; justify-content: center !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time { font-size: 12px !important; }
 }
+
+/* Studio: kolokvijum je prepoznatljiv po punoj traci u boji godine i obojenoj ivici */
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum {
+  background: color-mix(in srgb, var(--ev) 12%, var(--surface)) !important;
+  border: 1.5px solid var(--ev) !important;
+  border-style: solid !important;
+}
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-time {
+  background: var(--ev) !important; color: #ffffff !important; font-size: 13.5px !important;
+}
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: #ffffff !important; opacity: 0.95; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: 15px !important; font-weight: 800 !important; }
