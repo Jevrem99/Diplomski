@@ -23,7 +23,7 @@ export function proveriLozinku(lozinka: unknown): string | null {
   return null;
 }
 
-const proveriEmail = (email: unknown): string | null =>
+export const proveriEmail = (email: unknown): string | null =>
   EMAIL_REGEX.test(String(email ?? '').trim()) ? null : 'E-mail nije u ispravnom formatu (npr. ime@pmf.kg.ac.rs).';
 
 export function validirajKorisnika(b: any, lozinkaObavezna: boolean): Polja {

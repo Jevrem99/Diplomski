@@ -16,6 +16,7 @@ interface ColumnDef {
   hideInTable?: boolean; // da li je kolona sakrivena u tabeli
 }
 
+import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
 @Component({
   selector: 'app-database-management',
   standalone: true,
@@ -278,6 +279,11 @@ export class DatabaseManagement implements OnInit {
     const newPassword = prompt(`Unesite novu privremenu lozinku za: ${displayName} (${row.email})`);
 
     if (newPassword && newPassword.trim() !== '') {
+      const greska = proveriEmail(row.email) || proveriLozinku(newPassword.trim());
+      if (greska) {
+        this.toast.show(greska, 'error');
+        return;
+      }
       this.http.post(`${this.API_URL}/auth/admin-reset-password`, { 
         email: row.email, 
         newPassword: newPassword.trim() 

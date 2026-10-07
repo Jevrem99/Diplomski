@@ -61,6 +61,9 @@
           </mat-select>
         </mat-form-field>
       </div>
+      @if (vremeGreska) {
+        <div class="text-sm font-bold" style="color: var(--danger-text);" role="alert">⚠ {{ vremeGreska }}</div>
+      }
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full">
         <mat-label>Izaberi salu*</mat-label>

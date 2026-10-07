@@ -115,3 +115,17 @@ test('normalizujNazivSale spaja zapise iste sale, a razlikuje A-II-24 i A-II-24R
     assert.notEqual(n('A-II-24'), n('A-II-24R'));
     assert.equal(n(null), '');
 });
+
+
+test('proveriVremena: kraj mora biti posle početka', () => {
+    const { proveriVremena, proveriEmail } = require('../src/utils/validators');
+    assert.equal(proveriVremena('09:00', '10:15'), null);
+    assert.equal(proveriVremena('09:00:00', '2026-10-06T10:15:00'), null);
+    assert.equal(proveriVremena('09:00', null), null);
+    assert.ok(proveriVremena('09:00', '08:00'));
+    assert.ok(proveriVremena('09:00', '09:00'));
+    assert.ok(proveriVremena('09:00', 'abc'));
+    assert.equal(proveriEmail('ime.prezime@pmf.kg.ac.rs'), null);
+    assert.ok(proveriEmail('ime@'));
+    assert.ok(proveriEmail('bez-monkeya.rs'));
+});

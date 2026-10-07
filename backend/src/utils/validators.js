@@ -27,6 +27,20 @@ const proveriLozinku = (lozinka) => {
 
 const proveriEmail = (email) => (EMAIL_REGEX.test(String(email || '').trim()) ? null : 'E-mail nije u ispravnom formatu (npr. ime@pmf.kg.ac.rs).');
 
+// Početak i kraj termina (HH:MM, može i puni ISO "…T09:00:00"). Kraj mora biti posle početka.
+const uMinute = (v) => {
+    const m = String(v ?? '').match(/(\d{1,2}):(\d{2})/);
+    return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+};
+const proveriVremena = (vreme, kraj) => {
+    if (prazno(vreme) || prazno(kraj)) return null;
+    const a = uMinute(vreme);
+    const b = uMinute(kraj);
+    if (a === null || b === null) return 'Vreme mora biti u formatu SS:MM.';
+    if (b <= a) return 'Vreme kraja mora biti posle vremena početka.';
+    return null;
+};
+
 // Svaka funkcija vraća objekat { imePolja: 'poruka' } - prazan objekat znači da je sve u redu
 const validirajKorisnika = (b, { lozinkaObavezna = true } = {}) => {
     const polja = {};
@@ -104,7 +118,7 @@ const mapirajPrismaGresku = (error, res) => {
 };
 
 module.exports = {
-    ULOGE, jeValidnaUloga, proveriLozinku, proveriEmail,
+    ULOGE, jeValidnaUloga, proveriLozinku, proveriEmail, proveriVremena,
     validirajKorisnika, validirajOsobu, validirajPredmet,
     odbaciAkoImaGresaka, mapirajPrismaGresku
 };

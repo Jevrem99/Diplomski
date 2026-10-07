@@ -8,6 +8,7 @@ import { ToastService } from '../../core/services/toast.service';
 import { environment } from '../../../environments/environment';
 import { DesignPickerComponent } from '../../shared/components/design-picker/design-picker.component';
 
+import { proveriLozinku } from '../../core/utils/validacija';
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -98,8 +99,9 @@ export class Settings implements OnInit {
       return;
     }
 
-    if (this.passwordData.newPassword.length < 6) {
-      this.toast.show('Nova lozinka mora imati bar 6 karaktera!', 'error');
+    const greskaLozinke = proveriLozinku(this.passwordData.newPassword);
+    if (greskaLozinke) {
+      this.toast.show(greskaLozinke, 'error');
       return;
     }
 

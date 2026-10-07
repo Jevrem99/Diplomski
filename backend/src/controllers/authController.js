@@ -4,7 +4,7 @@ const userModel = require('../models/userModel');
 const nodemailer = require('nodemailer');
 const crypto = require('crypto');
 const config = require('../config/config');
-const { jeValidnaUloga, proveriLozinku } = require('../utils/validators');
+const { jeValidnaUloga, proveriLozinku, proveriEmail } = require('../utils/validators');
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -35,6 +35,8 @@ const forgotPassword = async (req, res) => {
     if (!email) {
         return res.status(400).json({ error: 'Email je obavezno polje.' });
     }
+    const greskaEmaila = proveriEmail(email);
+    if (greskaEmaila) return res.status(400).json({ error: greskaEmaila, polja: { email: greskaEmaila } });
 
     try {
         const user = await userModel.getUserByUsername(email.trim().toLowerCase());
@@ -113,6 +115,8 @@ const adminResetPassword = async (req, res) => {
     if (!email || !newPassword) {
         return res.status(400).json({ error: 'Email i nova lozinka su obavezni.' });
     }
+    const greskaEmaila = proveriEmail(email);
+    if (greskaEmaila) return res.status(400).json({ error: greskaEmaila, polja: { email: greskaEmaila } });
     const greskaLozinke = proveriLozinku(newPassword);
     if (greskaLozinke) return res.status(400).json({ error: greskaLozinke });
     if (role && !jeValidnaUloga(role)) return res.status(400).json({ error: 'Nevalidna uloga.' });

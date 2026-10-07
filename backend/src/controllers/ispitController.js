@@ -5,6 +5,7 @@ dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
+const { proveriVremena } = require('../utils/validators');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
@@ -321,6 +322,8 @@ const createIspit = async (req, res) => {
     if (!finalDatum || Number.isNaN(new Date(finalDatum).getTime()) || !finalVreme) {
         return res.status(400).json({ error: 'Datum i vreme početka su obavezni.' });
     }
+    const greskaVremena = proveriVremena(finalVreme, finalVremeKraja);
+    if (greskaVremena) return res.status(400).json({ error: greskaVremena, polja: { vreme_kraja: greskaVremena } });
     try {
         let finalDezurni = dezurni_ids || [];
 
@@ -435,6 +438,10 @@ const updateIspit = async (req, res) => {
       body.vreme_kraja !== undefined ? body.vreme_kraja : body.vremeKraja, 
       postojeciIspit.vreme_kraja
     );
+    if (novoVreme && novoVremeKraja && new Date(novoVremeKraja).getTime() <= new Date(novoVreme).getTime()) {
+      const g = 'Vreme kraja mora biti posle vremena početka.';
+      return res.status(400).json({ error: g, polja: { vreme_kraja: g } });
+    }
 
     // 3. Sala
     let salaConnect = undefined;
@@ -559,6 +566,8 @@ const saveBulkIspiti = async (req, res) => {
             if (!datum || !vreme || Number.isNaN(new Date(datum).getTime())) {
                 return res.status(400).json({ error: 'Svaki termin mora imati datum i vreme početka.' });
             }
+            const greskaVremena = proveriVremena(vreme, vremeKraja);
+            if (greskaVremena) return res.status(400).json({ error: `${greskaVremena} (termin: ${ispit.title || ispit.naziv || datum})` });
             const salaId = await odrediSalaId(ispit.sala || ispit.room, salaCache);
             const dezurni = ispit.dezurni_ids || [];
             const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId });
