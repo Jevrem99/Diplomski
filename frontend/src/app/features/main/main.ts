@@ -1385,6 +1385,7 @@ export class Main implements OnInit, AfterViewInit {
       (window as any)._conflictTooltipListener = true;
     }
 
+    document.querySelectorAll('body > .custom-conflict-tooltip').forEach(el => el.remove()); // ostaci prethodnog crtanja
     const allEvents = this.calendarComponent.getApi().getEvents();
     const conflictsByDate = new Map<string, string[]>();
     const eventsByDate: Record<string, any[]> = {};
@@ -1457,7 +1458,7 @@ export class Main implements OnInit, AfterViewInit {
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#f59e0b" style="width: 22px; height: 22px; filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.15));">
                 <path fill-rule="evenodd" d="M9.401 3.003c1.155-2 4.043-2 5.197 0l7.355 12.748c1.154 2-.29 4.5-2.599 4.5H4.645c-2.309 0-3.752-2.5-2.598-4.5L9.4 3.003zM12 8.25a.75.75 0 01.75.75v3.75a.75.75 0 01-1.5 0V9a.75.75 0 01.75-.75zm0 8.25a.75.75 0 100-1.5.75.75 0 000 1.5z" clip-rule="evenodd" />
               </svg>
-              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 14px; width: min(620px, 94vw); max-height: 75vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 999999; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
+              <div class="custom-conflict-tooltip" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #ffffff; color: #1e293b; border: 1px solid #cbd5e1; border-radius: 14px; width: min(620px, 94vw); max-height: 75vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 9999px rgba(0, 0, 0, 0.18); z-index: 2147483000; pointer-events: none; text-align: left; font-family: Montserrat, sans-serif;">
                 <div style="background:#1F63A0; color:#fff; padding:16px 24px; font-weight:800; font-size:19px; border-radius:14px 14px 0 0;">
                   ⚠ Konflikti – ${naslovDatuma}
                 </div>
@@ -1465,14 +1466,18 @@ export class Main implements OnInit, AfterViewInit {
               </div>
             </div>`;
 
+          const tooltip = warning.querySelector('.custom-conflict-tooltip') as HTMLElement;
           warning.addEventListener('click', (e) => {
             e.stopPropagation();
-            const tooltip = warning.querySelector('.custom-conflict-tooltip') as HTMLElement;
             const isCurrentlyVisible = tooltip.style.display === 'block';
             document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => {
               el.style.setProperty('display', 'none', 'important');
             });
-            if (!isCurrentlyVisible) tooltip.style.setProperty('display', 'block', 'important');
+            if (!isCurrentlyVisible) {
+              // Prozor ide direktno u <body>: u ćeliji kalendara ga drugi slojevi (kartice, filteri) prekrivaju
+              if (tooltip.parentElement !== document.body) document.body.appendChild(tooltip);
+              tooltip.style.setProperty('display', 'block', 'important');
+            }
           });
 
           actionsWrapper.appendChild(warning);
