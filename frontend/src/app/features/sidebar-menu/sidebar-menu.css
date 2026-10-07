@@ -70,9 +70,9 @@
 
 .nav-item-link {
   color: #ffffff !important;
-  font-size: 1.05rem !important;
+  font-size: 17px !important;
   font-weight: 600 !important;
-  padding: 0.5rem 0.9rem;
+  padding: 0.4rem 0.7rem;
   border-radius: 6px;
   cursor: pointer;
   text-decoration: none;
@@ -302,13 +302,19 @@ mat-sidenav-content {
 
 /* Uže trake: manji fontovi, dugmad samo sa ikonicama */
 @media (max-width: 1560px) {
-  .nav-item-link { font-size: 0.92rem !important; padding: 0.45rem 0.6rem; }
+  .nav-item-link { font-size: 15.5px !important; padding: 0.35rem 0.45rem; }
   .top-bar-links { gap: 0.15rem; }
   .top-bar-imi { gap: 1rem; padding: 0 1rem; }
-  .imi-main-title { font-size: 1rem !important; }
+  .imi-main-title { font-size: 16px !important; }
+  .imi-subtitle { font-size: 11px !important; }
   .design-btn span:last-child,
   .desktop-logout-btn span { display: none; }
   .design-btn, .desktop-logout-btn { padding: 0.5rem 0.65rem; }
+}
+
+@media (max-width: 1250px) {
+  .nav-item-link { font-size: 14px !important; padding: 0.3rem 0.35rem; }
+  .imi-titles { display: none; }
 }
 
 /* Telefon: kompaktna gornja traka da stanu i dugme "Izgled" i "Meni" */

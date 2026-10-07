@@ -1065,7 +1065,7 @@ body.dark-theme[data-design="studio"]:not(#_) {
   --tint-blue-bg: #1d2142;  --tint-blue-bd: #323a5c;
 }
 body[data-design="studio"]:not(#_) *:not(.material-icons):not(mat-icon):not(.fc-icon) {
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif !important;
+  font-family: "Open Sans", "Segoe UI", system-ui, -apple-system, Roboto, sans-serif !important;
 }
 /* Svetla gornja traka sa tankom linijom */
 body[data-design="studio"]:not(#_) .top-bar-imi { background-color: var(--surface) !important; border-bottom: 1px solid var(--border); box-shadow: none !important; }
@@ -1135,21 +1135,21 @@ body:not(#_):not(#__) .clean-cal-card { height: auto !important; min-height: 0 !
 body:not(#_):not(#__) .clean-cal-card .cal-card-time,
 body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
   flex-direction: row !important; justify-content: space-between !important; align-items: center !important;
-  height: 22px !important; width: 100% !important; margin: 0 !important; padding: 0 8px !important;
-  border-radius: 0 !important; border-right: none !important; font-size: 13px !important; font-weight: 800 !important;
+  height: 26px !important; width: 100% !important; margin: 0 !important; padding: 0 8px !important;
+  border-radius: 0 !important; border-right: none !important; font-size: 14.5px !important; font-weight: 800 !important;
 }
-body:not(#_):not(#__) .clean-cal-card .cal-card-sala { font-size: 11.5px !important; max-width: none !important; opacity: 0.9; }
-body:not(#_):not(#__) .clean-cal-card .cal-ticker-wrap { white-space: normal !important; overflow: hidden !important; padding: 4px 8px 6px !important; display: block !important; width: 100%; }
+body:not(#_):not(#__) .clean-cal-card .cal-card-sala { font-size: 12.5px !important; max-width: none !important; opacity: 0.9; }
+body:not(#_):not(#__) .clean-cal-card .cal-ticker-wrap { white-space: normal !important; overflow: hidden !important; padding: 4px 6px 6px !important; display: block !important; width: 100%; }
 body:not(#_):not(#__) .clean-cal-card .cal-ticker-text {
-  font-size: 14px !important; line-height: 1.22 !important; font-weight: 700 !important;
+  font-size: 15px !important; line-height: 1.22 !important; font-weight: 700 !important;
   white-space: normal !important; overflow: hidden; display: -webkit-box !important;
   -webkit-line-clamp: 2; -webkit-box-orient: vertical; animation: none !important; transform: none !important;
-  overflow-wrap: break-word; word-break: normal;
+  overflow-wrap: normal; word-break: normal; hyphens: manual;
 }
-body:not(#_):not(#__) .fc .cal-day-num { font-size: 14px !important; font-weight: 700; }
-body:not(#_):not(#__) .fc .fc-col-header-cell-cushion { font-size: 0.8rem !important; }
-body:not(#_):not(#__) .bank-card-title { font-size: 14.5px !important; line-height: 1.3; }
-body:not(#_):not(#__) .bank-card-prof { font-size: 12.5px !important; }
+body:not(#_):not(#__) .fc .cal-day-num { font-size: 16px !important; font-weight: 700; }
+body:not(#_):not(#__) .fc .fc-col-header-cell-cushion { font-size: 0.85rem !important; }
+body:not(#_):not(#__) .bank-card-title { font-size: 16px !important; line-height: 1.3; }
+body:not(#_):not(#__) .bank-card-prof { font-size: 14px !important; }
 body:not(#_):not(#__) .bank-card-item { padding-top: 8px !important; padding-bottom: 8px !important; }
 body:not(#_):not(#__) .bank-items-scroll { gap: 8px !important; padding: 10px !important; }
 /* Studio: tamniji sporedni tekst radi kontrasta */
@@ -1170,4 +1170,13 @@ body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-c
   background: var(--ev) !important; color: #ffffff !important; font-size: 13.5px !important;
 }
 body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-card-sala { color: #ffffff !important; opacity: 0.95; }
-body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: 15px !important; font-weight: 800 !important; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-size: 15px !important; font-weight: 700 !important; }
+
+/* Studio: najdeblja slova (800/900) se teško čitaju, pa se spuštaju na 700; običan "bold" na 600 */
+body[data-design="studio"]:not(#_):not(#__) :is(.font-extrabold, .font-black, [class*="font-extrabold"], [class*="font-black"]) { font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) :is(.font-bold, [class*="font-bold"], strong, b) { font-weight: 600 !important; }
+body[data-design="studio"]:not(#_):not(#__) :is(h1, h2, h3, th, .db-title, .bank-card-title, .imi-main-title) { font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card .cal-card-time { font-weight: 700 !important; }
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card .cal-ticker-text,
+body[data-design="studio"]:not(#_):not(#__) .clean-cal-card.is-kolokvijum .cal-ticker-text { font-weight: 600 !important; }
+body[data-design="studio"]:not(#_):not(#__) :is(.header-btn, .tab-btn, .fc .fc-button, .btn-action-primary, .btn-action-secondary, .btn-action-danger, .year-tag-btn) { font-weight: 600 !important; }
