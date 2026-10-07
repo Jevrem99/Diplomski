@@ -2,7 +2,7 @@ import { Injectable, inject, signal } from '@angular/core';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 
-export type DesignId = 'klasik' | 'panel' | 'minimal' | 'mekano' | 'organski' | 'staklo' | 'kontrast';
+export type DesignId = 'klasik' | 'panel' | 'minimal' | 'mekano' | 'organski' | 'staklo' | 'kontrast' | 'studio';
 
 export interface DesignInfo {
   id: DesignId;
@@ -15,10 +15,11 @@ const SVI_DIZAJNI: DesignInfo[] = [
   { id: 'klasik', naziv: 'Klasik', opis: 'Trenutni izgled: plava gornja traka, ravne kartice.' },
   { id: 'panel', naziv: 'Panel', skriven: true, opis: 'Bočni meni levo, pregledan i kompaktan raspored; termini kao čipovi sa trakom u boji godine.' },
   { id: 'minimal', naziv: 'Minimal', skriven: true, opis: 'Samo tipografija i tanke linije: bez senki i punih ploča, termini kao tanki redovi.' },
-  { id: 'mekano', naziv: 'Mekano', opis: 'Neumorfizam: meke uzdignute i udubljene površine, ćelije kalendara kao udubljenja.' },
+  { id: 'studio', naziv: 'Studio', opis: 'Profesionalan, miran izgled: svetla traka, indigo akcenat, tanke linije bez senki.' },
+  { id: 'mekano', naziv: 'Mekano', skriven: true, opis: 'Neumorfizam: meke uzdignute i udubljene površine, ćelije kalendara kao udubljenja.' },
   { id: 'organski', naziv: 'Organski', opis: 'Zemljani tonovi, zaobljeni oblici i serifni naslovi; termini kao pastelne pilule.' },
   { id: 'staklo', naziv: 'Staklo', opis: 'Glassmorphism: providne kartice, mutna pozadina, plutajuća traka.' },
-  { id: 'kontrast', naziv: 'Kontrast', opis: 'Debele ivice i jake boje: maksimalna čitljivost, kartice sa oštrom senkom.' },
+  { id: 'kontrast', naziv: 'Kontrast', skriven: true, opis: 'Debele ivice i jake boje: maksimalna čitljivost, kartice sa oštrom senkom.' },
 ];
 
 export const DESIGNS: DesignInfo[] = SVI_DIZAJNI.filter((d) => !d.skriven);

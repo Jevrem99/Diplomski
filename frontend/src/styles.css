@@ -189,3 +189,16 @@ body > .fc-event-dragging .bank-card-color-bar {
 .fc .fc-daygrid-day.fc-day-in-range:hover {
   background-color: #bfdbfe !important; /* Tailwind blue-200 */
 }
+
+/* ---------- Telefon: kalendar ---------- */
+@media (max-width: 640px) {
+  .fc .fc-header-toolbar { flex-wrap: wrap !important; justify-content: center !important; gap: 8px !important; }
+  .fc .fc-toolbar-chunk { display: flex; align-items: center; gap: 4px; }
+  .fc .fc-toolbar-title { font-size: 1rem !important; white-space: nowrap; padding: 6px 12px !important; }
+  .fc .fc-button { padding: 5px 9px !important; font-size: 12px !important; }
+  /* Ćelije su uske: kartica prikazuje samo vreme (i salu), naslov je u iskačućem prozoru */
+  .fc .clean-cal-card .cal-ticker-wrap { display: none !important; }
+  .fc .clean-cal-card { height: 28px !important; }
+  .fc .clean-cal-card .cal-card-time { width: 100%; justify-content: center; border-right: none !important; margin: 0 !important; padding: 0 !important; }
+  .fc .fc-daygrid-day-frame { min-height: 70px !important; }
+}
