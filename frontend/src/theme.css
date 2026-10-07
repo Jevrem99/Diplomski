@@ -1150,14 +1150,6 @@ body:not(#_):not(#__) .clean-cal-card .cal-card-time:has(.cal-card-sala) {
   border-radius: 0 !important; border-right: none !important; font-size: var(--fs-card-time) !important; font-weight: var(--fw-bold) !important; line-height: 1.1;
 }
 body:not(#_):not(#__) .clean-cal-card .cal-card-vreme { flex-shrink: 0; white-space: nowrap; }
-body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: none; }
-@media (min-width: 2100px) {
-  body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-pun { display: inline; }
-  body:not(#_):not(#__) .clean-cal-card .cal-card-tip .tip-kratko { display: none; }
-}
-body:not(#_):not(#__) .clean-cal-card .cal-card-tip {
-  flex-shrink: 0; font-size: var(--fs-card-meta); font-weight: var(--fw-medium); letter-spacing: 0.05em; text-transform: uppercase; opacity: 0.6;
-}
 body:not(#_):not(#__) .clean-cal-card .cal-card-sala {
   display: inline-block; margin-left: auto; font-size: var(--fs-card-meta) !important; font-weight: var(--fw-medium) !important; max-width: 100% !important;
   padding: 2px var(--sp-2); border-radius: var(--sp-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 0.85 !important;
@@ -1181,7 +1173,7 @@ body[data-design="studio"]:not(#_):not(.dark-theme) { --muted: #4b5578; --faint:
 @media (max-width: 640px) {
   body:not(#_):not(#__) .fc .clean-cal-card { height: 30px !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-kraj { display: none; }
-  body:not(#_):not(#__) .fc .clean-cal-card .cal-card-tip { display: none; }
+  
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time, body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time:has(.cal-card-sala) { height: 100% !important; align-items: center !important; padding: 0 !important; gap: 0 !important; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-sala { font-size: 10px !important; padding: 0 3px; }
   body:not(#_):not(#__) .fc .clean-cal-card .cal-card-time { font-size: 12px !important; }

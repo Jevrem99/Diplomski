@@ -538,15 +538,12 @@ export class Main implements OnInit, AfterViewInit {
       const krajSirov = String(arg.event.extendedProps['vremeKraja'] || arg.event.extendedProps['vreme_kraja'] || '').substring(0, 5);
       const vremeTekst = krajSirov && krajSirov !== '00:00' && krajSirov !== '0:00' ? `${String(vreme).substring(0, 5)}<span class="cal-card-kraj">–${krajSirov}</span>` : String(vreme).substring(0, 5);
       const { ink, chip } = bojaTeksta(boja);
-      const tipPun = jeNastava ? 'Nastava' : (isIspit ? 'Ispit' : 'Kolokvijum');
-      const tipKratko = jeNastava ? 'Nast.' : (isIspit ? 'Ispit' : 'Kol.');
-      const tipTag = `<span class="cal-card-tip" title="${tipPun}"><span class="tip-pun">${tipPun}</span><span class="tip-kratko">${tipKratko}</span></span>`;
 
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
           <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja}; --ev-ink: ${ink}; --ev-chip: ${chip};">
-            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${tipTag}${salaTag}</div>
+            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>
