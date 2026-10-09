@@ -315,6 +315,11 @@ export class DatabaseManagement implements OnInit {
     }
   }
 
+  // Podaci koji su po prirodi latinični (ne preslovljavaju se u ćirilicu)
+  jeLatinicnaKolona(colKey: string): boolean {
+    return ['username', 'email', 'korisnik', 'password', 'sifra'].includes(colKey);
+  }
+
   formatCellValue(row: any, colKey: string): string {
     if (colKey === 'password') return '********';
 

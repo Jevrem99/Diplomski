@@ -6,7 +6,8 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:pismo": "vitest run src/app/core/utils/pismo.spec.ts"
   },
   "private": true,
   "packageManager": "npm@10.9.2",

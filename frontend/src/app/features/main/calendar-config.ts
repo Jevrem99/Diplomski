@@ -10,6 +10,16 @@ export const KALENDAR_STATICKA_PODESAVANJA: Partial<CalendarOptions> = {
   // Dani prethodnog/sledećeg meseca se ne prikazuju (ni ne crtaju njihovi termini): brži kalendar
   showNonCurrentDates: false,
   fixedWeekCount: false,
+  // Srpski za sve što FullCalendar sam ispisuje (opisi dugmadi, nazivi dana za čitače ekrana, sati u nedeljnom prikazu)
+  locale: 'sr-Latn',
+  allDayText: 'Ceo dan',
+  buttonHints: { prev: 'Prethodni period', next: 'Sledeći period', today: 'Idi na današnji dan' },
+  viewHint: (naziv: string) => `Prikaz: ${naziv}`,
+  navLinkHint: 'Idi na $0',
+  moreLinkHint: (n: number) => `Prikaži još ${n}`,
+  closeHint: 'Zatvori',
+  timeHint: 'Vreme',
+  eventHint: 'Termin',
   titleFormat: (arg) => `${MESECI[arg.date.month]} ${arg.date.year}.`,
   dayHeaderContent: (arg) => DANI_KRATKO[arg.date.getDay()],
   views: {
