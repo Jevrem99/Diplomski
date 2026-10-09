@@ -66,8 +66,44 @@
 
               <!-- VIŠESTRUKI IZBOR PREDMETA -->
               @case ('multi') {
+                @if (vrsta === 'grupa') {
+                  <!-- Grupa: izabrani predmeti kao čipovi + pretraga sa listom ponuđenih (kao u filteru banke predmeta) -->
+                  <div class="pred-izbor">
+                    @if (formData[col.key]?.length) {
+                      <div class="chips">
+                        @for (predmetId of formData[col.key]; track predmetId) {
+                          @if (getPredmetById(predmetId); as p) {
+                            <span class="chip" (click)="ukloniPredmet(predmetId)" title="Ukloni iz grupe">
+                              <span>{{ p.naziv }}</span><span class="chip-x">×</span>
+                            </span>
+                          }
+                        }
+                      </div>
+                    }
+                    <div class="control">
+                      <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                      <input type="text" [(ngModel)]="pretragaPredmeta" (keydown.enter)="dodajPrviPonudjeni(); $event.preventDefault()"
+                             (blur)="dodir(col.key)" autocomplete="off" placeholder="Pretraži predmet po nazivu ili šifri" />
+                      @if (pretragaPredmeta) {
+                        <button type="button" class="eye" (click)="pretragaPredmeta = ''" title="Obriši pretragu">✕</button>
+                      }
+                    </div>
+                    @if (pretragaPredmeta.trim()) {
+                      <div class="pred-lista">
+                        @for (p of ponudjeniPredmeti; track p.id) {
+                          <button type="button" class="pred-opt" (click)="dodajPredmet(p)">
+                            <span class="pred-ime">{{ p.naziv }}</span>
+                            <span class="pred-meta">{{ p.godina == 5 ? 'MAS' : p.godina + '. god.' }} · {{ p.semestar }}</span>
+                          </button>
+                        } @empty {
+                          <div class="pred-prazno">Nema rezultata.</div>
+                        }
+                      </div>
+                    }
+                  </div>
+                } @else {
                 <mat-form-field appearance="outline" class="w-full multi-field" subscriptSizing="dynamic">
-                  <mat-select [(ngModel)]="formData[col.key]" multiple placeholder="Izaberite predmete">
+                  <mat-select [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" multiple placeholder="Izaberite predmete">
                     <mat-select-trigger>
                       <div class="chips">
                         @for (predmetId of formData[col.key]; track predmetId) {
@@ -85,6 +121,7 @@
                     }
                   </mat-select>
                 </mat-form-field>
+                }
               }
 
               <!-- BROJ SA DUGMIĆIMA + / - -->

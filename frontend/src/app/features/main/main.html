@@ -10,7 +10,16 @@
     <!-- Zaglavlje banke predmeta: Plava podloga i bijeli tekst -->
     <div class="bank-header-box text-white">
       <h2 class="text-base font-extrabold text-white m-0">Banka predmeta</h2>
-      <p class="text-xs text-white/80 mt-1">Prevuci predmet na željeni datum</p>
+      <p class="text-xs text-white/80 mt-1">
+        {{ bankaTab === 'predmeti' ? 'Prevuci predmet na željeni datum' : 'Prevuci grupu: svi njeni predmeti dobijaju isti termin' }}
+      </p>
+
+      <div class="banka-tabovi" role="tablist">
+        <button type="button" role="tab" class="banka-tab" [class.aktivan]="bankaTab === 'predmeti'" (click)="bankaTab = 'predmeti'">Predmeti</button>
+        <button type="button" role="tab" class="banka-tab" [class.aktivan]="bankaTab === 'grupe'" (click)="bankaTab = 'grupe'">
+          Grupe @if (grupe.length) { <span class="banka-tab-broj">{{ grupe.length }}</span> }
+        </button>
+      </div>
 
       <!-- Pretraga i gumb za filtre -->
       <div class="mt-3 flex gap-2">
@@ -41,7 +50,7 @@
           <div class="flex flex-col gap-1.5">
             <div class="relative flex items-center">
               <input type="text" [ngModel]="filterLevoOsoba" (ngModelChange)="promenaOsobe($event)"
-                (keydown.enter)="izaberiPrvuOsobu()" placeholder="Profesor ili saradnik (npr. andric)"
+                (keydown.enter)="izaberiPrvuOsobu()" placeholder="Profesor ili saradnik"
                 class="bank-search-input w-full pl-9 pr-8 h-[38px] rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F63A0]/50 transition-all">
               <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none"
                 stroke="currentColor" viewBox="0 0 24 24">
@@ -89,6 +98,19 @@
               }
             </div>
           </div>
+
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/90 px-0.5">Semestar</span>
+            <div class="godine-grid grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/25">
+              @for (s of semestarOpcije; track s.id) {
+              <button type="button" (click)="filterLevoSemestar = s.id"
+                [class.aktivna-godina]="filterLevoSemestar === s.id"
+                class="year-tag-btn py-1.5 text-xs font-extrabold rounded-lg text-center cursor-pointer transition-all duration-150 select-none text-white/70 hover:text-white hover:bg-white/10">
+                {{ s.label }}
+              </button>
+              }
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -96,6 +118,35 @@
     <!-- LISTA PREDMETA ZA POVLAČENJE -->
     <!-- LISTA PREDMETA ZA PREVLAČENJE -->
     <div class="bank-items-scroll flex-1 overflow-y-auto p-4 flex flex-col gap-3" #draggableContainer>
+      @if (bankaTab === 'grupe') {
+      <button type="button" class="grupa-nova-btn" (click)="otvoriGrupu()">+ Nova grupa</button>
+      @for (grupa of filtriraneGrupe; track grupa.id) {
+      <div class="fc-event bank-card-item bank-grupa-item group" [attr.data-grupa-id]="grupa.id">
+        <div class="bank-card-color-bar" [style.background-color]="getGodinaColor(grupa.predmeti[0]?.godina)"></div>
+        <div class="bank-card-content">
+          <div class="grupa-zaglavlje">
+            <h3 class="bank-card-title">{{ grupa.naziv }}</h3>
+            <span class="grupa-akcije" (mousedown)="$event.stopPropagation()" (touchstart)="$event.stopPropagation()">
+              <button type="button" class="grupa-akcija" title="Izmeni grupu" (click)="otvoriGrupu(grupa)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.4-9.6a2 2 0 112.8 2.8L11.8 15H9v-2.8l8.6-8.8z"/></svg>
+              </button>
+              <button type="button" class="grupa-akcija grupa-akcija-brisi" title="Obriši grupu" (click)="obrisiGrupu(grupa)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7l-.9 12.1a2 2 0 01-2 1.9H7.9a2 2 0 01-2-1.9L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+              </button>
+            </span>
+          </div>
+          <ul class="grupa-predmeti">
+            @for (gp of grupa.predmeti; track gp.id) { <li>{{ gp.naziv }}</li> }
+          </ul>
+          <span class="bank-card-semestar grupa-broj">{{ grupa.predmeti.length }} predmeta · isti dan i vreme</span>
+        </div>
+      </div>
+      } @empty {
+      <p class="text-xs text-gray-400 text-center py-4">
+        Nema grupa. Grupa su predmeti koji se uvek zakazuju istog dana u isto vreme (npr. na apsolventskim rokovima).
+      </p>
+      }
+      } @else {
       @for (predmet of filtriraniPredmeti; track predmet.id) {
       <div class="fc-event bank-card-item group" [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
         <!-- Obojena vertikalna traka -->
@@ -114,6 +165,7 @@
               [style.background-color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 28%, transparent)'">
               {{ predmet.godina == 5 ? 'MAS' : predmet.godina + '. Godina' }}
             </span>
+            <span class="bank-card-semestar">{{ jeZimski(predmet) ? 'Zimski' : 'Letnji' }}</span>
           </div>
         </div>
       </div>
@@ -126,6 +178,7 @@
         class="load-more-btn w-full py-2.5 mt-2 text-xs font-bold rounded-xl transition-colors shadow-xs cursor-pointer border-none">
         Vidi više predmeta
       </button>
+      }
       }
     </div>
   </aside>
@@ -337,6 +390,14 @@
           Objavi
         </button>
 
+        <!-- Rezervacije sala (JSON) za objavljene kolokvijume -->
+        <button (click)="izveziRezervacijeSala()" class="header-btn" title="Fajl za administratora fakulteta: rezervacije sala za objavljene kolokvijume">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2M7 7h10"></path>
+          </svg>
+          <span>Rezervacije sala</span>
+        </button>
+
         <!-- IMI Sync -->
         <button (click)="sinhronizujIMI()" class="header-btn">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -344,7 +405,7 @@
               d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
             </path>
           </svg>
-          <span class="hidden sm:inline">IMI Sync</span>
+          <span class="hidden sm:inline">IMI sinhronizacija</span>
         </button>
       </div>
     </header>

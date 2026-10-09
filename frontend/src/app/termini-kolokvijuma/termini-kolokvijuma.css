@@ -14,7 +14,7 @@
 .badge-unsaved { background: var(--tint-amber-bg); color: var(--tint-amber-fg); border-radius: 999px; padding: 3px 10px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
 
 .grid-kol { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.grid-row { display: grid; grid-template-columns: 130px 1fr 1fr 1fr; gap: 10px; align-items: center; }
+.grid-row { display: grid; grid-template-columns: 130px 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; }
 .grid-row-head { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
 .label { font-weight: 600; font-size: .85rem; color: var(--text-2); }
 .check { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-2); }

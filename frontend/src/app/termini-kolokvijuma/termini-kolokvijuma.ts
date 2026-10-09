@@ -9,6 +9,7 @@ interface KolokvijumForma {
   datum: string;          // yyyy-MM-dd (za <input type="date">)
   trajanje: number | null;
   racunarskaSala: boolean;
+  dezurni: number | null; // potreban broj dežurnih
 }
 
 interface RedPredmeta {
@@ -22,6 +23,7 @@ interface RedPredmeta {
   popravniUTerminuIspita: boolean;
   popravniTrajanje: number | null;
   popravniRacunarskaSala: boolean;
+  popravniDezurni: number | null;
   napomena: string;
   cuva: boolean;
   izmenjen: boolean;
@@ -82,10 +84,12 @@ export class TerminiKolokvijuma implements OnInit {
         datum: izServera(t[`k${n}_datum`]),
         trajanje: t[`k${n}_trajanje`] ?? null,
         racunarskaSala: !!t[`k${n}_racunarska_sala`],
+        dezurni: t[`k${n}_dezurni`] ?? null,
       })),
       popravniUTerminuIspita: !!t.popravni_u_terminu_ispita,
       popravniTrajanje: t.popravni_trajanje ?? null,
       popravniRacunarskaSala: !!t.popravni_racunarska_sala,
+      popravniDezurni: t.popravni_dezurni ?? null,
       napomena: t.napomena || '',
       cuva: false,
       izmenjen: false,
@@ -103,12 +107,14 @@ export class TerminiKolokvijuma implements OnInit {
       popravni_u_terminu_ispita: r.popravniUTerminuIspita,
       popravni_trajanje: r.popravniTrajanje,
       popravni_racunarska_sala: r.popravniRacunarskaSala,
+      popravni_dezurni: r.popravniDezurni,
       napomena: r.napomena || null,
     };
     r.k.forEach((k, i) => {
       telo[`k${i + 1}_datum`] = naServer(k.datum);
       telo[`k${i + 1}_trajanje`] = k.trajanje;
       telo[`k${i + 1}_racunarska_sala`] = k.racunarskaSala;
+      telo[`k${i + 1}_dezurni`] = k.dezurni;
     });
 
     this.http.post<any>(`${this.api}/termini-kolokvijuma/sacuvaj`, telo).subscribe({

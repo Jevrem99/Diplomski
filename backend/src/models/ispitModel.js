@@ -24,7 +24,7 @@ const getIspitById = async (id) => {
 };
 
 // db = prisma ili transakcioni klijent (tx) kad se poziva unutar prisma.$transaction
-const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true, tip_kolokvijuma = 'I', sala_id = null, dezurni_ids = [], db = prisma) => {
+const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = true, tip_kolokvijuma = 'I', sala_id = null, dezurni_ids = [], db = prisma, grupa_kljuc = null) => {
     // 1. Kreiraj samo ispit (bez ugnježdenog dezurstva)
     const noviIspit = await db.ispit.create({
         data: {
@@ -33,6 +33,7 @@ const createIspit = async (predmet_id, datum, vreme, vreme_kraja, is_ispit = tru
             vreme_kraja: vreme_kraja ? new Date(`${datum}T${vreme_kraja}Z`) : null,
             is_ispit: Boolean(is_ispit),
             tip_kolokvijuma: tip_kolokvijuma || 'I',
+            grupa_kljuc: grupa_kljuc || null,
             predmet: predmet_id ? { connect: { id: Number(predmet_id) } } : undefined,
             sala: sala_id ? { connect: { id: Number(sala_id) } } : undefined
         }

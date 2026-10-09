@@ -7,7 +7,7 @@
           <h2 id="menu_title">MENI</h2>
           <button class="drawer-close-btn" (click)="drawer.close()" title="Zatvori meni">✕</button>
         </div>
-        <span class="user-subtitle">Korisnik: <strong>{{username}}</strong> ({{uloga}})</span>
+        <span class="user-subtitle">Korisnik: <strong data-lat>{{username}}</strong> ({{uloga}})</span>
       </div>
 
       <!-- SAMO ZA ADMINA -->
@@ -89,7 +89,7 @@
       </nav>
 
       <div class="rail-bottom">
-        <span class="rail-user"><strong>{{ username }}</strong> · {{ uloga }}</span>
+        <span class="rail-user"><strong data-lat>{{ username }}</strong> · {{ uloga }}</span>
         <a class="rail-link" [class.rail-active]="aktivna('/settings')" (click)="navigateToSettings()">
           <img src="assets/settings_icon.png" alt="" class="rail-icon" /><span>Podešavanja</span>
         </a>

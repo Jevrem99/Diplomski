@@ -7,9 +7,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
-import { HINTOVI, Polja, procitajGresku, validirajIspit, validirajKorisnika, validirajOsobu, validirajPredmet } from '../../../core/utils/validacija';
+import { presloviULatinicu } from '../../../features/main/main.utils';
+import { HINTOVI, Polja, procitajGresku, validirajGrupu, validirajIspit, validirajKorisnika, validirajOsobu, validirajPredmet } from '../../../core/utils/validacija';
 
-type Vrsta = 'korisnik' | 'predmet' | 'osoba' | 'ispit' | 'drugo';
+type Vrsta = 'korisnik' | 'predmet' | 'osoba' | 'ispit' | 'grupa' | 'drugo';
 type TipPolja = 'text' | 'password' | 'number' | 'date' | 'time' | 'pills' | 'select' | 'multi';
 
 // SVG putanje (24x24, linije) za ikone u poljima i zaglavlju
@@ -44,6 +45,7 @@ export class CrudModal {
   liveErrors: Polja = {};
   serverErrors: Polja = {};
   prikaziLozinku = false;
+  pretragaPredmeta = ''; // tekst u polju za pretragu predmeta (grupa)
 
   constructor(
     public dialogRef: MatDialogRef<CrudModal>,
@@ -92,11 +94,12 @@ export class CrudModal {
     if (k.includes('sifra')) return 'predmet';
     if (k.includes('ime') && k.includes('prezime')) return 'osoba';
     if (k.includes('predmet_id') && k.includes('datum')) return 'ispit';
+    if (k.length === 2 && k.includes('naziv') && k.includes('predmeti_ids')) return 'grupa';
     return 'drugo';
   }
 
   get ikonaZaglavlja(): string {
-    return ({ korisnik: IKONE['korisnik'], predmet: IKONE['knjiga'], osoba: IKONE['osobe'], ispit: IKONE['kalendar'], drugo: IKONE['oznaka'] } as Record<string, string>)[this.vrsta];
+    return ({ korisnik: IKONE['korisnik'], predmet: IKONE['knjiga'], osoba: IKONE['osobe'], ispit: IKONE['kalendar'], grupa: IKONE['knjiga'], drugo: IKONE['oznaka'] } as Record<string, string>)[this.vrsta];
   }
 
   get podnaslov(): string {
@@ -146,7 +149,8 @@ export class CrudModal {
   }
 
   obavezno(key: string): boolean {
-    if (['id', 'saradnici_ids', 'predmeti_ids'].includes(key)) return false;
+    if (key === 'predmeti_ids') return this.vrsta === 'grupa';
+    if (['id', 'saradnici_ids'].includes(key)) return false;
     if (key === 'password' && this.jeIzmena) return false;
     if (this.vrsta === 'osoba' && key === 'email') return false;
     if (this.vrsta === 'predmet' && ['broj_studenata', 'status', 'profesor_id'].includes(key)) return false;
@@ -172,6 +176,7 @@ export class CrudModal {
       case 'predmet': return validirajPredmet(podaci);
       case 'osoba': return validirajOsobu(podaci);
       case 'ispit': return validirajIspit(podaci);
+      case 'grupa': return validirajGrupu(podaci);
       default: return {};
     }
   }
@@ -199,6 +204,7 @@ export class CrudModal {
 
   prazno(key: string): boolean {
     const v = this.formData[key];
+    if (Array.isArray(v)) return v.length === 0;
     return v === undefined || v === null || String(v).trim() === '' || (key === 'password' && v === '********');
   }
 
@@ -255,6 +261,29 @@ export class CrudModal {
     return this.data.columns.some(c => c.key === 'saradnici_ids');
   }
 
+  // Predmeti koji se poklapaju sa ukucanim tekstom (latinica ili ćirilica) i još nisu u grupi
+  get ponudjeniPredmeti(): any[] {
+    const q = presloviULatinicu(this.pretragaPredmeta.trim());
+    if (!q) return [];
+    const izabrani = new Set((this.formData.predmeti_ids || []).map(Number));
+    return (this.data.predmetiList || [])
+      .filter((p: any) => !izabrani.has(Number(p.id)) &&
+        (presloviULatinicu(p.naziv).includes(q) || presloviULatinicu(p.sifra || '').includes(q)))
+      .slice(0, 30);
+  }
+
+  dodajPredmet(predmet: any): void {
+    const ids: number[] = this.formData.predmeti_ids || (this.formData.predmeti_ids = []);
+    if (!ids.map(Number).includes(Number(predmet.id))) ids.push(Number(predmet.id));
+    this.pretragaPredmeta = '';
+    this.promena('predmeti_ids');
+  }
+
+  dodajPrviPonudjeni(): void {
+    const prvi = this.ponudjeniPredmeti[0];
+    if (prvi) this.dodajPredmet(prvi);
+  }
+
   getPredmetById(id: number): any {
     if (!this.data.predmetiList) return null;
     return this.data.predmetiList.find((p: any) => p.id === Number(id));
@@ -263,6 +292,7 @@ export class CrudModal {
   ukloniPredmet(predmetId: number): void {
     if (this.formData.predmeti_ids) {
       this.formData.predmeti_ids = this.formData.predmeti_ids.filter((id: number) => Number(id) !== Number(predmetId));
+      this.promena('predmeti_ids');
     }
   }
 

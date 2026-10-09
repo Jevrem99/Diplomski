@@ -2,6 +2,7 @@ import { Component, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DESIGNS, DesignId, DesignService } from '../../../core/services/design.service';
 import { ThemeService } from '../../../core/services/theme';
+import { PismoService } from '../../../core/services/pismo.service';
 
 // Izbor dizajna (4 kartice sa malim pregledom) + prekidač svetle/tamne teme.
 // Koristi se u Podešavanjima i u iskačućem meniju "Izgled" u gornjoj traci.
@@ -32,11 +33,21 @@ import { ThemeService } from '../../../core/services/theme';
         <span>Tamna tema</span>
         <input type="checkbox" [checked]="themeService.isDarkMode()" (change)="themeService.toggleTheme()" />
       </label>
+
+      <div class="dp-theme">
+        <span>Pismo</span>
+        <span class="dp-pismo" role="radiogroup" aria-label="Pismo">
+          <button type="button" role="radio" data-lat [attr.aria-checked]="pismoService.pismo() === 'cirilica'"
+                  [class.dp-pismo-akt]="pismoService.pismo() === 'cirilica'" (click)="pismoService.postavi('cirilica')">Ћирилица</button>
+          <button type="button" role="radio" data-lat [attr.aria-checked]="pismoService.pismo() === 'latinica'"
+                  [class.dp-pismo-akt]="pismoService.pismo() === 'latinica'" (click)="pismoService.postavi('latinica')">Latinica</button>
+        </span>
+      </div>
     </div>
   `,
   styles: [`
     .dp-root { display: flex; flex-direction: column; gap: 14px; }
-    .dp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; }
+    .dp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
     .dp-card {
       display: flex; flex-direction: column; gap: 6px; text-align: left; cursor: pointer;
       padding: 10px; border-radius: 12px; border: 2px solid var(--border-strong);
@@ -45,7 +56,7 @@ import { ThemeService } from '../../../core/services/theme';
     }
     .dp-card:hover { border-color: var(--primary); transform: translateY(-1px); }
     .dp-active { border-color: var(--primary); box-shadow: 0 0 0 3px var(--tint-blue-bd); }
-    .dp-name { font-weight: 800; font-size: .95rem; }
+    .dp-name { font-weight: 800; font-size: .9rem; overflow-wrap: anywhere; }
 
     /* ---- mali pregledi (fiksne boje, ne zavise od izabranog dizajna) ---- */
     .dp-preview { display: flex; flex-direction: column; height: 84px; border-radius: 8px; overflow: hidden; border: 1px solid #cbd5e1; background: #e9f0f8; }
@@ -96,11 +107,16 @@ import { ThemeService } from '../../../core/services/theme';
     .dp-theme { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-weight: 700; font-size: .9rem; color: var(--text); cursor: pointer;
       padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
     .dp-theme input { width: 38px; height: 20px; accent-color: var(--primary); cursor: pointer; }
+    div.dp-theme { cursor: default; }
+    .dp-pismo { display: inline-flex; gap: 4px; padding: 3px; border-radius: 9px; background: var(--surface-3); }
+    .dp-pismo button { height: 28px; padding: 0 12px; border: none; border-radius: 7px; background: transparent; color: var(--text-2); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
+    .dp-pismo button.dp-pismo-akt { background: var(--primary); color: #fff; }
   `]
 })
 export class DesignPickerComponent {
   designService = inject(DesignService);
   themeService = inject(ThemeService);
+  pismoService = inject(PismoService);
   designs = DESIGNS;
 
   izaberi(id: DesignId): void {

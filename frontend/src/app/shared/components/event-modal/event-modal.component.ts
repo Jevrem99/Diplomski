@@ -12,6 +12,7 @@ import { MatIcon } from "@angular/material/icon";
 import { forkJoin } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { DataCacheService } from '../../../core/services/data-cache.service';
+import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
 
 @Component({
   selector: 'app-event-modal',
@@ -45,9 +46,57 @@ export class EventModal implements OnInit {
   sveUcionice: any[] = [];
   odsutniSaradniciMap = new Map<number, string>();
 
+  // Sortiranje liste dostupnih saradnika (podrazumevano: ko ima najmanje sati dežurstva)
+  sortiranje: 'manje' | 'vise' | 'prezime' = 'manje';
+
+  satiSaradnika(s: any): number {
+    return this.data.satiPoSaradniku?.[Number(s.id)]?.sati ?? 0;
+  }
+  brojDezurstava(s: any): number {
+    return this.data.satiPoSaradniku?.[Number(s.id)]?.broj ?? 0;
+  }
+  jeNaPredmetu(s: any): boolean {
+    return (this.data.saradniciPredmeta || []).includes(Number(s.id));
+  }
+  // Trajanje termina koji se upravo zakazuje (0 dok vreme početka nije izabrano)
+  get trajanjeOvogTermina(): number {
+    return this.formData.startTime ? trajanjeUSatima(this.formData.startTime, this.formData.endTime) : 0;
+  }
+  sati(n: number): string {
+    return formatSati(n);
+  }
+
+  get sortiraniSaradnici(): any[] {
+    const prezime = (a: any, b: any) => `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`, 'sr');
+    return [...this.slobodniSaradnici].sort((a, b) => {
+      // odsutni uvek na dnu
+      const oa = this.odsutniSaradniciMap.has(a.id) ? 1 : 0;
+      const ob = this.odsutniSaradniciMap.has(b.id) ? 1 : 0;
+      if (oa !== ob) return oa - ob;
+      if (this.sortiranje === 'prezime') return prezime(a, b);
+      const razlika = this.satiSaradnika(a) - this.satiSaradnika(b);
+      return (this.sortiranje === 'manje' ? razlika : -razlika) || prezime(a, b);
+    });
+  }
+
+  // Potreban broj dežurnih koji je saradnik uneo na stranici "Termini kolokvijuma" (samo za kolokvijume)
+  get potrebnoDezurnih(): number | null {
+    const t = this.data.potrebnoDezurnih;
+    if (!t || this.formData.is_ispit) return null;
+    const tip = String(this.formData.tip_kolokvijuma || 'I').trim().toLowerCase();
+    let v: number | null | undefined = null;
+    if (tip.includes('поправни') || tip.includes('popravni')) v = t.popravni_dezurni;
+    else if (tip === 'iii') v = t.k3_dezurni;
+    else if (tip === 'ii') v = t.k2_dezurni;
+    else if (tip === 'i') v = t.k1_dezurni;
+    return typeof v === 'number' ? v : null;
+  }
+
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean,tip_kolokvijuma?: string } 
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
+      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[],
+      potrebnoDezurnih?: { k1_dezurni?: number | null; k2_dezurni?: number | null; k3_dezurni?: number | null; popravni_dezurni?: number | null } | null } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
@@ -136,7 +185,10 @@ export class EventModal implements OnInit {
   }
 
   onDelete(): void {
-    if (confirm('Da li ste sigurni da želite da obrišete ovaj termin?')) {
+    const pitanje = this.data.grupaPredmeti?.length
+      ? `Termin je deo grupe (${this.data.grupaPredmeti.length} predmeta). Obrisati termine svih predmeta iz grupe?`
+      : 'Da li ste sigurni da želite da obrišete ovaj termin?';
+    if (confirm(pitanje)) {
       this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
     }
   }

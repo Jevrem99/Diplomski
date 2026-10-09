@@ -70,7 +70,7 @@
             @for (row of tableData; track $index) {
               <tr>
                 @for (col of visibleColumns; track col.key) {
-                  <td>{{ formatCellValue(row, col.key) }}</td>
+                  <td [attr.data-lat]="jeLatinicnaKolona(col.key) ? '' : null">{{ formatCellValue(row, col.key) }}</td>
                 }
                 @if (activeEntity !== 'dnevnik') {
                   <td class="action-cell">

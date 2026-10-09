@@ -40,49 +40,40 @@ const getAllTerminiKolokvijuma = async () => {
   });
 };
 
+// Broj ili null (prazno polje u formi ne sme da postane 0)
+const brojIliNull = (v) => (v === null || v === undefined || v === '' ? null : Number(v));
+
+const poljaTermina = (data) => ({
+  k1_datum: data.k1_datum,
+  k1_trajanje: brojIliNull(data.k1_trajanje),
+  k1_racunarska_sala: Boolean(data.k1_racunarska_sala),
+  k1_dezurni: brojIliNull(data.k1_dezurni),
+
+  k2_datum: data.k2_datum,
+  k2_trajanje: brojIliNull(data.k2_trajanje),
+  k2_racunarska_sala: Boolean(data.k2_racunarska_sala),
+  k2_dezurni: brojIliNull(data.k2_dezurni),
+
+  k3_datum: data.k3_datum,
+  k3_trajanje: brojIliNull(data.k3_trajanje),
+  k3_racunarska_sala: Boolean(data.k3_racunarska_sala),
+  k3_dezurni: brojIliNull(data.k3_dezurni),
+
+  popravni_u_terminu_ispita: Boolean(data.popravni_u_terminu_ispita),
+  popravni_trajanje: brojIliNull(data.popravni_trajanje),
+  popravni_racunarska_sala: Boolean(data.popravni_racunarska_sala),
+  popravni_dezurni: brojIliNull(data.popravni_dezurni),
+
+  napomena: data.napomena
+});
+
 // Čuvanje ili ažuriranje termina kolokvijuma za konkretan predmet
 const upsertTerminiKolokvijuma = async (predmetId, data) => {
+  const polja = poljaTermina(data);
   return await prisma.terminKolokvijuma.upsert({
     where: { predmet_id: Number(predmetId) },
-    update: {
-      k1_datum: data.k1_datum,
-      k1_trajanje: data.k1_trajanje ? Number(data.k1_trajanje) : null,
-      k1_racunarska_sala: Boolean(data.k1_racunarska_sala),
-
-      k2_datum: data.k2_datum,
-      k2_trajanje: data.k2_trajanje ? Number(data.k2_trajanje) : null,
-      k2_racunarska_sala: Boolean(data.k2_racunarska_sala),
-
-      k3_datum: data.k3_datum,
-      k3_trajanje: data.k3_trajanje ? Number(data.k3_trajanje) : null,
-      k3_racunarska_sala: Boolean(data.k3_racunarska_sala),
-
-      popravni_u_terminu_ispita: Boolean(data.popravni_u_terminu_ispita),
-      popravni_trajanje: data.popravni_trajanje ? Number(data.popravni_trajanje) : null,
-      popravni_racunarska_sala: Boolean(data.popravni_racunarska_sala),
-
-      napomena: data.napomena
-    },
-    create: {
-      predmet_id: Number(predmetId),
-      k1_datum: data.k1_datum,
-      k1_trajanje: data.k1_trajanje ? Number(data.k1_trajanje) : null,
-      k1_racunarska_sala: Boolean(data.k1_racunarska_sala),
-
-      k2_datum: data.k2_datum,
-      k2_trajanje: data.k2_trajanje ? Number(data.k2_trajanje) : null,
-      k2_racunarska_sala: Boolean(data.k2_racunarska_sala),
-
-      k3_datum: data.k3_datum,
-      k3_trajanje: data.k3_trajanje ? Number(data.k3_trajanje) : null,
-      k3_racunarska_sala: Boolean(data.k3_racunarska_sala),
-
-      popravni_u_terminu_ispita: Boolean(data.popravni_u_terminu_ispita),
-      popravni_trajanje: data.popravni_trajanje ? Number(data.popravni_trajanje) : null,
-      popravni_racunarska_sala: Boolean(data.popravni_racunarska_sala),
-
-      napomena: data.napomena
-    }
+    update: polja,
+    create: { predmet_id: Number(predmetId), ...polja }
   });
 };
 

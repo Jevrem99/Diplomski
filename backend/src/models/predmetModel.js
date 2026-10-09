@@ -3,6 +3,7 @@ const prisma = require('../db/prisma');
 const getAllPredmets = async () => {
     return await prisma.predmet.findMany({
         include: {
+            terminiKolokvijuma: { select: { k1_dezurni: true, k2_dezurni: true, k3_dezurni: true, popravni_dezurni: true } },
             profesor: true, // Glavni profesor
             saradnici: {    // Asistenti na predmetu
                 include: {

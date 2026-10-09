@@ -6,6 +6,7 @@
     "scripts": {
         "setup": "npm install --prefix backend && npm install --prefix frontend",
         "start": "node start.js",
-        "test": "npm test --prefix backend"
+        "test": "npm test --prefix backend",
+        "db:dodaci": "npm run db:dodaci --prefix backend"
     }
 }

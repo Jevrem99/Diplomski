@@ -52,6 +52,13 @@ const saveTermini = async (req, res) => {
       }
     }
 
+    for (const polje of ['k1_dezurni', 'k2_dezurni', 'k3_dezurni', 'popravni_dezurni']) {
+      const v = data[polje];
+      if (v !== null && v !== undefined && v !== '' && (!Number.isInteger(Number(v)) || Number(v) < 0 || Number(v) > 20)) {
+        return res.status(400).json({ message: 'Potreban broj dežurnih mora biti ceo broj od 0 do 20.' });
+      }
+    }
+
     const updated = await terminiModel.upsertTerminiKolokvijuma(predmet_id, data);
     await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Termini kolokvijuma', `Predmet ID ${predmet_id}`);
     res.json({ message: 'Uspešno sačuvano', data: updated });

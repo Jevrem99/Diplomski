@@ -91,3 +91,12 @@ export function validirajIspit(b: any): Polja {
   }
   return polja;
 }
+
+export function validirajGrupu(b: any): Polja {
+  const polja: Polja = {};
+  if (prazno(b.naziv)) polja['naziv'] = 'Naziv grupe je obavezan.';
+  else if (String(b.naziv).trim().length > 80) polja['naziv'] = 'Naziv grupe može imati najviše 80 karaktera.';
+  const ids = Array.isArray(b.predmeti_ids) ? [...new Set(b.predmeti_ids.map(Number))] : [];
+  if (ids.length < 2) polja['predmeti_ids'] = 'Grupa mora imati najmanje dva predmeta.';
+  return polja;
+}
