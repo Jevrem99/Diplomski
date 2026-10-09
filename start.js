@@ -1,5 +1,6 @@
 // Pokreće back end i front end jednom komandom:  npm start   (iz glavnog foldera projekta)
-// Ctrl+C gasi oba. Portovi se menjaju sa: PORT (back end, podrazumevano 5000) i FRONT_PORT (front end, 4200).
+// Ctrl+C gasi oba. Portovi se menjaju sa: BACK_PORT (back end, podrazumevano 5000) i FRONT_PORT (front end, 4200).
+// Back end uvek dobija svoj port izričito: opšta promenljiva PORT iz okruženja ga ne sme prebaciti na port front enda.
 const { spawn } = require('child_process');
 const path = require('path');
 
@@ -43,6 +44,7 @@ process.on('SIGINT', () => ugasi(0));
 process.on('SIGTERM', () => ugasi(0));
 
 const frontPort = process.env.FRONT_PORT || '4200';
-console.log(`Pokrećem back end (port ${process.env.PORT || 5000}) i front end (http://localhost:${frontPort}) ...`);
-pokreni('backend', 'backend', 'node', ['src/server.js']);
+const backPort = process.env.BACK_PORT || '5000';
+console.log(`Pokrećem back end (port ${backPort}) i front end (http://localhost:${frontPort}) ...`);
+pokreni('backend', 'backend', 'node', ['src/server.js'], { PORT: backPort });
 pokreni('frontend', 'frontend', 'npx', ['ng', 'serve', '--port', frontPort]);
