@@ -54,6 +54,10 @@ const SAMO_ADMIN = [
     ['GET', '/dezurstva/export-excel'],
     ['GET', '/termini-kolokvijuma/sve'],
     ['GET', '/zamene'],
+    ['GET', '/grupe'],
+    ['POST', '/grupe'],
+    ['PUT', '/grupe/0'],
+    ['DELETE', '/grupe/0'],
     ['POST', '/zamene/0/odobri'],
     ['POST', '/zamene/0/odbij'],
     ['POST', '/auth/admin-reset-password'],
@@ -97,7 +101,7 @@ test('profesor i asistent ne smeju na admin rute (403)', async (t) => {
 test('admin prolazi zaštitu admin ruta (nikad 401/403)', async (t) => {
     if (preskoci(t)) return;
     // Samo bezbedna čitanja i pozivi sa nepostojećim id-jem; ništa se ne menja u bazi.
-    const bezbedno = [['GET', '/users'], ['GET', '/admin/logs'], ['GET', '/zamene'], ['GET', '/termini-kolokvijuma/sve'], ['DELETE', '/ispit/0'], ['PUT', '/ispit/0']];
+    const bezbedno = [['GET', '/users'], ['GET', '/admin/logs'], ['GET', '/zamene'], ['GET', '/grupe'], ['DELETE', '/grupe/0'], ['GET', '/termini-kolokvijuma/sve'], ['DELETE', '/ispit/0'], ['PUT', '/ispit/0']];
     for (const [metod, putanja] of bezbedno) {
         const status = await zovi(metod, putanja, TOKENI.admin, {});
         assert.ok(status !== 401 && status !== 403, `admin: ${metod} ${putanja} -> ${status}`);

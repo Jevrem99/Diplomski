@@ -727,3 +727,5 @@
 }
 .potrebno-badge.je-dovoljno { background: var(--tint-green-bg); color: var(--tint-green-fg); border-color: var(--tint-green-bd); }
 .potrebno-badge.je-visak { background: var(--danger-soft); color: var(--danger-text); border-color: var(--danger-border); }
+
+.modal-grupa-note { margin-top: 6px; font-size: 0.78rem; font-weight: 600; color: rgba(255, 255, 255, 0.92); }

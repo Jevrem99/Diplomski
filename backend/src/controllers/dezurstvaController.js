@@ -173,7 +173,11 @@ const exportRasporedDezurstava = async (req, res) => {
         }
 
         // ---- Red 3+: podaci ----
+        // Termini iste grupe traju istovremeno: sate nosi samo prvi red grupe, da se zbir po asistentu ne udvostruči
+        const vidjeneGrupe = new Set();
         ispiti.forEach((ispit, idx) => {
+            const ponovljenaGrupa = Boolean(ispit.grupa_kljuc) && vidjeneGrupe.has(ispit.grupa_kljuc);
+            if (ispit.grupa_kljuc) vidjeneGrupe.add(ispit.grupa_kljuc);
             const rNum = firstDataRow + idx;
             const dodeljeni = new Set(ispit.dezurstva.map((d) => d.saradnik_id));
             const naziv = ispit.predmet?.naziv || '';
@@ -181,7 +185,7 @@ const exportRasporedDezurstava = async (req, res) => {
             const rowData = [
                 `${naziv}\n - ${tipTekst(ispit)}`,
                 new Date(ispit.datum),
-                izracunajSate(ispit.vreme, ispit.vreme_kraja),
+                ponovljenaGrupa ? 0 : izracunajSate(ispit.vreme, ispit.vreme_kraja),
                 potrebnoDezurnih(ispit) ?? ispit.dezurstva.length, // nije uneto -> koliko ih je dodeljeno
                 asistenti.length > 0
                     ? { formula: `SUM(${firstLetter}${rNum}:${lastLetter}${rNum})` }

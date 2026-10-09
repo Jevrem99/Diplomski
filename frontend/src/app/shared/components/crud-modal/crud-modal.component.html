@@ -67,7 +67,7 @@
               <!-- VIŠESTRUKI IZBOR PREDMETA -->
               @case ('multi') {
                 <mat-form-field appearance="outline" class="w-full multi-field" subscriptSizing="dynamic">
-                  <mat-select [(ngModel)]="formData[col.key]" multiple placeholder="Izaberite predmete">
+                  <mat-select [(ngModel)]="formData[col.key]" (ngModelChange)="promena(col.key)" multiple placeholder="Izaberite predmete">
                     <mat-select-trigger>
                       <div class="chips">
                         @for (predmetId of formData[col.key]; track predmetId) {

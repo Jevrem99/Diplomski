@@ -165,3 +165,18 @@ test('potrebnoDezurnih bira polje prema tipu kolokvijuma', () => {
     assert.equal(d.potrebnoDezurnih({ is_ispit: true, tip_kolokvijuma: 'I', predmet }), null);
     assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'I', predmet: {} }), null);
 });
+
+
+test('validirajGrupu: naziv i bar dva različita predmeta', () => {
+    const { validirajGrupu, ocistiGrupaKljuc } = require('../src/utils/validators');
+    assert.deepEqual(validirajGrupu({ naziv: 'Logika i jezici', predmet_ids: [1, 2] }), {});
+    assert.deepEqual(validirajGrupu({ naziv: 'Logika i jezici', predmeti_ids: ['3', '4', '5'] }), {});
+    assert.ok(validirajGrupu({ naziv: '', predmet_ids: [1, 2] }).naziv);
+    assert.ok(validirajGrupu({ naziv: 'x', predmet_ids: [1] }).predmeti_ids);
+    assert.ok(validirajGrupu({ naziv: 'x', predmet_ids: [1, 1] }).predmeti_ids);
+    assert.ok(validirajGrupu({ naziv: 'x' }).predmeti_ids);
+    assert.equal(ocistiGrupaKljuc('g_mabc123_x9'), 'g_mabc123_x9');
+    assert.equal(ocistiGrupaKljuc(''), null);
+    assert.equal(ocistiGrupaKljuc("x'; DROP TABLE"), null);
+    assert.equal(ocistiGrupaKljuc(undefined), null);
+});

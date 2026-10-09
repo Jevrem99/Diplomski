@@ -5,7 +5,7 @@ dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
-const { proveriVremena } = require('../utils/validators');
+const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
@@ -202,8 +202,10 @@ const prikazDatuma = (dan) => dan.split('-').reverse().slice(0, 2).join('.') + '
 //  - asistent već dežura u istom terminu,
 //  - ista sala je zauzeta drugim ispitom u istom terminu.
 // excludeIspitId(s): ispiti koji se menjaju/brišu (ne računaju se kao konflikt sa samim sobom)
+// grupa_kljuc: termini nastali jednim postavljanjem grupe predmeta dele salu, vreme i dežurne,
+//              pa se međusobno ne prijavljuju kao konflikt
 // planirani: termini koji se tek čuvaju u istoj seriji ({ datum, vreme, vreme_kraja, sala_id, dezurni_ids, naziv, saradnici })
-const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, excludeIspitId, excludeIspitIds = [], planirani = [], db = prisma }) => {
+const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, db = prisma }) => {
     const dan = String(datum).split('T')[0];
     const ispitDatum = new Date(`${dan}T00:00:00.000Z`);
     const pocetak = formatTimeToDateTime(dan, vreme);
@@ -211,7 +213,9 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
     const kraj = formatTimeToDateTime(dan, vreme_kraja) || new Date(pocetak.getTime() + DEFAULT_TRAJANJE_MS);
     const ids = (dezurni_ids || []).map(Number).filter(Number.isInteger);
     const izuzeti = [...excludeIspitIds, ...(excludeIspitId ? [excludeIspitId] : [])].map(Number).filter(Number.isInteger);
-    const notIn = izuzeti.length > 0 ? { id: { notIn: izuzeti } } : {};
+    // NULL se u SQL-u ne poredi sa "različito od", pa se termini bez grupe navode izričito
+    const vanGrupe = grupa_kljuc ? { OR: [{ grupa_kljuc: null }, { grupa_kljuc: { not: grupa_kljuc } }] } : {};
+    const notIn = { ...(izuzeti.length > 0 ? { id: { notIn: izuzeti } } : {}), ...vanGrupe };
     const konflikti = [];
     const preklapa = (poc, zav) => minutaOdPonoci(poc) < minutaOdPonoci(kraj) && minutaOdPonoci(zav) > minutaOdPonoci(pocetak);
     const imenaSaradnika = new Map();
@@ -281,6 +285,7 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
     // 4. Isti konflikti sa terminima koji se čuvaju u istoj seriji (još nisu u bazi)
     for (const o of planirani) {
         if (String(o.datum).split('T')[0] !== dan) continue;
+        if (grupa_kljuc && o.grupa_kljuc === grupa_kljuc) continue;
         const poc = formatTimeToDateTime(dan, o.vreme);
         if (!poc) continue;
         const zav = formatTimeToDateTime(dan, o.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
@@ -312,6 +317,7 @@ const odrediSalaId = async (sala, cache = new Map(), db = prisma) => {
 
 const createIspit = async (req, res) => {
     const { predmet_id, datum, vreme, is_ispit, tip_kolokvijuma, sala, date, startTime, room, vreme_kraja, endTime, dezurni_ids } = req.body;
+    const grupaKljuc = ocistiGrupaKljuc(req.body.grupa_kljuc);
 
     const finalDatum = datum || date;
     const finalVreme = vreme || startTime;
@@ -342,7 +348,8 @@ const createIspit = async (req, res) => {
 
         // PROVERA KONFLIKATA
         const konflikti = await proveriKonflikte({
-            datum: finalDatum, vreme: finalVreme, vreme_kraja: finalVremeKraja, dezurni_ids: finalDezurni, sala_id: salaId
+            datum: finalDatum, vreme: finalVreme, vreme_kraja: finalVremeKraja, dezurni_ids: finalDezurni, sala_id: salaId,
+            grupa_kljuc: grupaKljuc
         });
         if (konflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({
@@ -360,7 +367,9 @@ const createIspit = async (req, res) => {
             is_ispit ?? true,
             finalTipKolokvijuma,
             salaId,
-            finalDezurni
+            finalDezurni,
+            prisma,
+            grupaKljuc
         );
         await logAction(
             req.user?.username || 'Korisnik',
@@ -468,6 +477,11 @@ const updateIspit = async (req, res) => {
       .map(d => (typeof d === 'object' ? d.id : Number(d)))
       .filter(Boolean);
 
+    // Ključ grupe: ako ga zahtev ne pominje, ostaje postojeći
+    const grupaKljuc = Object.prototype.hasOwnProperty.call(body, 'grupa_kljuc')
+      ? ocistiGrupaKljuc(body.grupa_kljuc)
+      : postojeciIspit.grupa_kljuc;
+
     // Provera konflikata (ispit koji menjamo se ne računa kao konflikt sam sa sobom)
     const salaZaProveru = salaConnect ? salaConnect.connect.id : postojeciIspit.sala_id;
     const konflikti = await proveriKonflikte({
@@ -476,7 +490,8 @@ const updateIspit = async (req, res) => {
       vreme_kraja: vremeUDate(novoVremeKraja)?.toISOString().substring(11, 19) || null,
       dezurni_ids: dezurniIds,
       sala_id: salaZaProveru,
-      excludeIspitId: numericId
+      excludeIspitId: numericId,
+      grupa_kljuc: grupaKljuc
     });
     if (konflikti.length > 0 && req.query.force !== '1') {
       return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: tekstovi(konflikti), konflikti });
@@ -497,6 +512,7 @@ const updateIspit = async (req, res) => {
           vreme_kraja: novoVremeKraja,
           is_ispit: body.is_ispit ?? true,
           tip_kolokvijuma: body.tip_kolokvijuma || 'I',
+          grupa_kljuc: grupaKljuc,
           ...(predmetConnect ? { predmet: predmetConnect } : {}),
           ...(salaConnect ? { sala: salaConnect } : {}),
           ...izmenaObjavljenog,
@@ -570,9 +586,10 @@ const saveBulkIspiti = async (req, res) => {
             if (greskaVremena) return res.status(400).json({ error: `${greskaVremena} (termin: ${ispit.title || ispit.naziv || datum})` });
             const salaId = await odrediSalaId(ispit.sala || ispit.room, salaCache);
             const dezurni = ispit.dezurni_ids || [];
-            const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId });
+            const grupaKljuc = ocistiGrupaKljuc(ispit.grupa_kljuc);
+            const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, grupa_kljuc: grupaKljuc });
             sviKonflikti.push(...konflikti);
-            pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dezurni });
+            pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dezurni, grupaKljuc });
         }
         if (sviKonflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: tekstovi(sviKonflikti), konflikti: sviKonflikti });
@@ -591,7 +608,8 @@ const saveBulkIspiti = async (req, res) => {
                     p.ispit.tip_kolokvijuma || 'I',
                     p.salaId,
                     p.dezurni,
-                    tx
+                    tx,
+                    p.grupaKljuc
                 ));
             }
             return rezultat;
@@ -658,6 +676,7 @@ const proveriRaspored = async (req, res) => {
                 sala_id: salaId,
                 salaNaziv,
                 dezurni_ids: dezurni,
+                grupa_kljuc: ocistiGrupaKljuc(t.grupa_kljuc),
                 naziv: predmetNazivi.get(predmetId) || t.title || 'Ispit'
             };
         };
@@ -682,6 +701,7 @@ const proveriRaspored = async (req, res) => {
             const konflikti = await proveriKonflikte({
                 datum: p.datum, vreme: p.vreme, vreme_kraja: p.vreme_kraja, dezurni_ids: p.dezurni_ids, sala_id: p.sala_id,
                 excludeIspitIds: izuzeti,
+                grupa_kljuc: p.grupa_kljuc,
                 planirani: planirani.filter((o) => o !== p)
             });
             if (konflikti.length > 0) {

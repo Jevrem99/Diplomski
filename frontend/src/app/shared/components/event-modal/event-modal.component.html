@@ -8,6 +8,11 @@
         <span class="meta-separator">•</span>
         <span class="meta-item">Datum: <strong>{{ data.date }}</strong></span>
       </div>
+      @if (data.grupaPredmeti?.length) {
+        <div class="modal-grupa-note">
+          Grupa predmeta: isti termin, sala i dežurni važe za {{ data.grupaPredmeti!.length }} predmeta ({{ data.grupaPredmeti!.join(', ') }}).
+        </div>
+      }
     </div>
     <button class="modal-close-btn" (click)="onCancel()" title="Zatvori">✕</button>
   </div>

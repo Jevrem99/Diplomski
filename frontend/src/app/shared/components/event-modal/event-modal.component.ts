@@ -95,7 +95,7 @@ export class EventModal implements OnInit {
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
     @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
-      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[],
+      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[],
       potrebnoDezurnih?: { k1_dezurni?: number | null; k2_dezurni?: number | null; k3_dezurni?: number | null; popravni_dezurni?: number | null } | null } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
@@ -185,7 +185,10 @@ export class EventModal implements OnInit {
   }
 
   onDelete(): void {
-    if (confirm('Da li ste sigurni da želite da obrišete ovaj termin?')) {
+    const pitanje = this.data.grupaPredmeti?.length
+      ? `Termin je deo grupe (${this.data.grupaPredmeti.length} predmeta). Obrisati termine svih predmeta iz grupe?`
+      : 'Da li ste sigurni da želite da obrišete ovaj termin?';
+    if (confirm(pitanje)) {
       this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
     }
   }

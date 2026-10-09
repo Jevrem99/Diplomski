@@ -173,12 +173,19 @@ export class ZaduzenjaComponent implements OnInit {
       zaduzenjaMap.set(s.id, { ...s, ukupnoSati: 0, brojIspita: 0 });
     });
 
+    // Termini iste grupe traju istovremeno: jednom saradniku se računaju jednom
+    const vidjenoUGrupi = new Set<string>();
     ispiti.forEach(ispit => {
       const sati = this.razlikaUSatima(ispit.vreme, ispit.vreme_kraja);
       const dezurstva = ispit.dezurstva || [];
       
       dezurstva.forEach((dez: any) => {
         const sId = typeof dez.saradnik === 'object' ? dez.saradnik.id : dez.saradnik_id;
+        if (sId && ispit.grupa_kljuc) {
+          const oznaka = `${ispit.grupa_kljuc}|${sId}`;
+          if (vidjenoUGrupi.has(oznaka)) return;
+          vidjenoUGrupi.add(oznaka);
+        }
         if (sId && zaduzenjaMap.has(sId)) {
           const saradnikInfo = zaduzenjaMap.get(sId);
           saradnikInfo.ukupnoSati += sati;

@@ -82,6 +82,23 @@ const validirajPredmet = (b) => {
     return polja;
 };
 
+// Grupa predmeta: naziv + najmanje dva različita predmeta
+const validirajGrupu = (b) => {
+    const polja = {};
+    if (prazno(b.naziv)) polja.naziv = 'Naziv grupe je obavezan.';
+    else if (String(b.naziv).trim().length > 80) polja.naziv = 'Naziv grupe može imati najviše 80 karaktera.';
+    const sirovi = b.predmet_ids || b.predmeti_ids;
+    const ids = Array.isArray(sirovi) ? [...new Set(sirovi.map(Number).filter(Number.isInteger))] : [];
+    if (ids.length < 2) polja.predmeti_ids = 'Grupa mora imati najmanje dva predmeta.';
+    return polja;
+};
+
+// Ključ jednog postavljanja grupe na raspored (pravi ga klijent); prazno ili neispravno -> null
+const ocistiGrupaKljuc = (v) => {
+    const t = typeof v === 'string' ? v.trim() : '';
+    return /^[A-Za-z0-9_-]{4,64}$/.test(t) ? t : null;
+};
+
 // Šalje 400 sa porukom po poljima ako ih ima; vraća true ako je odgovor poslat
 const odbaciAkoImaGresaka = (res, polja) => {
     if (Object.keys(polja).length === 0) return false;
@@ -119,6 +136,6 @@ const mapirajPrismaGresku = (error, res) => {
 
 module.exports = {
     ULOGE, jeValidnaUloga, proveriLozinku, proveriEmail, proveriVremena,
-    validirajKorisnika, validirajOsobu, validirajPredmet,
+    validirajKorisnika, validirajOsobu, validirajPredmet, validirajGrupu, ocistiGrupaKljuc,
     odbaciAkoImaGresaka, mapirajPrismaGresku
 };
