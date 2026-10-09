@@ -39,7 +39,7 @@
 
         <div class="grid-kol">
           <div class="grid-row grid-row-head">
-            <span>Kolokvijum</span><span>Datum</span><span>Trajanje (min)</span><span>Računarska sala</span>
+            <span>Kolokvijum</span><span>Datum</span><span>Trajanje (min)</span><span>Računarska sala</span><span>Potreban broj dežurnih</span>
           </div>
           @for (k of r.k; track $index) {
             <div class="grid-row">
@@ -48,6 +48,8 @@
               <input type="number" min="15" max="480" step="15" placeholder="npr. 90"
                      [(ngModel)]="k.trajanje" (ngModelChange)="oznaciIzmenu(r)" />
               <label class="check"><input type="checkbox" [(ngModel)]="k.racunarskaSala" (ngModelChange)="oznaciIzmenu(r)" /> Da</label>
+              <input type="number" min="0" max="20" step="1" placeholder="broj dežurnih" title="Potreban broj dežurnih"
+                     [(ngModel)]="k.dezurni" (ngModelChange)="oznaciIzmenu(r)" />
             </div>
           }
           <div class="grid-row">
@@ -56,6 +58,8 @@
             <input type="number" min="15" max="480" step="15" placeholder="npr. 90"
                    [(ngModel)]="r.popravniTrajanje" (ngModelChange)="oznaciIzmenu(r)" />
             <label class="check"><input type="checkbox" [(ngModel)]="r.popravniRacunarskaSala" (ngModelChange)="oznaciIzmenu(r)" /> Da</label>
+            <input type="number" min="0" max="20" step="1" placeholder="broj dežurnih" title="Potreban broj dežurnih"
+                   [(ngModel)]="r.popravniDezurni" (ngModelChange)="oznaciIzmenu(r)" />
           </div>
         </div>
 

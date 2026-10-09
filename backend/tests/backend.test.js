@@ -152,3 +152,16 @@ test('semestarIzNapomene: napomena "реализује се у ..." ima prednost
     assert.equal(f(null, 'Zimski'), 'Zimski');
     assert.equal(_internal.ocistiNazivPredmeta('Алгоритми (реализује се у летњем семестру)'), 'Алгоритми');
 });
+
+
+test('potrebnoDezurnih bira polje prema tipu kolokvijuma', () => {
+    const { _internal: d } = require('../src/controllers/dezurstvaController');
+    const predmet = { terminiKolokvijuma: { k1_dezurni: 3, k2_dezurni: 4, k3_dezurni: null, popravni_dezurni: 2 } };
+    assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'I', predmet }), 3);
+    assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'II', predmet }), 4);
+    assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'III', predmet }), null);
+    assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'Поправни I', predmet }), 2);
+    assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'тест', predmet }), null);
+    assert.equal(d.potrebnoDezurnih({ is_ispit: true, tip_kolokvijuma: 'I', predmet }), null);
+    assert.equal(d.potrebnoDezurnih({ is_ispit: false, tip_kolokvijuma: 'I', predmet: {} }), null);
+});

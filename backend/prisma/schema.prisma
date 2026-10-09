@@ -51,6 +51,7 @@ model Predmet {
   
   ispiti      Ispit[]
   terminiKolokvijuma TerminKolokvijuma?
+  grupe       GrupaPredmeta[] @relation("PredmetiUGrupi")
 
   @@index([profesor_id])
 }
@@ -74,6 +75,8 @@ model Ispit {
   predmet    Predmet?    @relation(fields: [predmet_id], references: [id])
   is_published Boolean    @default(false)
   sala       Sala?       @relation(fields: [sala_id], references: [id])
+  // Termini nastali jednim prevlacenjem grupe predmeta dele isti kljuc i ponasaju se kao celina
+  grupa_kljuc String?
   
   dezurstva  Dezurstva[] 
 
@@ -81,6 +84,7 @@ model Ispit {
   @@index([datum])
   @@index([sala_id])
   @@index([is_published])
+  @@index([grupa_kljuc])
 }
 model RedovnaNastava {
   id             Int      @id @default(autoincrement())
@@ -157,6 +161,12 @@ model TerminKolokvijuma {
   popravni_trajanje        Int?
   popravni_racunarska_sala Boolean @default(false)
 
+  // Potreban broj dezurnih po kolokvijumu (unosi saradnik; koristi ga tabela dezurstava)
+  k1_dezurni              Int?
+  k2_dezurni              Int?
+  k3_dezurni              Int?
+  popravni_dezurni        Int?
+
   napomena                String?
 
   created_at              DateTime @default(now())
@@ -181,4 +191,12 @@ model ZahtevZamene {
   @@index([status])
   @@index([trazilac_id])
   @@index([dezurstvo_id])
+}
+
+// Grupa predmeta koji se uvek zakazuju istog dana u isto vreme (npr. apsolventski rokovi)
+model GrupaPredmeta {
+  id         Int       @id @default(autoincrement())
+  naziv      String
+  predmeti   Predmet[] @relation("PredmetiUGrupi")
+  created_at DateTime  @default(now())
 }

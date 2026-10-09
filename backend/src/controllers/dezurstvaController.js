@@ -55,6 +55,19 @@ const tipTekst = (ispit) => {
     return `${tip} колоквијум`;
 };
 
+// Potreban broj dežurnih koji je saradnik uneo na stranici "Termini kolokvijuma" (null ako nije unet)
+const potrebnoDezurnih = (ispit) => {
+    const t = ispit.predmet?.terminiKolokvijuma;
+    if (!t || ispit.is_ispit) return null;
+    const tip = String(ispit.tip_kolokvijuma || 'I').trim().toLowerCase();
+    let v = null;
+    if (tip.includes('поправни') || tip.includes('popravni')) v = t.popravni_dezurni;
+    else if (tip === 'iii') v = t.k3_dezurni;
+    else if (tip === 'ii') v = t.k2_dezurni;
+    else if (tip === 'i') v = t.k1_dezurni;
+    return Number.isInteger(v) ? v : null;
+};
+
 const exportRasporedDezurstava = async (req, res) => {
     try {
         // Opcioni filter: ?ids=1,2,3 (npr. ispiti trenutno prikazani na frontu)
@@ -67,7 +80,7 @@ const exportRasporedDezurstava = async (req, res) => {
         const ispiti = await prisma.ispit.findMany({
             where,
             include: {
-                predmet: true,
+                predmet: { include: { terminiKolokvijuma: true } },
                 dezurstva: { include: { saradnik: true } },
             },
             orderBy: [{ datum: 'asc' }, { vreme: 'asc' }],
@@ -169,7 +182,7 @@ const exportRasporedDezurstava = async (req, res) => {
                 `${naziv}\n - ${tipTekst(ispit)}`,
                 new Date(ispit.datum),
                 izracunajSate(ispit.vreme, ispit.vreme_kraja),
-                ispit.dezurstva.length,
+                potrebnoDezurnih(ispit) ?? ispit.dezurstva.length, // nije uneto -> koliko ih je dodeljeno
                 asistenti.length > 0
                     ? { formula: `SUM(${firstLetter}${rNum}:${lastLetter}${rNum})` }
                     : 0,
@@ -294,4 +307,4 @@ const exportMojKalendar = async (req, res) => {
     }
 };
 
-module.exports = { getMojaDezurstva, exportRasporedDezurstava, exportMojKalendar };
+module.exports = { getMojaDezurstva, exportRasporedDezurstava, exportMojKalendar, _internal: { potrebnoDezurnih } };
