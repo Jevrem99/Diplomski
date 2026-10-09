@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
+import { trajanjeUSatima } from '../../core/utils/vreme';
 @Component({
   selector: 'app-zaduzenja',
   standalone: true,
@@ -196,15 +197,7 @@ export class ZaduzenjaComponent implements OnInit {
   }
 
   private razlikaUSatima(vremeOd: string, vremeDo: string): number {
-    if (!vremeOd || !vremeDo) return 2; 
-    const getMin = (v: string) => {
-      const val = v.includes('T') ? v.substring(11, 16) : v.substring(0, 5);
-      const [h, m] = val.split(':').map(Number);
-      return (h * 60) + m;
-    };
-    const start = getMin(vremeOd);
-    const end = getMin(vremeDo);
-    return Math.max(0, (end - start) / 60);
+    return trajanjeUSatima(vremeOd, vremeDo);
   }
 
   izveziUExcel() {

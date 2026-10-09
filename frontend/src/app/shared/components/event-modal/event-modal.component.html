@@ -78,11 +78,21 @@
 
       <!-- Izabrani dežurni saradnici -->
       <div class="selected-box">
-        <span class="selected-box-title">Dodeljeni dežurni saradnici</span>
+        <span class="selected-box-title">
+          Dodeljeni dežurni saradnici ({{ izabraniSaradnici.length }})
+          @if (potrebnoDezurnih !== null) {
+            <span class="potrebno-badge" [class.je-dovoljno]="izabraniSaradnici.length === potrebnoDezurnih"
+                  [class.je-visak]="izabraniSaradnici.length > potrebnoDezurnih"
+                  title="Broj koji je saradnik uneo na stranici Termini kolokvijuma">
+              Potrebno: {{ potrebnoDezurnih }}
+            </span>
+          }
+        </span>
         <div class="flex flex-wrap gap-1.5">
           @for (saradnik of izabraniSaradnici; track saradnik.id) {
-            <div class="dezurni-chip">
+            <div class="dezurni-chip" title="Sati dežurstva u semestru, sa ovim terminom">
               <span>{{ saradnik.ime }} {{ saradnik.prezime }}</span>
+              <span class="chip-sati">{{ sati(satiSaradnika(saradnik) + trajanjeOvogTermina) }} h</span>
               <button class="chip-remove" (click)="ukloniDezurnog(saradnik)">×</button>
             </div>
           } @empty {
@@ -109,15 +119,26 @@
 
     <!-- DESNA KOLONA: Dostupni saradnici -->
     <div class="modal-side-col">
-      <h3 class="side-col-title">Dostupni saradnici</h3>
+      <div class="side-col-head">
+        <h3 class="side-col-title">Dostupni saradnici</h3>
+        <select class="sort-select" [(ngModel)]="sortiranje" title="Redosled liste">
+          <option value="manje">Najmanje sati</option>
+          <option value="vise">Najviše sati</option>
+          <option value="prezime">Po prezimenu</option>
+        </select>
+      </div>
+      <p class="side-col-hint">Sati dežurstva u ovom semestru (bez ovog termina).</p>
       
       <div class="saradnici-scroll-list">
-        @for (saradnik of slobodniSaradnici; track saradnik.id) {
+        @for (saradnik of sortiraniSaradnici; track saradnik.id) {
           <div class="saradnik-row"
                [ngClass]="odsutniSaradniciMap.has(saradnik.id) ? 'is-odsutan' : ''">
             
             <div class="flex flex-col">
-              <span class="saradnik-name">{{ saradnik.ime }} {{ saradnik.prezime }}</span>
+              <span class="saradnik-name">{{ saradnik.ime }} {{ saradnik.prezime }}
+                @if (jeNaPredmetu(saradnik)) { <span class="tag-predmet">na predmetu</span> }
+              </span>
+              <span class="saradnik-sati">{{ sati(satiSaradnika(saradnik)) }} h · {{ brojDezurstava(saradnik) }} dež.</span>
               @if (odsutniSaradniciMap.has(saradnik.id)) {
                 <span class="saradnik-warning">
                   {{ odsutniSaradniciMap.get(saradnik.id) }}

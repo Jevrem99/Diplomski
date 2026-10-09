@@ -708,3 +708,22 @@
   padding: 0 24px !important;
   border-radius: 8px !important;
 }
+/* Sati dežurstva i redosled liste saradnika */
+.side-col-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.side-col-hint { margin: -4px 0 0 0; font-size: 0.72rem; font-weight: 600; color: var(--muted); }
+.sort-select {
+  height: 30px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--border-strong);
+  background: var(--surface-2); color: var(--text); font: inherit; font-size: 0.75rem; font-weight: 700; cursor: pointer;
+}
+.saradnik-sati { font-size: 0.74rem; font-weight: 700; color: var(--primary-text); }
+.tag-predmet {
+  margin-left: 4px; padding: 1px 6px; border-radius: 4px; font-size: 0.66rem; font-weight: 700;
+  background: var(--tint-green-bg); color: var(--tint-green-fg); border: 1px solid var(--tint-green-bd); white-space: nowrap;
+}
+.chip-sati { padding: 0 6px; border-radius: 10px; background: rgba(255, 255, 255, 0.22); font-size: 0.72rem; }
+.potrebno-badge {
+  margin-left: 8px; padding: 1px 8px; border-radius: 10px; font-size: 0.7rem; text-transform: none;
+  background: var(--tint-amber-bg); color: var(--tint-amber-fg); border: 1px solid var(--tint-amber-bd);
+}
+.potrebno-badge.je-dovoljno { background: var(--tint-green-bg); color: var(--tint-green-fg); border-color: var(--tint-green-bd); }
+.potrebno-badge.je-visak { background: var(--danger-soft); color: var(--danger-text); border-color: var(--danger-border); }

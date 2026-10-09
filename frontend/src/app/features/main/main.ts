@@ -19,6 +19,7 @@ import { ExcelIzvozService } from './services/excel-izvoz.service';
 import { Predmet, Profesor } from './main.models';
 import { presloviULatinicu, formatDatumKonflikta, tipKonflikta, timeToMins, bojaTeksta } from './main.utils';
 import { MESECI } from './calendar-config';
+import { trajanjeUSatima, semestarOpseg } from '../../core/utils/vreme';
 import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
@@ -248,7 +249,9 @@ export class Main implements OnInit, AfterViewInit {
           tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
           is_ispit: info.event.extendedProps['is_ispit'] ?? true,
           dezurni: info.event.extendedProps['dezurni'] || [],
-          zauzeteSaleNaDan: zauzecaNaDan
+          zauzeteSaleNaDan: zauzecaNaDan,
+          satiPoSaradniku: this.satiPoSaradniku(eventDate, info.event.id),
+          ...this.podaciPredmetaZaModal(info.event.extendedProps['predmetId'])
         },
         disableClose: true
       });
@@ -362,6 +365,8 @@ export class Main implements OnInit, AfterViewInit {
           title: originalEvent.title, date: eventDate, predmetId: predmetId,
           dezurni: droppedPredmet?.saradnici || [], is_ispit: true, zauzeteSaleNaDan: zauzecaNaDan,
           tip_kolokvijuma: info.event.extendedProps['tip_kolokvijuma'] || 'I',
+          satiPoSaradniku: this.satiPoSaradniku(eventDate),
+          ...this.podaciPredmetaZaModal(predmetId)
         },
         disableClose: true
       });
@@ -932,6 +937,37 @@ export class Main implements OnInit, AfterViewInit {
     this.loadAllUcioniceForFilter();
     this.fetchStats();
     this.boje.ucitajSacuvane();
+  }
+
+  // Sati dežurstva po saradniku u semestru kome pripada datum (uključuje i nesačuvane izmene).
+  // iskljuciId: termin koji se upravo menja (da se ne računa dva puta).
+  satiPoSaradniku(datum: string, iskljuciId?: string): Record<number, { sati: number; broj: number }> {
+    const opseg = semestarOpseg(datum);
+    const rezultat: Record<number, { sati: number; broj: number }> = {};
+    this.allLoadedEvents.forEach(e => {
+      const p = e.extendedProps || {};
+      if (p.isNastava || (iskljuciId && String(e.id) === String(iskljuciId))) return;
+      const dan = String(e.start || '').split('T')[0];
+      if (!dan || dan < opseg.od || dan > opseg.do) return;
+      const sati = trajanjeUSatima(p.vreme, p.vreme_kraja || p.vremeKraja);
+      (p.dezurni || []).forEach((d: any) => {
+        const id = Number(typeof d === 'object' ? d?.id : d);
+        if (!id) return;
+        const unos = rezultat[id] ?? (rezultat[id] = { sati: 0, broj: 0 });
+        unos.sati += sati;
+        unos.broj += 1;
+      });
+    });
+    return rezultat;
+  }
+
+  // Šta prozor termina dobija o predmetu: saradnici na predmetu i potreban broj dežurnih
+  private podaciPredmetaZaModal(predmetId: any): { saradniciPredmeta: number[]; potrebnoDezurnih: any } {
+    const predmet: any = this.predmeti.find(p => p.id == predmetId);
+    return {
+      saradniciPredmeta: (predmet?.saradnici || []).map((x: any) => Number(x.id)),
+      potrebnoDezurnih: predmet?.terminiKolokvijuma || null
+    };
   }
 
   private hoverRaf = 0;
