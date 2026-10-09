@@ -139,3 +139,16 @@ test('sabloni mejlova ne propuštaju HTML iz podataka', () => {
     assert.ok(!html.includes('<img src=x'));
     assert.ok(html.includes('&lt;img src=x'));
 });
+
+
+test('semestarIzNapomene: napomena "реализује се у ..." ima prednost nad sekcijom', () => {
+    const f = _internal.semestarIzNapomene;
+    assert.equal(f('Алгоритми (реализује се у летњем семестру)', 'Zimski'), 'Letnji');
+    assert.equal(f('Алгоритми\r\n(реализује се у зимском семестру)', 'Letnji'), 'Zimski');
+    assert.equal(f('Базе података држи се у летњем семестру', 'Zimski'), 'Letnji');
+    assert.equal(f('Baze podataka (realizuje se u zimskom semestru)', 'Letnji'), 'Zimski');
+    assert.equal(f('Математика 1', 'Zimski'), 'Zimski');
+    assert.equal(f('Математика 2', 'Letnji'), 'Letnji');
+    assert.equal(f(null, 'Zimski'), 'Zimski');
+    assert.equal(_internal.ocistiNazivPredmeta('Алгоритми (реализује се у летњем семестру)'), 'Алгоритми');
+});

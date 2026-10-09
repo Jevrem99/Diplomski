@@ -89,6 +89,19 @@
               }
             </div>
           </div>
+
+          <div class="flex flex-col gap-1.5">
+            <span class="text-[10px] font-extrabold uppercase tracking-wider text-white/90 px-0.5">Semestar</span>
+            <div class="godine-grid grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-black/25">
+              @for (s of semestarOpcije; track s.id) {
+              <button type="button" (click)="filterLevoSemestar = s.id"
+                [class.aktivna-godina]="filterLevoSemestar === s.id"
+                class="year-tag-btn py-1.5 text-xs font-extrabold rounded-lg text-center cursor-pointer transition-all duration-150 select-none text-white/70 hover:text-white hover:bg-white/10">
+                {{ s.label }}
+              </button>
+              }
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -114,6 +127,7 @@
               [style.background-color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 28%, transparent)'">
               {{ predmet.godina == 5 ? 'MAS' : predmet.godina + '. Godina' }}
             </span>
+            <span class="bank-card-semestar">{{ jeZimski(predmet) ? 'Zimski' : 'Letnji' }}</span>
           </div>
         </div>
       </div>

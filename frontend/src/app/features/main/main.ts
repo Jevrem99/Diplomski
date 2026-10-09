@@ -88,6 +88,10 @@ export class Main implements OnInit, AfterViewInit {
   }
   filterGodina: string = 'sve';
   filterSala: string = 'sve';
+  filterLevoSemestar: 'svi' | 'zimski' | 'letnji' = 'svi';
+  readonly semestarOpcije: { id: 'svi' | 'zimski' | 'letnji'; label: string }[] = [
+    { id: 'svi', label: 'Svi' }, { id: 'zimski', label: 'Zimski' }, { id: 'letnji', label: 'Letnji' }
+  ];
   filterLevoOsoba: string = ''; // ono što je ukucano u polju (latinica i ćirilica se ne razlikuju)
   izabranaOsobaId: number | null = null; // osoba izabrana iz ponuđene liste
   searchPredmet: string = '';
@@ -1087,10 +1091,19 @@ export class Main implements OnInit, AfterViewInit {
     this.izabranaOsobaId = null;
   }
 
+  // U bazi stoji "Zimski" ili "Letnji" (uvoz iz Excela poštuje napomenu "реализује се у ...")
+  jeZimski(p: { semestar?: string }): boolean {
+    return String(p.semestar || '').trim().toLowerCase().startsWith('z');
+  }
+
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
+    }
+    if (this.filterLevoSemestar !== 'svi') {
+      const zimski = this.filterLevoSemestar === 'zimski';
+      filtrirano = filtrirano.filter(p => this.jeZimski(p) === zimski);
     }
     if (this.izabranaOsobaId !== null) {
       const id = this.izabranaOsobaId;

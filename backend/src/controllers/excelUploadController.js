@@ -22,7 +22,8 @@ function ocistiNazivPredmeta(rawNaziv) {
 
     // 2. Sečemo napomene u zagradama poput (реализује се...) ili "држи се у..."
     naziv = naziv.replace(/држи се у.*$/i, '').trim();
-    naziv = naziv.replace(/\(реализује се.*$/i, '').trim();
+    naziv = naziv.replace(/\(?\s*(реализује|изводи) се.*$/i, '').trim();
+    naziv = naziv.replace(/\(?\s*(realizuje|izvodi|drži|drzi) se.*$/i, '').trim();
     naziv = naziv.replace(/\s+предмет са .*$/i, '').trim();
 
     // 3. Čim naiđe na '+', odmah sečemo sve iza
@@ -38,6 +39,16 @@ function ocistiNazivPredmeta(rawNaziv) {
     }
 
     return naziv;
+}
+
+// Semestar u kome se predmet STVARNO drži. Napomena uz naziv ("реализује се у летњем семестру",
+// "држи се у зимском ...", i latinicom) ima prednost nad sekcijom tabele u kojoj predmet stoji.
+function semestarIzNapomene(nazivRaw, trenutniSemestar) {
+    const tekst = String(nazivRaw ?? '').replace(/\s+/g, ' ').toLowerCase();
+    const m = tekst.match(/(?:реализује|држи|изводи)\s+се\s+у\s+(летњ|зимск)/)
+        || tekst.match(/(?:realizuje|drži|drzi|izvodi)\s+se\s+u\s+(letnj|zimsk)/);
+    if (!m) return trenutniSemestar;
+    return (m[1].startsWith('лет') || m[1].startsWith('let')) ? 'Letnji' : 'Zimski';
 }
 
 // Funkcija za pametno pronalaženje godine SAMO iz hedera
@@ -186,10 +197,7 @@ function parsirajSheet(rows, program, predmetiMap, neodrzavaniRedovi, rowOffset)
             const sifra = !jeZaglavljeIliPrazno(sifraRaw) ? String(sifraRaw).replace(/[\t\r\n]+/g, '').trim() : null;
 
             // Napomena "(реализује се у летњем/зимском семестру)" ima prednost nad sekcijom u kojoj predmet stoji
-            const napomena = String(nazivRaw).match(/реализује се у\s+(летњем|зимском)/i);
-            const semestar = napomena
-                ? (napomena[1].toLowerCase() === 'летњем' ? 'Letnji' : 'Zimski')
-                : currentSemestar;
+            const semestar = semestarIzNapomene(nazivRaw, currentSemestar);
             const kljuc = sifra || `${program}-G${currentGodina}-${semestar[0]}-${normalizujZaKljuc(cistNaziv)}`;
             currentKljuc = kljuc;
 
@@ -298,5 +306,5 @@ const importPredmetiExcel = async (req, res) => {
 module.exports = {
     importPredmetiExcel,
     // izloženo radi testiranja
-    _internal: { parseBrojStudenata, ocistiNazivPredmeta, parseGodinaIzHedera }
+    _internal: { parseBrojStudenata, ocistiNazivPredmeta, parseGodinaIzHedera, semestarIzNapomene }
 };
