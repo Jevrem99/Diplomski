@@ -682,6 +682,11 @@ export class Main implements OnInit, AfterViewInit {
     if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu. Za kolokvijume se pravi i fajl sa rezervacijama sala.')) {
       this.http.put<any>(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
         next: (odgovor) => {
+          if (odgovor?.objavljeno === 0) {
+            // Svi termini su već objavljeni: nema šta novo da se rezerviše
+            this.toastService.show('Nema novih termina za objavljivanje. Fajl sa rezervacijama za već objavljene kolokvijume preuzmite dugmetom „Rezervacije sala“.', 'error');
+            return;
+          }
           const rez = odgovor?.rezervacije;
           const broj = rez?.rezervacije?.length ?? 0;
           if (broj > 0) {
@@ -689,7 +694,7 @@ export class Main implements OnInit, AfterViewInit {
             const bezSale = rez.bez_sale?.length ? ` Bez sale: ${rez.bez_sale.length} (nisu u fajlu).` : '';
             this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}`, 'success');
           } else {
-            this.toastService.show('Raspored je uspešno objavljen!', 'success');
+            this.toastService.show('Raspored je uspešno objavljen! Među objavljenim terminima nema kolokvijuma sa izabranom salom, pa nema rezervacija.', 'success');
           }
         },
         error: (err) => {

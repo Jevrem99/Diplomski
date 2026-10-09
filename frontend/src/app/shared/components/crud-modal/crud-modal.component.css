@@ -339,3 +339,18 @@
   .modal-body { flex-direction: column; }
   .modal-saradnici-col { width: auto; border-left: none; padding-left: 0; border-top: 1px solid var(--border); padding-top: 1rem; }
 }
+
+/* Pretraga predmeta za grupu: lista ponuđenih predmeta ispod polja */
+.pred-izbor { display: flex; flex-direction: column; gap: 8px; }
+.pred-lista {
+  max-height: 220px; overflow-y: auto; padding: 4px; border-radius: 12px;
+  background: var(--surface); border: 1.5px solid var(--border-strong);
+}
+.pred-opt {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%;
+  padding: 8px 10px; border: none; border-radius: 8px; background: transparent; cursor: pointer; text-align: left; font: inherit;
+}
+.pred-opt:hover { background: var(--primary-soft); }
+.pred-ime { font-size: 0.88rem; font-weight: 700; color: var(--text); }
+.pred-meta { font-size: 0.74rem; font-weight: 600; color: var(--muted); white-space: nowrap; }
+.pred-prazno { padding: 8px 10px; font-size: 0.82rem; font-weight: 600; color: var(--muted); }

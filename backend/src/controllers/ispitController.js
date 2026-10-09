@@ -729,7 +729,7 @@ const publishAll = async (req, res) => {
         });
 
         if (draftIspiti.length === 0) {
-            return res.status(200).json({ message: 'Nema novih ispita za objavljivanje.' });
+            return res.status(200).json({ message: 'Nema novih termina za objavljivanje.', objavljeno: 0 });
         }
 
         // Rezervacije sala za kolokvijume koji se sada objavljuju (JSON za administratora fakulteta); ispiti se ne računaju
@@ -789,6 +789,7 @@ const publishAll = async (req, res) => {
         );
         res.status(200).json({
             message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!`,
+            objavljeno: result.count,
             rezervacije
         });
     } catch (err) {

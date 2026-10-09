@@ -7,6 +7,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { Observable } from 'rxjs';
+import { presloviULatinicu } from '../../../features/main/main.utils';
 import { HINTOVI, Polja, procitajGresku, validirajGrupu, validirajIspit, validirajKorisnika, validirajOsobu, validirajPredmet } from '../../../core/utils/validacija';
 
 type Vrsta = 'korisnik' | 'predmet' | 'osoba' | 'ispit' | 'grupa' | 'drugo';
@@ -44,6 +45,7 @@ export class CrudModal {
   liveErrors: Polja = {};
   serverErrors: Polja = {};
   prikaziLozinku = false;
+  pretragaPredmeta = ''; // tekst u polju za pretragu predmeta (grupa)
 
   constructor(
     public dialogRef: MatDialogRef<CrudModal>,
@@ -257,6 +259,29 @@ export class CrudModal {
 
   get hasSaradniciColumn(): boolean {
     return this.data.columns.some(c => c.key === 'saradnici_ids');
+  }
+
+  // Predmeti koji se poklapaju sa ukucanim tekstom (latinica ili ćirilica) i još nisu u grupi
+  get ponudjeniPredmeti(): any[] {
+    const q = presloviULatinicu(this.pretragaPredmeta.trim());
+    if (!q) return [];
+    const izabrani = new Set((this.formData.predmeti_ids || []).map(Number));
+    return (this.data.predmetiList || [])
+      .filter((p: any) => !izabrani.has(Number(p.id)) &&
+        (presloviULatinicu(p.naziv).includes(q) || presloviULatinicu(p.sifra || '').includes(q)))
+      .slice(0, 30);
+  }
+
+  dodajPredmet(predmet: any): void {
+    const ids: number[] = this.formData.predmeti_ids || (this.formData.predmeti_ids = []);
+    if (!ids.map(Number).includes(Number(predmet.id))) ids.push(Number(predmet.id));
+    this.pretragaPredmeta = '';
+    this.promena('predmeti_ids');
+  }
+
+  dodajPrviPonudjeni(): void {
+    const prvi = this.ponudjeniPredmeti[0];
+    if (prvi) this.dodajPredmet(prvi);
   }
 
   getPredmetById(id: number): any {
