@@ -55,6 +55,7 @@ const SAMO_ADMIN = [
     ['GET', '/termini-kolokvijuma/sve'],
     ['GET', '/zamene'],
     ['GET', '/grupe'],
+    ['GET', '/ispit/rezervacije-sala'],
     ['POST', '/grupe'],
     ['PUT', '/grupe/0'],
     ['DELETE', '/grupe/0'],

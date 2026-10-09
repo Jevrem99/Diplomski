@@ -6,6 +6,7 @@ const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
 const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
+const { napraviRezervacije, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
@@ -721,7 +722,7 @@ const publishAll = async (req, res) => {
         const draftIspiti = await prisma.ispit.findMany({
             where: { is_published: false },
             include: {
-                predmet: true,
+                predmet: { include: { profesor: true, terminiKolokvijuma: true } },
                 sala: true,
                 dezurstva: { include: { saradnik: true } }
             }
@@ -731,12 +732,16 @@ const publishAll = async (req, res) => {
             return res.status(200).json({ message: 'Nema novih ispita za objavljivanje.' });
         }
 
+        // Rezervacije sala za kolokvijume koji se sada objavljuju (JSON za administratora fakulteta); ispiti se ne računaju
+        const rezervacije = napraviRezervacije(draftIspiti, { objavio: req.user?.username || null });
+
         const saradniciMap = new Map();
 
         draftIspiti.forEach(ispit => {
             const datumStr = ispit.datum;
-            const vremeStr = ispit.vreme ? (typeof ispit.vreme === 'string' ? ispit.vreme.substring(0, 5) : '00:00') : '00:00';
-            const vremeKrajaStr = ispit.vreme_kraja ? (typeof ispit.vreme_kraja === 'string' ? ispit.vreme_kraja.substring(0, 5) : '') : '';
+            // vreme stiže iz baze kao tekst ili kao Date; oba se čitaju (inače bi vreme kraja ispadalo prazno)
+            const vremeStr = vremeHHMM(ispit.vreme) || '00:00';
+            const vremeKrajaStr = vremeHHMM(ispit.vreme_kraja) || '';
             const salaNaziv = ispit.sala?.naziv || 'Bez sale';
             const predmetNaziv = ispit.predmet?.naziv || 'Ispit';
 
@@ -782,9 +787,34 @@ const publishAll = async (req, res) => {
             'Raspored',
             `Objavljen raspored sa ${result.count} ispita i poslata obaveštenja saradnicima`
         );
-        res.status(200).json({ message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!` });
+        res.status(200).json({
+            message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!`,
+            rezervacije
+        });
     } catch (err) {
         console.error('Greška pri objavljivanju:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// GET /ispit/rezervacije-sala?od=GGGG-MM-DD&do=GGGG-MM-DD
+// Rezervacije svih OBJAVLJENIH kolokvijuma u periodu (podrazumevano od danas): za ponovno preuzimanje fajla.
+const getRezervacijeSala = async (req, res) => {
+    try {
+        const danas = new Date().toISOString().substring(0, 10);
+        const od = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.od || '')) ? req.query.od : danas;
+        const doDatuma = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.do || '')) ? req.query.do : null;
+        const ispiti = await prisma.ispit.findMany({
+            where: {
+                is_ispit: false,
+                is_published: true,
+                datum: { gte: new Date(`${od}T00:00:00.000Z`), ...(doDatuma ? { lte: new Date(`${doDatuma}T00:00:00.000Z`) } : {}) }
+            },
+            include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true }
+        });
+        res.status(200).json(napraviRezervacije(ispiti, { objavio: req.user?.username || null }));
+    } catch (err) {
+        console.error('Greška pri pravljenju rezervacija sala:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -847,6 +877,7 @@ module.exports = {
     deleteIspit,
     saveBulkIspiti,
     publishAll,
+    getRezervacijeSala,
     getZauzetiTermini,
     getDashboardStats
 };

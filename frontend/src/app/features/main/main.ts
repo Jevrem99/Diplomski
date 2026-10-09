@@ -679,15 +679,49 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   objaviRaspored(): void {
-    if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu.')) {
-      this.http.put(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
-        next: () => this.toastService.show('Raspored je uspešno objavljen!', 'success'),
+    if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu. Za kolokvijume se pravi i fajl sa rezervacijama sala.')) {
+      this.http.put<any>(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
+        next: (odgovor) => {
+          const rez = odgovor?.rezervacije;
+          const broj = rez?.rezervacije?.length ?? 0;
+          if (broj > 0) {
+            this.preuzmiRezervacije(rez);
+            const bezSale = rez.bez_sale?.length ? ` Bez sale: ${rez.bez_sale.length} (nisu u fajlu).` : '';
+            this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}`, 'success');
+          } else {
+            this.toastService.show('Raspored je uspešno objavljen!', 'success');
+          }
+        },
         error: (err) => {
           console.error('Greška:', err);
           this.toastService.show('Došlo je do greške pri objavljivanju.', 'error');
         }
       });
     }
+  }
+
+  // Rezervacije sala za već objavljene kolokvijume (od danas nadalje), za ponovno preuzimanje fajla
+  izveziRezervacijeSala(): void {
+    this.http.get<any>(`${this.API_URL}/ispit/rezervacije-sala`).subscribe({
+      next: (rez) => {
+        if (!rez?.rezervacije?.length) {
+          this.toastService.show('Nema objavljenih kolokvijuma sa salom od danas nadalje.', 'error');
+          return;
+        }
+        this.preuzmiRezervacije(rez);
+      },
+      error: () => this.toastService.show('Greška pri pravljenju fajla sa rezervacijama.', 'error')
+    });
+  }
+
+  private preuzmiRezervacije(rez: any): void {
+    const blob = new Blob([JSON.stringify(rez, null, 2)], { type: 'application/json' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `rezervacije-sala-kolokvijumi-${new Date().toISOString().substring(0, 10)}.json`;
+    a.click();
+    window.URL.revokeObjectURL(url);
   }
 
   sinhronizujIMI(): void {

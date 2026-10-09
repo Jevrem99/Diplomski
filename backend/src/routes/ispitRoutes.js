@@ -12,6 +12,7 @@ router.get('/zauzeti-termini', protect, ispitController.getZauzetiTermini);
 router.post('/proveri-konflikte', ...urednik, ispitController.proveriRaspored);
 router.post('/bulk', ...urednik, ispitController.saveBulkIspiti);
 router.put('/publish-all', ...urednik, ispitController.publishAll);
+router.get('/rezervacije-sala', ...urednik, ispitController.getRezervacijeSala);
 
 // 2. OSNOVNE GET I POST RUTE
 router.get('/', protect, ispitController.getAllIspiti);

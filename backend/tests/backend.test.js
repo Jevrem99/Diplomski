@@ -180,3 +180,31 @@ test('validirajGrupu: naziv i bar dva različita predmeta', () => {
     assert.equal(ocistiGrupaKljuc("x'; DROP TABLE"), null);
     assert.equal(ocistiGrupaKljuc(undefined), null);
 });
+
+
+test('rezervacije sala: samo kolokvijumi, grupa je jedna rezervacija, termin bez sale ide u bez_sale', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const predmet = (id, naziv, studenata, rs) => ({ sifra: `S${id}`, naziv, godina: 3, broj_studenata: studenata, profesor: { ime: 'Ana', prezime: 'Anić' }, terminiKolokvijuma: { k1_racunarska_sala: rs } });
+    const sala = { naziv: 'A-0-15' };
+    const d = new Date('2026-10-28T00:00:00.000Z');
+    const ispiti = [
+        { id: 1, is_ispit: true, datum: d, vreme: utc('09:00'), vreme_kraja: utc('11:00'), sala, predmet: predmet(1, 'Ispit X', 10, false), tip_kolokvijuma: 'I' },
+        { id: 2, is_ispit: false, datum: d, vreme: utc('13:00'), vreme_kraja: utc('15:00'), sala, grupa_kljuc: 'g1', predmet: predmet(2, 'Logika', 40, true), tip_kolokvijuma: 'I' },
+        { id: 3, is_ispit: false, datum: d, vreme: utc('13:00'), vreme_kraja: utc('15:00'), sala, grupa_kljuc: 'g1', predmet: predmet(3, 'Jezici', 35, false), tip_kolokvijuma: 'I' },
+        { id: 4, is_ispit: false, datum: d, vreme: utc('16:00'), vreme_kraja: null, sala, is_izmenjen: true, predmet: predmet(4, 'Algebra', 20, false), tip_kolokvijuma: 'II' },
+        { id: 6, is_ispit: false, datum: d, vreme: '08:30:00', vreme_kraja: utc('09:15'), sala, predmet: predmet(6, 'Tekstualno vreme', 12, false), tip_kolokvijuma: 'III' },
+        { id: 5, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('11:00'), sala: null, predmet: predmet(5, 'Bez sale', 5, false), tip_kolokvijuma: 'I' }
+    ];
+    const r = napraviRezervacije(ispiti, { objavio: 'admin', sada: new Date('2026-10-09T10:00:00Z') });
+    assert.equal(r.format, 'raspored-rezervacije-sala');
+    assert.equal(r.rezervacije.length, 3, 'ispit se ne računa, grupa je jedna rezervacija');
+    assert.deepEqual([r.rezervacije[0].od, r.rezervacije[0].do], ['08:30', '09:15'], 'početak koji stiže kao tekst');
+    const grupa = r.rezervacije[1];
+    assert.deepEqual([grupa.sala, grupa.datum, grupa.od, grupa.do, grupa.racunarska_sala], ['A-0-15', '2026-10-28', '13:00', '15:00', true]);
+    assert.equal(grupa.predmeti.length, 2);
+    assert.equal(grupa.ukupno_studenata, 75);
+    const bezKraja = r.rezervacije[2];
+    assert.deepEqual([bezKraja.od, bezKraja.do, bezKraja.do_pretpostavljen, bezKraja.izmena], ['16:00', '18:00', true, true]);
+    assert.deepEqual(r.bez_sale.map((x) => x.id), ['kol-5']);
+});
