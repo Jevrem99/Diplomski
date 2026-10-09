@@ -12,7 +12,8 @@
         "test:roles": "node --test tests/roles.test.js",
         "backup": "node scripts/backup.js",
         "sale:spoji": "node scripts/spoji-sale.js",
-        "sale:spoji:primeni": "node scripts/spoji-sale.js --yes"
+        "sale:spoji:primeni": "node scripts/spoji-sale.js --yes",
+        "db:dodaci": "prisma db execute --file prisma/dodaci-2026-10.sql --schema prisma/schema.prisma"
     },
     "keywords": [
         "express",

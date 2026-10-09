@@ -1,6 +1,6 @@
 -- Dodaci šeme (oktobar 2026): potreban broj dežurnih, grupe predmeta, ključ grupe na terminu.
 -- Baza je pravljena sa "prisma db push", pa se dodaci primenjuju ovim fajlom:
---   npx prisma db execute --file prisma/dodaci-2026-10.sql --schema prisma/schema.prisma
+--   npm run db:dodaci        (iz glavnog foldera ili iz foldera backend)
 -- Bezbedno je pokrenuti više puta (IF NOT EXISTS). Postojeći podaci se ne menjaju.
 
 ALTER TABLE "Ispit" ADD COLUMN IF NOT EXISTS "grupa_kljuc" TEXT;
