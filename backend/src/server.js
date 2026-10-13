@@ -52,6 +52,7 @@ const authLimiter = rateLimit({
     message: { error: 'Previše pokušaja. Pokušajte ponovo za nekoliko minuta.' }
 });
 app.use('/auth/login', authLimiter);
+app.use('/auth/pmf', authLimiter);
 app.use('/auth/forgot-password', authLimiter);
 app.use('/auth/reset-password', authLimiter);
 

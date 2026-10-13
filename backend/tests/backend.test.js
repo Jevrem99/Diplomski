@@ -271,3 +271,80 @@ test('odgovor rezervacija sala odgovara objavljenoj JSON šemi (docs/rezervacije
     pokvaren.rezervacije[0].suvisno = 1;
     assert.equal(proveriSemu(sema, pokvaren).length, 3);
 });
+
+// ---------- Prijava preko PMF naloga ----------
+const http = require('node:http');
+const pmf = require('../src/services/pmfPrijava');
+
+const POKRENI_LAZNI_PMF = async (handler) => {
+    const srv = http.createServer(handler);
+    await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+    const stara = config.pmfVerifyUrl;
+    config.pmfVerifyUrl = `http://127.0.0.1:${srv.address().port}/verify`;
+    return async () => { config.pmfVerifyUrl = stara; await new Promise((r) => srv.close(r)); };
+};
+const TOKEN = 'a1'.repeat(32);
+
+test('PMF: ispravan token vraća e-mail malim slovima, token ide kao parametar', async () => {
+    let videoUrl;
+    const stani = await POKRENI_LAZNI_PMF((req, res) => {
+        videoUrl = req.url;
+        res.end(JSON.stringify({ success: true, korisnik: { Email: 'Pera.Peric@pmf.kg.ac.rs', uloga: 'admin' } }));
+    });
+    try {
+        const r = await pmf.proveriToken(TOKEN);
+        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs' }); // uloga iz odgovora se ne vraća
+        assert.ok(videoUrl.includes(`token=${TOKEN}`));
+    } finally { await stani(); }
+});
+
+test('PMF: pogrešan oblik tokena -> 400 bez poziva IMI-ja', async () => {
+    let pozvan = false;
+    const stani = await POKRENI_LAZNI_PMF((req, res) => { pozvan = true; res.end('{}'); });
+    try {
+        for (const losi of [undefined, '', 'abc', 'z'.repeat(64), `${TOKEN}0`, { $ne: 1 }]) {
+            await assert.rejects(pmf.proveriToken(losi), (e) => e.status === 400 && e.kod === 'TOKEN_OBLIK');
+        }
+        assert.equal(pozvan, false);
+    } finally { await stani(); }
+});
+
+test('PMF: IMI javlja da token ne važi -> 401, bez e-maila u odgovoru -> 401, ne-JSON -> 401', async () => {
+    const odgovori = [
+        [401, '{"error":"invalid"}'],
+        [200, '{"success":false,"email":"a@b.rs"}'],
+        [200, '{"status":"error","email":"a@b.rs"}'],
+        [200, '{"ime":"Pera"}'],
+        [200, '<html>prijavite se</html>']
+    ];
+    let i = 0;
+    const stani = await POKRENI_LAZNI_PMF((req, res) => {
+        const [kod, telo] = odgovori[i++];
+        res.writeHead(kod);
+        res.end(telo);
+    });
+    try {
+        for (let k = 0; k < odgovori.length; k++) {
+            await assert.rejects(pmf.proveriToken(TOKEN), (e) => e.status === 401 && e.kod === 'TOKEN_NEVAZECI', `slučaj ${k}`);
+        }
+    } finally { await stani(); }
+});
+
+test('PMF: IMI 5xx ili nedostupan -> 502', async () => {
+    const stani = await POKRENI_LAZNI_PMF((req, res) => { res.writeHead(503); res.end('x'); });
+    try {
+        await assert.rejects(pmf.proveriToken(TOKEN), (e) => e.status === 502 && e.kod === 'PMF_NEDOSTUPAN');
+    } finally { await stani(); }
+    config.pmfVerifyUrl = 'http://127.0.0.1:1/verify'; // niko ne sluša
+    try {
+        await assert.rejects(pmf.proveriToken(TOKEN), (e) => e.status === 502);
+    } finally { config.pmfVerifyUrl = 'https://imi.pmf.kg.ac.rs/cp/verify_token.php'; }
+});
+
+test('PMF: nadjiEmail prepoznaje poznata polja i ugnježdene objekte, ignoriše tekst koji nije e-mail', () => {
+    const { nadjiEmail } = pmf._internal;
+    assert.equal(nadjiEmail({ email: 'a@b.rs' }), 'a@b.rs');
+    assert.equal(nadjiEmail({ data: { user: { e_mail: 'x@y.rs' } } }), 'x@y.rs');
+    assert.equal(nadjiEmail({ ime: 'Pera', prezime: 'Peric' }), null);
+    assert.equal(nadjiEmail('nije mejl'), null);
+});

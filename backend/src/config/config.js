@@ -23,6 +23,8 @@ const config = {
     // Tajni ključ kojim sistem fakulteta preuzima rezervacije sala (zaglavlje X-API-Key).
     // Nije podešen ili je kraći od 24 karaktera -> integracija je isključena (vidi middlewares/apiKljuc.js).
     integracijaKljuc: (process.env.INTEGRACIJA_API_KLJUC || '').trim().length >= 24 ? process.env.INTEGRACIJA_API_KLJUC.trim() : null,
+    // Prijava preko PMF (IMI) naloga: naš server proverava token koji je IMI vratio korisniku
+    pmfVerifyUrl: process.env.PMF_VERIFY_URL || 'https://imi.pmf.kg.ac.rs/cp/verify_token.php',
     // Podrazumevani admin koji se pravi pri pokretanju ako admina nema (vidi src/db/ensureAdmin.js)
     admin: {
         username: process.env.ADMIN_USERNAME || 'admin',

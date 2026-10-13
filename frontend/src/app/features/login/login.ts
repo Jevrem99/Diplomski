@@ -55,9 +55,11 @@ export class Login implements OnInit {
   }
 
   private pocetnaStranica(uloga: string): string {
-    if (uloga === 'admin') return '/main';
-    if (uloga === 'profesor') return '/termini-kolokvijuma';
-    return '/moja-dezurstva';
+    return this.authService.pocetnaStranica(uloga);
+  }
+
+  prijavaPrekoPmf() {
+    window.location.href = this.authService.pmfPrijavaAdresa();
   }
 
   onLogin() {

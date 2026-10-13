@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const config = require('../config/config');
 const { jeValidnaUloga, proveriLozinku, proveriEmail } = require('../utils/validators');
 const { sendResetLozinkeEmail } = require('../services/emailService');
+const pmfPrijava = require('../services/pmfPrijava');
 
 const loginUser = async (req, res) => {
     const { username, password } = req.body;
@@ -47,6 +48,30 @@ const forgotPassword = async (req, res) => {
         await sendResetLozinkeEmail(user.email, user.username, resetUrl);
     } catch (error) {
         console.error('Greška u forgotPassword:', error);
+    }
+};
+
+// POST /auth/pmf { token }: prijava preko PMF (IMI) naloga; vraća isti { token } kao /auth/login
+const pmfLogin = async (req, res) => {
+    try {
+        const { email } = await pmfPrijava.proveriToken(req.body && req.body.token);
+        const korisnik = await pmfPrijava.nadjiIliNapraviKorisnika(email);
+        if (!korisnik) {
+            await logAction(email.slice(0, 60), 'LOGIN_FAILED', 'Sesija', 'PMF prijava: e-mail nije u bazi');
+            return res.status(403).json({
+                error: 'Vaš PMF nalog je ispravan, ali nemate pristup aplikaciji. Obratite se administratoru da vas doda.',
+                kod: 'NEMA_PRISTUPA'
+            });
+        }
+        await logAction(korisnik.username, 'LOGIN', 'Sesija', 'Uspešna prijava preko PMF naloga');
+        return res.status(200).json({ token: pmfPrijava.izdajSesiju(korisnik) });
+    } catch (error) {
+        if (error instanceof pmfPrijava.PmfGreska) {
+            if (error.status === 401) await logAction('PMF', 'LOGIN_FAILED', 'Sesija', 'PMF prijava: token nije važeći');
+            return res.status(error.status).json({ error: error.poruka, kod: error.kod });
+        }
+        console.error('Greška u pmfLogin:', error);
+        return res.status(500).json({ error: 'Greška na serveru.' });
     }
 };
 
@@ -131,6 +156,7 @@ const adminResetPassword = async (req, res) => {
 };
 
 module.exports = {
+    pmfLogin,
     loginUser,
     forgotPassword,
     resetPassword,

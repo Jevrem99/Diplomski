@@ -15,4 +15,21 @@ export class AuthService {
   login(credentials: any): Observable<any> {
     return this.http.post(this.apiUrl, credentials);
   }
+
+  // Posle povratka sa PMF prijave: server proverava token kod IMI-ja i izdaje našu sesiju
+  prijavaPmf(token: string): Observable<any> {
+    return this.http.post(`${environment.apiUrl}/auth/pmf`, { token });
+  }
+
+  // Adresa PMF prijave; IMI posle prijave vraća korisnika na našu /auth/callback stranicu
+  pmfPrijavaAdresa(): string {
+    const povratak = `${window.location.origin}/auth/callback`;
+    return `${environment.pmfPrijavaUrl}?redirect_uri=${encodeURIComponent(povratak)}`;
+  }
+
+  pocetnaStranica(uloga: string): string {
+    if (uloga === 'admin') return '/main';
+    if (uloga === 'profesor') return '/termini-kolokvijuma';
+    return '/moja-dezurstva';
+  }
 }
