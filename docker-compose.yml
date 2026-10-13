@@ -1,0 +1,64 @@
+# Cela aplikacija jednom komandom:  docker compose up -d --build
+# Podešavanja idu u fajl ".env" pored ovog fajla (kopija .env.docker.example).
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-raspored}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Postavite POSTGRES_PASSWORD u .env}
+      POSTGRES_DB: ${POSTGRES_DB:-raspored}
+      TZ: Europe/Belgrade
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-raspored} -d ${POSTGRES_DB:-raspored}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      TZ: Europe/Belgrade
+      PORT: "5000"
+      TRUST_PROXY: "1"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-raspored}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-raspored}
+      JWT_SECRET: ${JWT_SECRET:?Postavite JWT_SECRET u .env}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-12h}
+      FRONTEND_URL: ${FRONTEND_URL:?Postavite FRONTEND_URL u .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-${FRONTEND_URL}}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@pmf.kg.ac.rs}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      EMAIL_USER: ${EMAIL_USER:-}
+      EMAIL_PASS: ${EMAIL_PASS:-}
+      INTEGRACIJA_API_KLJUC: ${INTEGRACIJA_API_KLJUC:-}
+      NOCNI_SYNC: ${NOCNI_SYNC:-true}
+      NOCNI_SYNC_SAT: ${NOCNI_SYNC_SAT:-3}
+      IMI_INSECURE_TLS: ${IMI_INSECURE_TLS:-false}
+    volumes:
+      - backups:/app/backups
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:5000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+
+volumes:
+  dbdata:
+  backups:

@@ -25,6 +25,12 @@ const integracijeRoutes = require('./routes/integracijeRoutes');
 const app = express();
 
 app.disable('x-powered-by');
+// Iza reverse proxy-ja (nginx u Docker-u) prava IP korisnika stiže u zaglavlju X-Forwarded-For;
+// bez ovoga bi ograničenje pokušaja prijave računalo sve korisnike kao jednu adresu.
+if (process.env.TRUST_PROXY) {
+    const v = process.env.TRUST_PROXY;
+    app.set('trust proxy', /^\d+$/.test(v) ? Number(v) : v === 'true' ? true : v);
+}
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(compression());
 
