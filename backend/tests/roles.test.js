@@ -150,3 +150,15 @@ test('ruta koja ne postoji vraća 404', async (t) => {
     if (preskoci(t)) return;
     assert.equal(await zovi('GET', '/nema-takve-rute', TOKENI.admin), 404);
 });
+
+
+test('integracija: ruta za sistem fakulteta ne prima JWT korisnika, samo API ključ', async (t) => {
+    if (preskoci(t)) return;
+    // bez ključa i sa JWT tokenom admina: nikad 200 (401 ako je ključ podešen, 503 ako integracija nije uključena)
+    for (const tok of [null, TOKENI.admin]) {
+        const status = await zovi('GET', '/integracije/rezervacije-sala', tok);
+        assert.ok(status === 401 || status === 503, `status ${status}`);
+    }
+    const pogresan = await fetch(BASE + '/integracije/rezervacije-sala', { headers: { 'X-API-Key': 'pogresan-kljuc-pogresan-kljuc' } });
+    assert.ok([401, 503].includes(pogresan.status), `status ${pogresan.status}`);
+});

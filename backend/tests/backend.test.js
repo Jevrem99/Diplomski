@@ -208,3 +208,66 @@ test('rezervacije sala: samo kolokvijumi, grupa je jedna rezervacija, termin bez
     assert.deepEqual([bezKraja.od, bezKraja.do, bezKraja.do_pretpostavljen, bezKraja.izmena], ['16:00', '18:00', true, true]);
     assert.deepEqual(r.bez_sale.map((x) => x.id), ['kol-5']);
 });
+
+
+test('integracija: API ključ (nije podešen -> 503, pogrešan -> 401, ispravan -> prolazi)', () => {
+    const config = require('../src/config/config');
+    const { apiKljuc } = require('../src/middlewares/apiKljuc');
+    const poziv = (zaglavlje) => {
+        const rez = { kod: null, telo: null, status(k) { this.kod = k; return this; }, json(x) { this.telo = x; return this; } };
+        let proslo = false;
+        apiKljuc({ get: (ime) => (ime.toLowerCase() === 'x-api-key' ? zaglavlje : undefined) }, rez, () => { proslo = true; });
+        return { kod: rez.kod, proslo };
+    };
+    const staro = config.integracijaKljuc;
+    try {
+        config.integracijaKljuc = null;
+        assert.equal(poziv('bilo-sta').kod, 503, 'ključ nije podešen: isključeno');
+        config.integracijaKljuc = 'a'.repeat(32);
+        assert.equal(poziv(undefined).kod, 401);
+        assert.equal(poziv('b'.repeat(32)).kod, 401);
+        assert.equal(poziv('a'.repeat(31)).kod, 401);
+        const dobar = poziv('a'.repeat(32));
+        assert.equal(dobar.proslo, true);
+        assert.equal(dobar.kod, null);
+    } finally {
+        config.integracijaKljuc = staro;
+    }
+});
+
+test('jeDatum prihvata samo stvarne datume GGGG-MM-DD', () => {
+    const { jeDatum } = require('../src/services/rezervacijeSala');
+    assert.equal(jeDatum('2026-10-28'), true);
+    assert.equal(jeDatum('2028-02-29'), true);
+    assert.equal(jeDatum('2026-02-29'), false);
+    assert.equal(jeDatum('2026-13-01'), false);
+    assert.equal(jeDatum('28.10.2026'), false);
+    assert.equal(jeDatum(undefined), false);
+    assert.equal(jeDatum("2026-10-28' OR 1=1"), false);
+});
+
+test('odgovor rezervacija sala odgovara objavljenoj JSON šemi (docs/rezervacije-sala.schema.json)', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const { proveriSemu } = require('./helpers/mini-schema');
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const sema = JSON.parse(fs.readFileSync(path.join(__dirname, '../../docs/rezervacije-sala.schema.json'), 'utf-8'));
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const d = new Date('2026-10-28T00:00:00.000Z');
+    const sala = { naziv: 'A-0-15' };
+    const pr = (id, rs) => ({ sifra: `S${id}`, naziv: `Предмет ${id}`, godina: 3, broj_studenata: 10 * id, profesor: { ime: 'Ана', prezime: 'Анић' }, terminiKolokvijuma: { k1_racunarska_sala: rs } });
+    const ispiti = [
+        { id: 2, is_ispit: false, datum: d, vreme: utc('13:00'), vreme_kraja: utc('15:00'), sala, grupa_kljuc: 'g1', predmet: pr(2, true), tip_kolokvijuma: 'I' },
+        { id: 3, is_ispit: false, datum: d, vreme: '13:00:00', vreme_kraja: utc('15:00'), sala, grupa_kljuc: 'g1', predmet: pr(3, false), tip_kolokvijuma: 'I' },
+        { id: 4, is_ispit: false, datum: d, vreme: utc('16:00'), vreme_kraja: null, sala, predmet: { ...pr(4, false), profesor: null, sifra: null, godina: null }, tip_kolokvijuma: 'Поправни I' },
+        { id: 5, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('11:00'), sala: null, predmet: pr(5, false), tip_kolokvijuma: 'I' }
+    ];
+    const odgovor = napraviRezervacije(ispiti, { objavio: 'integracija' });
+    assert.deepEqual(proveriSemu(sema, odgovor), []);
+    // šema zaista hvata greške (provera da test ne prolazi "uvek")
+    const pokvaren = JSON.parse(JSON.stringify(odgovor));
+    pokvaren.rezervacije[0].od = '9:5';
+    delete pokvaren.rezervacije[0].sala;
+    pokvaren.rezervacije[0].suvisno = 1;
+    assert.equal(proveriSemu(sema, pokvaren).length, 3);
+});

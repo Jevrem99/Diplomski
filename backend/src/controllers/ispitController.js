@@ -6,7 +6,7 @@ const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
 const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
-const { napraviRezervacije, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
+const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 
@@ -803,17 +803,9 @@ const publishAll = async (req, res) => {
 const getRezervacijeSala = async (req, res) => {
     try {
         const danas = new Date().toISOString().substring(0, 10);
-        const od = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.od || '')) ? req.query.od : danas;
-        const doDatuma = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.do || '')) ? req.query.do : null;
-        const ispiti = await prisma.ispit.findMany({
-            where: {
-                is_ispit: false,
-                is_published: true,
-                datum: { gte: new Date(`${od}T00:00:00.000Z`), ...(doDatuma ? { lte: new Date(`${doDatuma}T00:00:00.000Z`) } : {}) }
-            },
-            include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true }
-        });
-        res.status(200).json(napraviRezervacije(ispiti, { objavio: req.user?.username || null }));
+        const od = jeDatum(req.query.od) ? req.query.od : danas;
+        const doDatuma = jeDatum(req.query.do) ? req.query.do : null;
+        res.status(200).json(await ucitajObjavljeneRezervacije({ od, doDatuma, objavio: req.user?.username || null }));
     } catch (err) {
         console.error('Greška pri pravljenju rezervacija sala:', err);
         res.status(500).json({ error: 'Internal server error' });

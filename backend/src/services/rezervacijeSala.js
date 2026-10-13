@@ -119,4 +119,26 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
     };
 };
 
-module.exports = { napraviRezervacije, hhmm, _internal: { trazenaRacunarskaSala, opisTipa, dodajMinute } };
+// Objavljeni kolokvijumi u periodu (od, do kao "GGGG-MM-DD"; do je opciono) -> rezervacije.
+// Snimak TRENUTNOG stanja: ko preuzima fajl sam vidi izmene i otkazivanja po stabilnom "id".
+const ucitajObjavljeneRezervacije = async ({ od, doDatuma = null, objavio = null }) => {
+    const prisma = require('../db/prisma');
+    const ispiti = await prisma.ispit.findMany({
+        where: {
+            is_ispit: false,
+            is_published: true,
+            datum: { gte: new Date(`${od}T00:00:00.000Z`), ...(doDatuma ? { lte: new Date(`${doDatuma}T00:00:00.000Z`) } : {}) }
+        },
+        include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true }
+    });
+    return napraviRezervacije(ispiti, { objavio });
+};
+
+// "2026-10-28" je ispravan datum; "2026-13-45" i "28.10.2026" nisu
+const jeDatum = (v) => {
+    if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    const d = new Date(`${v}T00:00:00.000Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(v);
+};
+
+module.exports = { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm, _internal: { trazenaRacunarskaSala, opisTipa, dodajMinute } };
