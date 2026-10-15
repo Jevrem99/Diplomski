@@ -1179,6 +1179,15 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   // Escape zatvara iskačuće prozore (birač datuma, konflikti, padajuće menije)
+  // Osvežavanje ili zatvaranje stranice sa nesačuvanim izmenama: pregledač pita da li je korisnik siguran
+  @HostListener('window:beforeunload', ['$event'])
+  upozoriNaNesacuvano(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
   @HostListener('document:keydown.escape')
   naEscape(): void {
     document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => el.style.setProperty('display', 'none', 'important'));
