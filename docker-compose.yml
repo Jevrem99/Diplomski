@@ -42,6 +42,11 @@ services:
       NOCNI_SYNC: ${NOCNI_SYNC:-true}
       NOCNI_SYNC_SAT: ${NOCNI_SYNC_SAT:-3}
       IMI_INSECURE_TLS: ${IMI_INSECURE_TLS:-false}
+      PMF_PRIJAVA_URL: ${PMF_PRIJAVA_URL:-https://imi.pmf.kg.ac.rs/cp/}
+      PMF_VERIFY_URL: ${PMF_VERIFY_URL:-https://imi.pmf.kg.ac.rs/cp/verify_token.php}
+      PMF_INSECURE_TLS: ${PMF_INSECURE_TLS:-false}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - backups:/app/backups
     healthcheck:

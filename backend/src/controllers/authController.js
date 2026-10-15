@@ -51,6 +51,9 @@ const forgotPassword = async (req, res) => {
     }
 };
 
+// GET /auth/pmf-podesavanja: kuda front end šalje korisnika na PMF prijavu
+const pmfPodesavanja = (req, res) => res.status(200).json({ prijavaUrl: config.pmfPrijavaUrl });
+
 // POST /auth/pmf { token }: prijava preko PMF (IMI) naloga; vraća isti { token } kao /auth/login
 const pmfLogin = async (req, res) => {
     try {
@@ -157,6 +160,7 @@ const adminResetPassword = async (req, res) => {
 
 module.exports = {
     pmfLogin,
+    pmfPodesavanja,
     loginUser,
     forgotPassword,
     resetPassword,

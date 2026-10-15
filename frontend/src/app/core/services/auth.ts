@@ -21,10 +21,14 @@ export class AuthService {
     return this.http.post(`${environment.apiUrl}/auth/pmf`, { token });
   }
 
-  // Adresa PMF prijave; IMI posle prijave vraća korisnika na našu /auth/callback stranicu
-  pmfPrijavaAdresa(): string {
+  // Adresa PMF prijave dolazi sa servera (.env); IMI posle prijave vraća korisnika na našu /auth/callback stranicu
+  pmfPodesavanja(): Observable<{ prijavaUrl: string }> {
+    return this.http.get<{ prijavaUrl: string }>(`${environment.apiUrl}/auth/pmf-podesavanja`);
+  }
+
+  pmfPrijavaAdresa(osnova: string): string {
     const povratak = `${window.location.origin}/auth/callback`;
-    return `${environment.pmfPrijavaUrl}?redirect_uri=${encodeURIComponent(povratak)}`;
+    return `${osnova}?redirect_uri=${encodeURIComponent(povratak)}`;
   }
 
   pocetnaStranica(uloga: string): string {

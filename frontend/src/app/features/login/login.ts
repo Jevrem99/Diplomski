@@ -59,7 +59,11 @@ export class Login implements OnInit {
   }
 
   prijavaPrekoPmf() {
-    window.location.href = this.authService.pmfPrijavaAdresa();
+    const idi = (osnova: string) => { window.location.href = this.authService.pmfPrijavaAdresa(osnova); };
+    this.authService.pmfPodesavanja().subscribe({
+      next: (r) => idi(r.prijavaUrl || environment.pmfPrijavaUrl),
+      error: () => idi(environment.pmfPrijavaUrl)
+    });
   }
 
   onLogin() {
