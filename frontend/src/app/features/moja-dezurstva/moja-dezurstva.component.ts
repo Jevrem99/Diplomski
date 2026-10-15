@@ -5,7 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { procitajGresku } from '../../core/utils/validacija';
+import { procitajGresku } from '../../core/utils/validacija';
+import { PotvrdaService } from '../../core/services/potvrda.service';
 
 @Component({
   selector: 'app-moja-dezurstva',
@@ -16,6 +17,7 @@ import { procitajGresku } from '../../core/utils/validacija';
 export class MojaDezurstva implements OnInit {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
+  private potvrda = inject(PotvrdaService);
   private cdr = inject(ChangeDetectorRef);
   private API_URL = environment.apiUrl;
 
@@ -191,8 +193,8 @@ export class MojaDezurstva implements OnInit {
     });
   }
 
-  povuciZahtev(z: any): void {
-    if (!confirm('Povući zahtev za zamenu?')) return;
+  async povuciZahtev(z: any): Promise<void> {
+    if (!(await this.potvrda.pitaj({ naslov: 'Povlačenje zahteva', poruka: 'Povući zahtev za zamenu?', potvrdi: 'Povuci' }))) return;
     this.http.delete(`${this.API_URL}/zamene/${z.id}`).subscribe({
       next: () => { this.toast.show('Zahtev je povučen.', 'success'); this.ucitajZahteve(); },
       error: (err) => this.toast.show(procitajGresku(err, 'Povlačenje nije uspelo.').opsta, 'error')

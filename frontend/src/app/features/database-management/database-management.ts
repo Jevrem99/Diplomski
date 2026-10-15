@@ -16,7 +16,8 @@ interface ColumnDef {
   hideInTable?: boolean; // da li je kolona sakrivena u tabeli
 }
 
-import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
+import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
+import { PotvrdaService } from '../../core/services/potvrda.service';
 @Component({
   selector: 'app-database-management',
   standalone: true,
@@ -31,6 +32,7 @@ export class DatabaseManagement implements OnInit {
   activeEntity: EntityType = 'profesori';
   tableData: any[] = [];
   private readonly toast = inject(ToastService);
+  private potvrda = inject(PotvrdaService);
   private readonly dialog = inject(MatDialog);
   displayedColumnsKeys: string[] = [];
   currentColumnsDef: ColumnDef[] = [];
@@ -223,8 +225,8 @@ export class DatabaseManagement implements OnInit {
     });
   }
 
-  deleteRow(id: number): void {
-    if (confirm('Da li ste sigurni da želite da obrišete ovaj zapis?')) {
+  async deleteRow(id: number): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje zapisa', poruka: 'Da li ste sigurni da želite da obrišete ovaj zapis?', potvrdi: 'Obriši', opasno: true })) {
       this.http.delete(`${this.getEndpoint(this.activeEntity)}/${id}`).subscribe({
         next: () => {
           this.toast.show('Zapis je obrisan!', 'success');
@@ -254,7 +256,7 @@ export class DatabaseManagement implements OnInit {
         },
         error: (err) => {
           console.error('Greška pri slanju Excel fajla:', err);
-          alert('Greška pri uvozu: ' + (err.error?.message || err.message));
+          this.potvrda.obavesti('Greška pri uvozu: ' + (err.error?.message || err.message), 'Uvoz nije uspeo');
           this.uploading = false;
         }
       });
@@ -299,17 +301,17 @@ export class DatabaseManagement implements OnInit {
     }
   }
 
-  deleteDatabase(): void {
-    if (confirm('Da li ste sigurni da želite da obrišete celu bazu podataka? Ova akcija je nepovratna.')) {
+  async deleteDatabase(): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje cele baze', poruka: 'Da li ste sigurni da želite da obrišete celu bazu podataka? Ova akcija je nepovratna.', potvrdi: 'Obriši sve', opasno: true })) {
       this.http.post<any>(`${this.API_URL}/admin/reset-database`, { confirm: 'RESET' }).subscribe({
         next: () => {
-          alert('Baza podataka je uspešno obrisana.');
+          this.toast.show('Baza podataka je uspešno obrisana.', 'success');
           this.tableData = [];
           this.fetchData(this.activeEntity);
         },
         error: (err) => {
           console.error('Greška pri brisanju baze podataka:', err);
-          alert('Greška pri brisanju baze podataka: ' + (err.error?.message || err.message));
+          this.potvrda.obavesti('Greška pri brisanju baze podataka: ' + (err.error?.message || err.message), 'Brisanje nije uspelo');
         }
       });
     }

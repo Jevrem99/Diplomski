@@ -248,3 +248,6 @@ body > .fc-event-dragging .bank-card-color-bar {
   outline: 2px dashed var(--primary);
   outline-offset: -2px;
 }
+
+/* Prozor za potvrdu (PotvrdaService) */
+.potvrda-panel .mat-mdc-dialog-surface { background: var(--surface) !important; border-radius: 14px !important; }

@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { MatIconModule } from '@angular/material/icon';
+import { PotvrdaService } from '../../../core/services/potvrda.service';
 
 export interface RokIzvoz {
   naziv: string;
@@ -31,6 +32,7 @@ export interface ExportDataResult {
 })
 export class ExportModalComponent {
   private dialogRef = inject(MatDialogRef);
+  private potvrda = inject(PotvrdaService);
   public data = inject(MAT_DIALOG_DATA, { optional: true });
 
   izvozPodaci: ExportDataResult = {
@@ -104,13 +106,13 @@ export class ExportModalComponent {
   onSave(): void {
     if (this.izvozPodaci.tip === 'kolokvijumi') {
       if (!this.izvozPodaci.datumOd || !this.izvozPodaci.datumDo) {
-        alert('Molimo unesite oba datuma za kolokvijume.');
+        this.potvrda.obavesti('Molimo unesite oba datuma za kolokvijume.', 'Nedostaju podaci');
         return;
       }
     } else {
       const neispravniRokovi = this.izvozPodaci.rokovi?.some(r => !r.naziv || !r.datumOd || !r.datumDo);
       if (neispravniRokovi || !this.izvozPodaci.rokovi || this.izvozPodaci.rokovi.length === 0) {
-        alert('Molimo popunite sve podatke za odabrane rokove.');
+        this.potvrda.obavesti('Molimo popunite sve podatke za odabrane rokove.', 'Nedostaju podaci');
         return;
       }
     }

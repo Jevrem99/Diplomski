@@ -13,7 +13,8 @@ import { forkJoin } from 'rxjs';
 import { presloviULatinicu } from '../../../features/main/main.utils';
 import { environment } from '../../../../environments/environment';
 import { DataCacheService } from '../../../core/services/data-cache.service';
-import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
+import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
+import { PotvrdaService } from '../../../core/services/potvrda.service';
 
 @Component({
   selector: 'app-event-modal',
@@ -29,6 +30,7 @@ import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
 export class EventModal implements OnInit {
   private http = inject(HttpClient);
   private cache = inject(DataCacheService);
+  private potvrda = inject(PotvrdaService);
   private cdr = inject(ChangeDetectorRef);
   formData = {
     startTime: '',
@@ -192,11 +194,11 @@ export class EventModal implements OnInit {
     this.slobodniSaradnici.push(saradnik);
   }
 
-  onDelete(): void {
+  async onDelete(): Promise<void> {
     const pitanje = this.data.grupaPredmeti?.length
       ? `Termin je deo grupe (${this.data.grupaPredmeti.length} predmeta). Obrisati termine svih predmeta iz grupe?`
       : 'Da li ste sigurni da želite da obrišete ovaj termin?';
-    if (confirm(pitanje)) {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje termina', poruka: pitanje, potvrdi: 'Obriši', opasno: true })) {
       this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
     }
   }

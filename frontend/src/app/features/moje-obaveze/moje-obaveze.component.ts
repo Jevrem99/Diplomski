@@ -3,7 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { ToastService } from '../../core/services/toast.service';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../environments/environment';
+import { PotvrdaService } from '../../core/services/potvrda.service';
 
 @Component({
   selector: 'app-moje-obaveze',
@@ -15,6 +16,7 @@ import { environment } from '../../../environments/environment';
 export class MojeObaveze implements OnInit {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
+  private potvrda = inject(PotvrdaService);
   private cdr = inject(ChangeDetectorRef); // <-- REŠAVA PROBLEM OSVEŽAVANJA LISTE
   private API_URL = environment.apiUrl;
 
@@ -201,8 +203,8 @@ export class MojeObaveze implements OnInit {
     });
   }
 
-  obrisiObavezu(id: number): void {
-    if (confirm('Da li želite da obrišete ovu prijavu?')) {
+  async obrisiObavezu(id: number): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje prijave', poruka: 'Da li želite da obrišete ovu prijavu?', potvrdi: 'Obriši', opasno: true })) {
       this.http.delete(`${this.API_URL}/obaveze/${id}`).subscribe({
         next: () => {
           this.toast.show('Zauzetost obrisana.', 'success');

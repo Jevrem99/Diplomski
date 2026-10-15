@@ -23,7 +23,8 @@ import { MESECI } from './calendar-config';
 import { trajanjeUSatima, semestarOpseg } from '../../core/utils/vreme';
 import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../environments/environment';
+import { PotvrdaService } from '../../core/services/potvrda.service';
 // Boja kartica redovne nastave (namerno drugačija od boja godina)
 const NASTAVA_BOJA = '#7a6fa8';
 
@@ -40,6 +41,7 @@ export class Main implements OnInit, AfterViewInit {
 
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
+  private potvrda = inject(PotvrdaService);
   private API_URL = environment.apiUrl;
   private cdr = inject(ChangeDetectorRef);
   private toastService = inject(ToastService);
@@ -678,8 +680,8 @@ export class Main implements OnInit, AfterViewInit {
     });
   }
 
-  objaviRaspored(): void {
-    if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu. Za kolokvijume se pravi i fajl sa rezervacijama sala.')) {
+  async objaviRaspored(): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Objavljivanje rasporeda', poruka: 'Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu. Za kolokvijume se pravi i fajl sa rezervacijama sala.', potvrdi: 'Objavi' })) {
       this.http.put<any>(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
         next: (odgovor) => {
           if (odgovor?.objavljeno === 0) {
@@ -1103,8 +1105,8 @@ export class Main implements OnInit, AfterViewInit {
     });
   }
 
-  obrisiGrupu(grupa: any): void {
-    if (!confirm(`Obrisati grupu „${grupa.naziv}“? Termini koji su već zakazani ostaju u rasporedu.`)) return;
+  async obrisiGrupu(grupa: any): Promise<void> {
+    if (!(await this.potvrda.pitaj({ naslov: 'Brisanje grupe', poruka: `Obrisati grupu „${grupa.naziv}“? Termini koji su već zakazani ostaju u rasporedu.`, potvrdi: 'Obriši', opasno: true }))) return;
     this.http.delete(`${this.API_URL}/grupe/${grupa.id}`).subscribe({
       next: () => {
         this.toastService.show('Grupa je obrisana.', 'success');
