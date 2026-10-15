@@ -133,6 +133,14 @@
         </select>
       </div>
       <p class="side-col-hint">Sati dežurstva u ovom semestru (bez ovog termina).</p>
+
+      <div class="saradnik-search">
+        <input type="text" [(ngModel)]="searchSaradnik" name="searchSaradnik" placeholder="Pretraži saradnike..."
+               class="saradnik-search-input" autocomplete="off">
+        @if (searchSaradnik) {
+          <button type="button" class="saradnik-search-clear" (click)="searchSaradnik = ''" title="Obriši pretragu">×</button>
+        }
+      </div>
       
       <div class="saradnici-scroll-list">
         @for (saradnik of sortiraniSaradnici; track saradnik.id) {
@@ -159,7 +167,7 @@
             </button>
           </div>
         } @empty {
-          <div class="empty-hint text-center py-6">Nema slobodnih saradnika u ovom terminu.</div>
+          <div class="empty-hint text-center py-6">{{ searchSaradnik ? 'Nema saradnika koji odgovaraju pretrazi.' : 'Nema slobodnih saradnika u ovom terminu.' }}</div>
         }
       </div>
     </div>

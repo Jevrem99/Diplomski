@@ -10,6 +10,7 @@ import { HttpClient } from '@angular/common/http';
 import { MatIcon } from "@angular/material/icon";
 
 import { forkJoin } from 'rxjs';
+import { presloviULatinicu } from '../../../features/main/main.utils';
 import { environment } from '../../../../environments/environment';
 import { DataCacheService } from '../../../core/services/data-cache.service';
 import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
@@ -66,9 +67,16 @@ export class EventModal implements OnInit {
     return formatSati(n);
   }
 
+  // Pretraga po imenu i prezimenu (latinica i ćirilica, bez obzira na veličinu slova)
+  searchSaradnik = '';
+
   get sortiraniSaradnici(): any[] {
     const prezime = (a: any, b: any) => `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`, 'sr');
-    return [...this.slobodniSaradnici].sort((a, b) => {
+    const q = presloviULatinicu(this.searchSaradnik.trim());
+    const lista = q
+      ? this.slobodniSaradnici.filter(s => presloviULatinicu(`${s.ime} ${s.prezime} ${s.prezime} ${s.ime}`).includes(q))
+      : this.slobodniSaradnici;
+    return [...lista].sort((a, b) => {
       // odsutni uvek na dnu
       const oa = this.odsutniSaradniciMap.has(a.id) ? 1 : 0;
       const ob = this.odsutniSaradniciMap.has(b.id) ? 1 : 0;
