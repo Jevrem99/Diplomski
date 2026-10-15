@@ -25,6 +25,7 @@ import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
 import { PotvrdaService } from '../../core/services/potvrda.service';
+import { RezervacijeSalaDialogComponent } from '../../shared/components/rezervacije-sala-dialog/rezervacije-sala-dialog.component';
 // Boja kartica redovne nastave (namerno drugačija od boja godina)
 const NASTAVA_BOJA = '#7a6fa8';
 
@@ -686,7 +687,7 @@ export class Main implements OnInit, AfterViewInit {
         next: (odgovor) => {
           if (odgovor?.objavljeno === 0) {
             // Svi termini su već objavljeni: nema šta novo da se rezerviše
-            this.toastService.show('Nema novih termina za objavljivanje. Fajl sa rezervacijama za već objavljene kolokvijume preuzmite dugmetom „Rezervacije sala“.', 'error');
+            this.toastService.show('Nema novih termina za objavljivanje. Fajl sa rezervacijama za već objavljene kolokvijume pogledajte dugmetom „Pregled rezervacija sala“.', 'error');
             return;
           }
           const rez = odgovor?.rezervacije;
@@ -707,7 +708,7 @@ export class Main implements OnInit, AfterViewInit {
     }
   }
 
-  // Rezervacije sala za već objavljene kolokvijume (od danas nadalje), za ponovno preuzimanje fajla
+  // Pregled rezervacija sala za već objavljene kolokvijume (od danas nadalje); iz prozora se može preuzeti i fajl
   izveziRezervacijeSala(): void {
     this.http.get<any>(`${this.API_URL}/ispit/rezervacije-sala`).subscribe({
       next: (rez) => {
@@ -715,9 +716,10 @@ export class Main implements OnInit, AfterViewInit {
           this.toastService.show('Nema objavljenih kolokvijuma sa salom od danas nadalje.', 'error');
           return;
         }
-        this.preuzmiRezervacije(rez);
+        this.dialog.open(RezervacijeSalaDialogComponent, { data: { rez }, width: '860px', maxWidth: '94vw', panelClass: 'potvrda-panel' })
+          .afterClosed().subscribe((preuzmi) => { if (preuzmi) this.preuzmiRezervacije(rez); });
       },
-      error: () => this.toastService.show('Greška pri pravljenju fajla sa rezervacijama.', 'error')
+      error: () => this.toastService.show('Greška pri učitavanju rezervacija sala.', 'error')
     });
   }
 
