@@ -6,7 +6,7 @@ const getDezurstvaBySaradnikId = async (saradnik_id) => {
         where: { 
             saradnik_id: Number(saradnik_id),
             ispit: {
-                is_published: true // <--- Asistenti vide samo objavljeno!
+                is_published: true // asistenti vide samo objavljeno
             }
         },
         include: {

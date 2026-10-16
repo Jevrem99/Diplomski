@@ -587,21 +587,14 @@ export class Main implements OnInit, AfterViewInit {
     const imaIzmenjenih = this.modifiedEvents && this.modifiedEvents.length > 0;
     const imaObrisanih = this.obrisaniIspitiServerIds && this.obrisaniIspitiServerIds.length > 0;
 
-    console.group('🚀 [KLIKNUTO SAČUVAJ] Slanje rasporeda na server');
-    console.log('📊 Stanje izmena:', { imaNovih, imaIzmenjenih, imaObrisanih });
 
     if (!imaNovih && !imaIzmenjenih && !imaObrisanih) {
-      console.log('⚠️ Nema detektovanih izmena za bazu.');
-      console.groupEnd();
       this.toastService.show('Nema izmena za čuvanje.', 'success');
       return;
     }
 
     const validniIzmenjeni = (this.modifiedEvents || []).filter(e => e.id && !String(e.id).startsWith('temp_'));
 
-    console.log('📤 NOVI ISPITI (POST /ispit/bulk):', JSON.stringify(this.unsavedEvents, null, 2));
-    console.log('📤 IZMENJENI ISPITI (PUT /ispit/:id):', JSON.stringify(validniIzmenjeni, null, 2));
-    console.log('📤 OBRISANI ID-jevi (DELETE /ispit/:id):', this.obrisaniIspitiServerIds);
 
     // Server prvo proveri celu seriju izmena (ništa ne čuva); konflikte prikazujemo u čitljivom prozoru
     this.proveraUToku = true;
@@ -613,7 +606,6 @@ export class Main implements OnInit, AfterViewInit {
       next: (r) => {
         this.proveraUToku = false;
         if (r?.konflikti?.length) {
-          console.groupEnd();
           this.konfliktiPriCuvanju = r.konflikti;
           this.prikaziKonfliktePriCuvanju = true;
           this.cdr.detectChanges();
@@ -653,15 +645,12 @@ export class Main implements OnInit, AfterViewInit {
     if (validniIzmenjeni.length > 0) {
       validniIzmenjeni.forEach(evt => {
         const url = this.API_URL + '/ispit/' + evt.id + '?force=1';
-        console.log('➡️️ Šaljem PUT na ' + url + ' sa payloadom:', evt);
         requests.push(this.http.put(url, evt));
       });
     }
 
     forkJoin(requests).subscribe({
       next: (odgovori) => {
-        console.log('✅ SERVER JE ODGOVORIO SA USPEHOM:', odgovori);
-        console.groupEnd();
 
         this.toastService.show('Raspored je uspešno sačuvan!', 'success');
         this.unsavedEvents = [];
@@ -672,10 +661,7 @@ export class Main implements OnInit, AfterViewInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('❌ GREŠKA OD STRANE SERVERA PRI ČUVANJU:', err);
-        console.log('🔍 Status kod:', err.status);
-        console.log('🔍 Detalji tela greške:', err.error);
-        console.groupEnd();
+      console.error('Greška pri čuvanju rasporeda:', err);
         this.toastService.show(err.error?.error || err.error?.message || 'Došlo je do greške pri čuvanju.', 'error');
       }
     });

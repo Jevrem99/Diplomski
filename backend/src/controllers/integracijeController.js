@@ -2,7 +2,7 @@ const { ucitajObjavljeneRezervacije, jeDatum } = require('../services/rezervacij
 
 // GET /integracije/rezervacije-sala?od=GGGG-MM-DD&do=GGGG-MM-DD
 // Snimak trenutnog stanja svih OBJAVLJENIH kolokvijuma u periodu (podrazumevano od danas nadalje).
-// Specifikacija za primaoca: docs/specifikacija-rezervacije-sala.md
+// Oblik odgovora opisuje docs/rezervacije-sala.schema.json
 const getRezervacijeSala = async (req, res) => {
     const { od, do: doDatuma } = req.query;
     if (od !== undefined && !jeDatum(od)) return res.status(400).json({ error: 'Parametar "od" mora biti datum u obliku GGGG-MM-DD.' });

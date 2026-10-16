@@ -33,7 +33,7 @@ const getProfesorById = async (id) => {
 }
 
 //is_saradnik mozda nepotreban ako se na frotnu dodavanje profesora i saradnika odvaja
-const createProfesor = async (ime, prezime, email, is_saradnik = false) => { // <--- DRUGAČIJI REDOSLED!
+const createProfesor = async (ime, prezime, email, is_saradnik = false) => {
   return await prisma.profesor.create({
     data: {
       ime: String(ime).trim(),

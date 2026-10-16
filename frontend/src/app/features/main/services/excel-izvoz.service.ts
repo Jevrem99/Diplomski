@@ -168,7 +168,7 @@ export class ExcelIzvozService {
         const colLetter = String.fromCharCode(65 + c);
         cellStyles[colLetter + rowIndex] = {
           alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-          font: { bold: false, sz: 11, name: 'Calibri' }, // <--- TAČNO 11pt REGULAR
+          font: { bold: false, sz: 11, name: 'Calibri' },
           border: punOkvir
         };
       }
@@ -512,7 +512,7 @@ export class ExcelIzvozService {
           }
 
           cellStyles[col + rowIndex] = {
-            alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, // <--- CENTER I MIDDLE!
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
             font: { name: 'Calibri', sz: 11, bold: false },
             border: tankiOkvir
           };

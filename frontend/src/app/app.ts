@@ -4,7 +4,7 @@ import { ToastComponent } from './shared/components/toast/toast.component';
 import { ThemeService } from './core/services/theme';
 import { DesignService } from './core/services/design.service';
 import { PismoService } from './core/services/pismo.service';
-import { SpinnerComponent } from './shared/components/spinner/spinner.component'; // <--- DODAJ
+import { SpinnerComponent } from './shared/components/spinner/spinner.component';
 @Component({
   selector: 'app-root',
   imports: [

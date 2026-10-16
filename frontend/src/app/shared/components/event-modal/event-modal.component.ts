@@ -112,7 +112,7 @@ export class EventModal implements OnInit {
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
     if (this.data.room) this.formData.room = this.data.room;
     if (this.data.is_ispit !== undefined) this.formData.is_ispit = this.data.is_ispit;
-    if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma; // <--- DODANO OVDJ
+    if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma;
     if (this.data.dezurni) {
       this.izabraniSaradnici = [...this.data.dezurni];
       this.formData.dezurni_ids = this.izabraniSaradnici.map(s => s.id);
@@ -138,9 +138,8 @@ export class EventModal implements OnInit {
   fetchUcionice(): void {
     this.cache.get<any[]>('/ucionice', 300_000).subscribe({
       next: (res) => {
-        console.log('Učionice stigle sa beka:', res);
         this.sveUcionice = res;
-        this.cdr.detectChanges(); // <--- OBAVEZNO: primorava Angular da osveži padajući meni
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Greška pri dohvatanju učionica:', err)
     });
@@ -249,7 +248,7 @@ export class EventModal implements OnInit {
       this.dialogRef.close({ 
         ...this.data, 
         ...this.formData, 
-        tip_kolokvijuma: this.formData.tip_kolokvijuma || 'I', // <--- EKSPLICITNO PROSLEDITI
+        tip_kolokvijuma: this.formData.tip_kolokvijuma || 'I',
         izabraniSaradnici: this.izabraniSaradnici 
       });
     } else {

@@ -110,7 +110,7 @@ const deleteUser = async (req, res) => {
     }
 }
 const getRoles = async (req, res) => {
-    // Jedan izvor istine na beku
+    // Jedan izvor istine na serveru
     const uloge = [
         { id: 'admin', naziv: 'Administrator' },
         { id: 'profesor', naziv: 'Profesor' },

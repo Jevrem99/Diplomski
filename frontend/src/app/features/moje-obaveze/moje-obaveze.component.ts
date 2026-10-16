@@ -17,7 +17,7 @@ export class MojeObaveze implements OnInit {
   private http = inject(HttpClient);
   private toast = inject(ToastService);
   private potvrda = inject(PotvrdaService);
-  private cdr = inject(ChangeDetectorRef); // <-- REŠAVA PROBLEM OSVEŽAVANJA LISTE
+  private cdr = inject(ChangeDetectorRef);
   private API_URL = environment.apiUrl;
 
   userEmail = localStorage.getItem('email');

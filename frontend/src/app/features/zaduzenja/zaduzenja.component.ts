@@ -102,7 +102,7 @@ import { PotvrdaService } from '../../core/services/potvrda.service';
 export class ZaduzenjaComponent implements OnInit {
   private http = inject(HttpClient);
   private potvrda = inject(PotvrdaService);
-  private cdr = inject(ChangeDetectorRef); // OVO REŠAVA PROBLEM SA UČITAVANJEM!
+  private cdr = inject(ChangeDetectorRef);
   private API_URL = environment.apiUrl;
 
   sviSaradnici: any[] = [];
