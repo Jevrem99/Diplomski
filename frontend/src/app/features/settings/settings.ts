@@ -63,7 +63,7 @@ export class Settings implements OnInit {
     this.userInfo.uloga = sirovaUloga.charAt(0).toUpperCase() + sirovaUloga.slice(1);
   }
 
-  // --- INTEGRACIJA SA SISTEMOM FAKULTETA (samo administrator) ---
+  // Integracija (samo administrator)
   integracija: { kljucPodesen: boolean; kljucIzvor: string | null; postUrl: string | null; postKljucPodesen: boolean } | null = null;
   noviKljuc: string | null = null;
   postUrlUnos = '';
@@ -74,7 +74,6 @@ export class Settings implements OnInit {
     return localStorage.getItem('uloga') === 'admin';
   }
 
-  // Adresa sa koje sistem fakulteta preuzima rezervacije
   get adresaPreuzimanja(): string {
     const osnova = this.API_URL.startsWith('http') ? this.API_URL : window.location.origin + this.API_URL;
     return `${osnova}/integracije/rezervacije-sala`;
@@ -90,7 +89,7 @@ export class Settings implements OnInit {
   ucitajIntegraciju(): void {
     this.http.get<any>(`${this.API_URL}/admin/integracija`).subscribe({
       next: (i) => this.primeniIntegraciju(i),
-      error: () => this.toast.show('Podešavanja integracije nisu učitana.', 'error')
+      error: () => this.toast.show('Podešavanja nisu učitana.', 'error')
     });
   }
 
@@ -98,8 +97,8 @@ export class Settings implements OnInit {
     if (this.integracija?.kljucPodesen) {
       const ok = await this.potvrda.pitaj({
         naslov: 'Novi ključ',
-        poruka: 'Sadašnji ključ prestaje da važi čim se napravi novi. Sistem fakulteta mora da dobije novi ključ, inače neće moći da preuzima rezervacije.',
-        potvrdi: 'Napravi novi ključ',
+        poruka: 'Sadašnji ključ prestaje da važi. Novi ključ morate poslati fakultetu.',
+        potvrdi: 'Napravi',
         opasno: true
       });
       if (!ok) return;
@@ -116,7 +115,7 @@ export class Settings implements OnInit {
   async ukloniKljuc(): Promise<void> {
     const ok = await this.potvrda.pitaj({
       naslov: 'Uklanjanje ključa',
-      poruka: 'Preuzimanje rezervacija sa ovim ključem više neće raditi (osim ako postoji ključ u .env fajlu servera).',
+      poruka: 'Preuzimanje sa ovim ključem prestaje da radi.',
       potvrdi: 'Ukloni',
       opasno: true
     });
@@ -138,7 +137,7 @@ export class Settings implements OnInit {
     const telo: any = { url: this.postUrlUnos.trim() };
     if (this.postKljucUnos) telo.kljuc = this.postKljucUnos;
     this.http.put<any>(`${this.API_URL}/admin/integracija/slanje`, telo).subscribe({
-      next: (i) => { this.primeniIntegraciju(i); this.toast.show(i.postUrl ? 'Adresa za slanje je sačuvana.' : 'Slanje je isključeno.', 'success'); },
+      next: (i) => { this.primeniIntegraciju(i); this.toast.show('Sačuvano.', 'success'); },
       error: (err) => this.toast.show(err.error?.error || 'Čuvanje nije uspelo.', 'error')
     });
   }
@@ -155,7 +154,7 @@ export class Settings implements OnInit {
     this.http.post<any>(`${this.API_URL}/admin/integracija/slanje/proba`, {}).subscribe({
       next: (r) => {
         this.slanjeUToku = false;
-        this.toast.show(r.poslato ? `Poslato (${r.broj} rezervacija), odgovor ${r.status}.` : `Slanje nije uspelo: ${r.greska}`, r.poslato ? 'success' : 'error');
+        this.toast.show(r.poslato ? `Poslato (${r.broj}).` : `Slanje nije uspelo: ${r.greska}`, r.poslato ? 'success' : 'error');
         this.cdr.detectChanges();
       },
       error: (err) => {
