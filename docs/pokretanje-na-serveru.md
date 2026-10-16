@@ -17,6 +17,7 @@ Baza i admin se prave sami. Aplikacija je na `http://<server>:8080`.
 - `FRONTEND_URL`: adresa aplikacije kakva se kuca u pregledaču, bez kose crte na kraju.
 - `ADMIN_PASSWORD`: lozinka za administratora (`admin`).
 - `INTEGRACIJA_API_KLJUC`: ključ koji dobija služba za preuzimanje rezervacija sala.
+  Može i bez toga: administrator ga pravi u aplikaciji (Podešavanja, Integracija); ključ iz aplikacije ima prednost nad ovim.
 - Mejlovi (nije obavezno): `EMAIL_USER`, `EMAIL_PASS`.
 
 ## Svakodnevno

@@ -200,3 +200,10 @@ model GrupaPredmeta {
   predmeti   Predmet[] @relation("PredmetiUGrupi")
   created_at DateTime  @default(now())
 }
+
+// Podešavanja koja se menjaju u aplikaciji (npr. ključ i adresa za integraciju sa sistemom fakulteta)
+model Podesavanje {
+  kljuc     String   @id
+  vrednost  String
+  azurirano DateTime @default(now()) @updatedAt
+}

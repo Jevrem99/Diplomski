@@ -692,10 +692,16 @@ export class Main implements OnInit, AfterViewInit {
           }
           const rez = odgovor?.rezervacije;
           const broj = rez?.rezervacije?.length ?? 0;
+          if (odgovor?.slanje?.ukljuceno && !odgovor.slanje.poslato) {
+            this.toastService.show(`Raspored je objavljen, ali slanje rezervacija na podešenu adresu nije uspelo (${odgovor.slanje.greska}). Proverite Podešavanja.`, 'error');
+            if (broj > 0) this.preuzmiRezervacije(rez);
+            return;
+          }
           if (broj > 0) {
             this.preuzmiRezervacije(rez);
             const bezSale = rez.bez_sale?.length ? ` Bez sale: ${rez.bez_sale.length} (nisu u fajlu).` : '';
-            this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}`, 'success');
+            const poslato = odgovor?.slanje?.poslato ? ' Rezervacije su poslate na podešenu adresu.' : '';
+            this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}${poslato}`, 'success');
           } else {
             this.toastService.show('Raspored je uspešno objavljen! Među objavljenim terminima nema kolokvijuma sa izabranom salom, pa nema rezervacija.', 'success');
           }

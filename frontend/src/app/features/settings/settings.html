@@ -81,6 +81,86 @@
         </form>
       </div>
 
+      <!-- KARTICA PREKO CELE ŠIRINE: Integracija sa sistemom fakulteta (samo administrator) -->
+      @if (jeAdmin) {
+        <div class="col-span-1 md:col-span-2 settings-card">
+          <div class="mb-4 border-b border-slate-100 pb-3">
+            <h2 class="card-title text-base">Integracija sa sistemom fakulteta</h2>
+            <p class="card-desc mt-0.5">Preuzimanje rezervacija sala (<span data-lat>JSON</span>) i, opciono, automatsko slanje posle objavljivanja.</p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Preuzimanje -->
+            <div class="flex flex-col gap-3">
+              <h3 class="form-label">Preuzimanje (sistem fakulteta preuzima od nas)</h3>
+              <div class="form-group">
+                <label class="form-label">Adresa</label>
+                <div class="flex gap-2">
+                  <input type="text" readonly [value]="adresaPreuzimanja" class="custom-input-field" data-lat>
+                  <button type="button" class="btn-reset-colors" (click)="kopiraj(adresaPreuzimanja)">Kopiraj</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><span data-lat>API</span> ključ (zaglavlje <span data-lat>X-API-Key</span>)</label>
+                <p class="card-desc">
+                  @if (integracija?.kljucPodesen) {
+                    Ključ je podešen ({{ integracija?.kljucIzvor === 'baza' ? 'iz aplikacije' : 'iz .env fajla servera' }}).
+                  } @else {
+                    Ključ nije podešen: preuzimanje je isključeno.
+                  }
+                </p>
+              </div>
+
+              @if (noviKljuc) {
+                <div class="form-group">
+                  <label class="form-label">Novi ključ (prikazuje se samo sada, sačuvajte ga)</label>
+                  <div class="flex gap-2">
+                    <input type="text" readonly [value]="noviKljuc" class="custom-input-field" data-lat>
+                    <button type="button" class="btn-reset-colors" (click)="kopiraj(noviKljuc)">Kopiraj</button>
+                  </div>
+                </div>
+              }
+
+              <div class="flex gap-2 flex-wrap">
+                <button type="button" class="btn-save-colors" (click)="napraviNoviKljuc()">
+                  {{ integracija?.kljucPodesen ? 'Napravi novi ključ' : 'Napravi ključ' }}
+                </button>
+                @if (integracija?.kljucIzvor === 'baza') {
+                  <button type="button" class="btn-reset-colors" (click)="ukloniKljuc()">Ukloni ključ</button>
+                }
+              </div>
+            </div>
+
+            <!-- Slanje -->
+            <div class="flex flex-col gap-3">
+              <h3 class="form-label">Slanje (mi šaljemo posle „Objavi“, opciono)</h3>
+              <div class="form-group">
+                <label class="form-label">Adresa za slanje (<span data-lat>POST</span>)</label>
+                <input type="text" [(ngModel)]="postUrlUnos" name="postUrl" class="custom-input-field" data-lat
+                       placeholder="https://... (prazno = isključeno)">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Ključ za tu adresu (opciono, šalje se kao <span data-lat>X-API-Key</span>)</label>
+                <input type="password" [(ngModel)]="postKljucUnos" name="postKljuc" class="custom-input-field" autocomplete="off"
+                       [placeholder]="integracija?.postKljucPodesen ? 'Podešen. Upišite novi da ga zamenite.' : 'Bez ključa'">
+              </div>
+              <div class="flex gap-2 flex-wrap">
+                <button type="button" class="btn-save-colors" (click)="sacuvajSlanje()">Sačuvaj</button>
+                @if (integracija?.postUrl) {
+                  <button type="button" class="btn-reset-colors" [disabled]="slanjeUToku" (click)="probnoSlanje()">
+                    {{ slanjeUToku ? 'Šaljem...' : 'Pošalji probno' }}
+                  </button>
+                }
+                @if (integracija?.postKljucPodesen) {
+                  <button type="button" class="btn-reset-colors" (click)="obrisiKljucZaSlanje()">Obriši ključ za slanje</button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- KARTICA PREKO CELE ŠIRINE: Boje po godinama -->
       @if (userInfo?.uloga === 'profesor' || userInfo?.uloga === 'admin') {
         <div class="col-span-1 md:col-span-2 settings-card">

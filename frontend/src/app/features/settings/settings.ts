@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -9,6 +9,7 @@ import { environment } from '../../../environments/environment';
 import { DesignPickerComponent } from '../../shared/components/design-picker/design-picker.component';
 
 import { proveriLozinku } from '../../core/utils/validacija';
+import { PotvrdaService } from '../../core/services/potvrda.service';
 @Component({
   selector: 'app-settings',
   standalone: true,
@@ -20,6 +21,8 @@ export class Settings implements OnInit {
   themeService = inject(ThemeService);
   private http = inject(HttpClient);
   private toast = inject(ToastService);
+  private potvrda = inject(PotvrdaService);
+  private cdr = inject(ChangeDetectorRef);
   private API_URL = environment.apiUrl;
 
   // Podaci za prikaz
@@ -49,6 +52,7 @@ export class Settings implements OnInit {
 
   ngOnInit(): void {
     this.loadSavedColors();
+    if (localStorage.getItem('uloga') === 'admin') this.ucitajIntegraciju();
 
     // Čupamo podatke iz localStorage-a da ih prikažemo korisniku
     this.userInfo.username = localStorage.getItem('username') || 'Nepoznato';
@@ -57,6 +61,109 @@ export class Settings implements OnInit {
     const sirovaUloga = localStorage.getItem('uloga') || 'Korisnik';
     // Malo ulepšavamo ispis uloge
     this.userInfo.uloga = sirovaUloga.charAt(0).toUpperCase() + sirovaUloga.slice(1);
+  }
+
+  // --- INTEGRACIJA SA SISTEMOM FAKULTETA (samo administrator) ---
+  integracija: { kljucPodesen: boolean; kljucIzvor: string | null; postUrl: string | null; postKljucPodesen: boolean } | null = null;
+  noviKljuc: string | null = null;
+  postUrlUnos = '';
+  postKljucUnos = '';
+  slanjeUToku = false;
+
+  get jeAdmin(): boolean {
+    return localStorage.getItem('uloga') === 'admin';
+  }
+
+  // Adresa sa koje sistem fakulteta preuzima rezervacije
+  get adresaPreuzimanja(): string {
+    const osnova = this.API_URL.startsWith('http') ? this.API_URL : window.location.origin + this.API_URL;
+    return `${osnova}/integracije/rezervacije-sala`;
+  }
+
+  private primeniIntegraciju(i: any): void {
+    this.integracija = i;
+    this.postUrlUnos = i.postUrl || '';
+    this.postKljucUnos = '';
+    this.cdr.detectChanges();
+  }
+
+  ucitajIntegraciju(): void {
+    this.http.get<any>(`${this.API_URL}/admin/integracija`).subscribe({
+      next: (i) => this.primeniIntegraciju(i),
+      error: () => this.toast.show('Podešavanja integracije nisu učitana.', 'error')
+    });
+  }
+
+  async napraviNoviKljuc(): Promise<void> {
+    if (this.integracija?.kljucPodesen) {
+      const ok = await this.potvrda.pitaj({
+        naslov: 'Novi ključ',
+        poruka: 'Sadašnji ključ prestaje da važi čim se napravi novi. Sistem fakulteta mora da dobije novi ključ, inače neće moći da preuzima rezervacije.',
+        potvrdi: 'Napravi novi ključ',
+        opasno: true
+      });
+      if (!ok) return;
+    }
+    this.http.post<{ kljuc: string }>(`${this.API_URL}/admin/integracija/kljuc`, {}).subscribe({
+      next: (r) => {
+        this.noviKljuc = r.kljuc;
+        this.ucitajIntegraciju();
+      },
+      error: () => this.toast.show('Ključ nije napravljen.', 'error')
+    });
+  }
+
+  async ukloniKljuc(): Promise<void> {
+    const ok = await this.potvrda.pitaj({
+      naslov: 'Uklanjanje ključa',
+      poruka: 'Preuzimanje rezervacija sa ovim ključem više neće raditi (osim ako postoji ključ u .env fajlu servera).',
+      potvrdi: 'Ukloni',
+      opasno: true
+    });
+    if (!ok) return;
+    this.http.delete<any>(`${this.API_URL}/admin/integracija/kljuc`).subscribe({
+      next: (i) => { this.noviKljuc = null; this.primeniIntegraciju(i); this.toast.show('Ključ je uklonjen.', 'success'); },
+      error: () => this.toast.show('Ključ nije uklonjen.', 'error')
+    });
+  }
+
+  kopiraj(tekst: string): void {
+    navigator.clipboard?.writeText(tekst).then(
+      () => this.toast.show('Kopirano.', 'success'),
+      () => this.toast.show('Kopiranje nije uspelo, označite tekst ručno.', 'error')
+    );
+  }
+
+  sacuvajSlanje(): void {
+    const telo: any = { url: this.postUrlUnos.trim() };
+    if (this.postKljucUnos) telo.kljuc = this.postKljucUnos;
+    this.http.put<any>(`${this.API_URL}/admin/integracija/slanje`, telo).subscribe({
+      next: (i) => { this.primeniIntegraciju(i); this.toast.show(i.postUrl ? 'Adresa za slanje je sačuvana.' : 'Slanje je isključeno.', 'success'); },
+      error: (err) => this.toast.show(err.error?.error || 'Čuvanje nije uspelo.', 'error')
+    });
+  }
+
+  obrisiKljucZaSlanje(): void {
+    this.http.put<any>(`${this.API_URL}/admin/integracija/slanje`, { url: this.integracija?.postUrl || '', kljuc: '' }).subscribe({
+      next: (i) => { this.primeniIntegraciju(i); this.toast.show('Ključ za slanje je obrisan.', 'success'); },
+      error: (err) => this.toast.show(err.error?.error || 'Brisanje nije uspelo.', 'error')
+    });
+  }
+
+  probnoSlanje(): void {
+    this.slanjeUToku = true;
+    this.http.post<any>(`${this.API_URL}/admin/integracija/slanje/proba`, {}).subscribe({
+      next: (r) => {
+        this.slanjeUToku = false;
+        this.toast.show(r.poslato ? `Poslato (${r.broj} rezervacija), odgovor ${r.status}.` : `Slanje nije uspelo: ${r.greska}`, r.poslato ? 'success' : 'error');
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.slanjeUToku = false;
+        this.toast.show(err.error?.error || 'Slanje nije uspelo.', 'error');
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   loadSavedColors(): void {

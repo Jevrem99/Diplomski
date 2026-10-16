@@ -210,28 +210,38 @@ test('rezervacije sala: samo kolokvijumi, grupa je jedna rezervacija, termin bez
 });
 
 
-test('integracija: API ključ (nije podešen -> 503, pogrešan -> 401, ispravan -> prolazi)', () => {
-    const config = require('../src/config/config');
-    const { apiKljuc } = require('../src/middlewares/apiKljuc');
-    const poziv = (zaglavlje) => {
+test('integracija: API ključ (nije podešen -> 503, pogrešan -> 401, ispravan -> prolazi)', async () => {
+    const { napraviApiKljuc } = require('../src/middlewares/apiKljuc');
+    const { sazetakHex } = require('../src/services/integracijaPodesavanja');
+    const poziv = async (ocekivani, zaglavlje) => {
         const rez = { kod: null, telo: null, status(k) { this.kod = k; return this; }, json(x) { this.telo = x; return this; } };
         let proslo = false;
-        apiKljuc({ get: (ime) => (ime.toLowerCase() === 'x-api-key' ? zaglavlje : undefined) }, rez, () => { proslo = true; });
+        const mw = napraviApiKljuc(async () => ({ hash: ocekivani ? sazetakHex(ocekivani) : null }));
+        await mw({ get: (ime) => (ime.toLowerCase() === 'x-api-key' ? zaglavlje : undefined) }, rez, () => { proslo = true; });
         return { kod: rez.kod, proslo };
     };
-    const staro = config.integracijaKljuc;
-    try {
-        config.integracijaKljuc = null;
-        assert.equal(poziv('bilo-sta').kod, 503, 'ključ nije podešen: isključeno');
-        config.integracijaKljuc = 'a'.repeat(32);
-        assert.equal(poziv(undefined).kod, 401);
-        assert.equal(poziv('b'.repeat(32)).kod, 401);
-        assert.equal(poziv('a'.repeat(31)).kod, 401);
-        const dobar = poziv('a'.repeat(32));
-        assert.equal(dobar.proslo, true);
-        assert.equal(dobar.kod, null);
-    } finally {
-        config.integracijaKljuc = staro;
+    assert.equal((await poziv(null, 'bilo-sta')).kod, 503, 'ključ nije podešen: isključeno');
+    const kljuc = 'a'.repeat(32);
+    assert.equal((await poziv(kljuc, undefined)).kod, 401);
+    assert.equal((await poziv(kljuc, 'b'.repeat(32))).kod, 401);
+    assert.equal((await poziv(kljuc, 'a'.repeat(31))).kod, 401);
+    const dobar = await poziv(kljuc, 'a'.repeat(32));
+    assert.equal(dobar.proslo, true);
+    assert.equal(dobar.kod, null);
+    // greška pri čitanju ključa (npr. baza ne radi) ne sme da propusti zahtev
+    const rez = { kod: null, status(k) { this.kod = k; return this; }, json() { return this; } };
+    let proslo = false;
+    await napraviApiKljuc(async () => { throw new Error('baza'); })({ get: () => kljuc }, rez, () => { proslo = true; });
+    assert.equal(rez.kod, 500);
+    assert.equal(proslo, false);
+});
+
+test('integracija: adresa za slanje mora biti http(s)', () => {
+    const { jeAdresa } = require('../src/services/integracijaPodesavanja');
+    assert.equal(jeAdresa('https://sistem.pmf.kg.ac.rs/rezervacije'), true);
+    assert.equal(jeAdresa('http://147.91.204.28:8080/x'), true);
+    for (const lose of ['', 'ftp://x.rs', 'javascript:alert(1)', 'sistem.rs/x', 42, null, 'http://' + 'a'.repeat(600)]) {
+        assert.equal(jeAdresa(lose), false, String(lose).slice(0, 30));
     }
 });
 

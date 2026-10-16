@@ -9,6 +9,7 @@ const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
+const integracijaPodesavanja = require('../services/integracijaPodesavanja');
 
 exports.exportKalendar = async (req, res) => {
     try {
@@ -787,10 +788,25 @@ const publishAll = async (req, res) => {
             'Raspored',
             `Objavljen raspored sa ${result.count} ispita i poslata obaveštenja saradnicima`
         );
+        // Opciono: stanje rezervacija šaljemo i na adresu koju je administrator podesio (greška ne ruši objavljivanje)
+        let slanje = { ukljuceno: false, poslato: false, status: null, greska: null };
+        try {
+            const danas = new Date().toISOString().substring(0, 10);
+            const stanjeSala = await ucitajObjavljeneRezervacije({ od: danas, objavio: req.user?.username || null });
+            slanje = await integracijaPodesavanja.posaljiRezervacije(stanjeSala);
+            if (slanje.ukljuceno) {
+                await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
+                    slanje.poslato ? 'Rezervacije sala poslate na podešenu adresu' : `Slanje rezervacija nije uspelo: ${slanje.greska}`);
+            }
+        } catch (err) {
+            console.error('Greška pri slanju rezervacija:', err);
+            slanje = { ukljuceno: true, poslato: false, status: null, greska: err.message };
+        }
         res.status(200).json({
             message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!`,
             objavljeno: result.count,
-            rezervacije
+            rezervacije,
+            slanje
         });
     } catch (err) {
         console.error('Greška pri objavljivanju:', err);

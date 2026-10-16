@@ -22,6 +22,7 @@ const terminiKolokvijumaRoutes = require('./routes/terminiKolokvijumaRoutes');
 const zameneRoutes = require('./routes/zameneRoutes');
 const grupaRoutes = require('./routes/grupaRoutes');
 const integracijeRoutes = require('./routes/integracijeRoutes');
+const integracijaPodesavanjaRoutes = require('./routes/integracijaPodesavanjaRoutes');
 const app = express();
 
 app.disable('x-powered-by');
@@ -63,6 +64,7 @@ app.use('/auth', authRoutes);
 app.use('/profesors', profesorRoutes);
 app.use('/predmet', predmetRoutes);
 app.use('/ispit', ispitRoutes);
+app.use('/admin/integracija', integracijaPodesavanjaRoutes);
 app.use('/admin', adminRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/dezurstva', dezurstvaRoutes);

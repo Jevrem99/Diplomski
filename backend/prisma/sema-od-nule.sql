@@ -290,3 +290,11 @@ ALTER TABLE "_PredmetiUGrupi" ADD CONSTRAINT "_PredmetiUGrupi_A_fkey" FOREIGN KE
 -- AddForeignKey
 ALTER TABLE "_PredmetiUGrupi" ADD CONSTRAINT "_PredmetiUGrupi_B_fkey" FOREIGN KEY ("B") REFERENCES "Predmet"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- CreateTable
+CREATE TABLE "Podesavanje" (
+    "kljuc" TEXT NOT NULL,
+    "vrednost" TEXT NOT NULL,
+    "azurirano" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Podesavanje_pkey" PRIMARY KEY ("kljuc")
+);

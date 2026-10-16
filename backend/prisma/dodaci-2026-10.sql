@@ -27,3 +27,11 @@ CREATE TABLE IF NOT EXISTS "_PredmetiUGrupi" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "_PredmetiUGrupi_AB_unique" ON "_PredmetiUGrupi"("A", "B");
 CREATE INDEX IF NOT EXISTS "_PredmetiUGrupi_B_index" ON "_PredmetiUGrupi"("B");
+
+-- Podešavanja integracije (ključ za preuzimanje rezervacija, adresa za slanje JSON-a)
+CREATE TABLE IF NOT EXISTS "Podesavanje" (
+    "kljuc" TEXT NOT NULL,
+    "vrednost" TEXT NOT NULL,
+    "azurirano" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Podesavanje_pkey" PRIMARY KEY ("kljuc")
+);
