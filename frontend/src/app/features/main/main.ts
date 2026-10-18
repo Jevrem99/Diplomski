@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin, Observable } from 'rxjs';
+import { forkJoin, Observable, timeout } from 'rxjs';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
@@ -1884,12 +1884,12 @@ export class Main implements OnInit, AfterViewInit {
       const fd = new FormData();
       fd.append('file', fajl);
       const params: any = godina ? { godina: String(godina) } : {};
-      return this.http.post<UvozPregled>(`${this.API_URL}/ispit/uvoz/pregled`, fd, { params });
+      return this.http.post<UvozPregled>(`${this.API_URL}/ispit/uvoz/pregled`, fd, { params }).pipe(timeout(30000));
     };
     const godina = new Date().getFullYear();
     posalji(godina).subscribe({
       next: (pregled) => this.otvoriPregledUvoza(fajl.name, pregled, posalji, godina),
-      error: (err) => this.toastService.show(err.error?.error || err.error?.message || 'Fajl nije moguće uvesti.', 'error')
+      error: (err) => this.toastService.show(this.porukaUvoza(err, 'Fajl nije moguće uvesti.'), 'error')
     });
   }
 
@@ -1899,12 +1899,17 @@ export class Main implements OnInit, AfterViewInit {
       data: { imaNesacuvanih: this.hasUnsavedChanges }
     }).afterClosed().subscribe((r) => {
       if (r?.akcija !== 'ucitaj') return;
-      const ucitaj = (): Observable<UvozPregled> => this.http.post<UvozPregled>(`${this.API_URL}/verzije/${r.verzija.id}/pregled`, {});
+      const ucitaj = (): Observable<UvozPregled> => this.http.post<UvozPregled>(`${this.API_URL}/verzije/${r.verzija.id}/pregled`, {}).pipe(timeout(30000));
       ucitaj().subscribe({
         next: (pregled) => this.otvoriPregledUvoza(r.verzija.naziv, pregled, ucitaj),
-        error: (err) => this.toastService.show(err.error?.error || 'Verzija nije učitana.', 'error')
+        error: (err) => this.toastService.show(this.porukaUvoza(err, 'Verzija nije učitana.'), 'error')
       });
     });
+  }
+
+  private porukaUvoza(err: any, podrazumevano: string): string {
+    if (err?.name === 'TimeoutError') return 'Server ne odgovara. Pokušajte ponovo.';
+    return err?.error?.error || err?.error?.message || podrazumevano;
   }
 
   private otvoriPregledUvoza(naslov: string, pregled: UvozPregled, ucitaj: (godina: number) => Observable<UvozPregled>, godina?: number): void {
