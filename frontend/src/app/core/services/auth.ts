@@ -32,7 +32,7 @@ export class AuthService {
   }
 
   pocetnaStranica(uloga: string): string {
-    if (uloga === 'admin') return '/main';
+    if (uloga === 'admin') return '/raspored';
     if (uloga === 'profesor') return '/termini-kolokvijuma';
     return '/moja-dezurstva';
   }

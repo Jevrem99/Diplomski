@@ -13,7 +13,7 @@ export const routes: Routes = [
     canActivate: [authGuard],
     children: [
       {
-        path: 'main',
+        path: 'raspored',
         loadComponent: () => import('./features/main/main').then(m => m.Main),
         canActivate: [roleGuard(['admin'])]
       },
@@ -34,5 +34,6 @@ export const routes: Routes = [
       { path: 'moja-dezurstva', loadComponent: () => import('./features/moja-dezurstva/moja-dezurstva.component').then(m => m.MojaDezurstva) }
     ]
   },
+  { path: 'main', redirectTo: 'raspored', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
 ];

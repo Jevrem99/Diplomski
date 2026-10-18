@@ -31,7 +31,7 @@ export class SidebarMenu {
   get linkovi(): NavLink[] {
     if (this.uloga === 'admin') {
       return [
-        { naziv: 'Raspored', ruta: '/main', ikona: 'assets/calendar_icon.png' },
+        { naziv: 'Raspored', ruta: '/raspored', ikona: 'assets/calendar_icon.png' },
         { naziv: 'Termini kolokvijuma', ruta: '/termini-kolokvijuma', ikona: 'assets/calendar_icon.png' },
         { naziv: 'Upravljaj bazom', ruta: '/database-management', ikona: 'assets/database_management_icon.png' },
         { naziv: 'Zahtevi za zamenu', ruta: '/zahtevi-zamena', ikona: 'assets/calendar_icon.png' },
@@ -55,7 +55,7 @@ export class SidebarMenu {
     this.router.navigate([ruta]);
   }
 
-  navigateToMain() { this.idi('/main'); }
+  navigateToMain() { this.idi('/raspored'); }
   navigateToMojaDezurstva() { this.idi('/moja-dezurstva'); }
   navigateToSettings() { this.idi('/settings'); }
   navigateToDatabaseManagement() { this.idi('/database-management'); }
