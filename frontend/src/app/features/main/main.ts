@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable } from 'rxjs';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
@@ -26,6 +26,8 @@ import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
 import { PotvrdaService } from '../../core/services/potvrda.service';
 import { RezervacijeSalaDialogComponent } from '../../shared/components/rezervacije-sala-dialog/rezervacije-sala-dialog.component';
+import { UvozPregledDialogComponent, UvozPregled, UvozStavka } from '../../shared/components/uvoz-pregled-dialog/uvoz-pregled-dialog.component';
+import { VerzijeDialogComponent } from '../../shared/components/verzije-dialog/verzije-dialog.component';
 // Boja kartica redovne nastave (namerno drugačija od boja godina)
 const NASTAVA_BOJA = '#7a6fa8';
 
@@ -1837,8 +1839,122 @@ export class Main implements OnInit, AfterViewInit {
         } else if (rezultat.tip === 'ispiti') {
           this.excel.generisiIspite(rezultat, this.allLoadedEvents, this.predmeti);
         }
+        this.preuzmiJsonIzvoz(rezultat);
       }
     });
+  }
+
+  // JSON uz Excel: isti period, može da se uveze nazad (i na drugom serveru)
+  private preuzmiJsonIzvoz(podaci: ExportDataResult): void {
+    let od = podaci.datumOd;
+    let doDatuma = podaci.datumDo;
+    if (podaci.tip === 'ispiti') {
+      const rokovi = (podaci.rokovi || []).filter(r => r.datumOd && r.datumDo);
+      if (!rokovi.length) return;
+      od = rokovi.map(r => r.datumOd).sort()[0];
+      doDatuma = rokovi.map(r => r.datumDo).sort().reverse()[0];
+    }
+    if (!od || !doDatuma) return;
+    this.http.get<any>(`${this.API_URL}/ispit/izvoz`, { params: { od, do: doDatuma, tip: podaci.tip } }).subscribe({
+      next: (json) => {
+        if (!json?.termini?.length) return;
+        const ime = (podaci.naslovRasporeda || ('Raspored_' + podaci.tip)).replace(/[\r\n]+/g, ' ').replace(/[\\/:*?"<>|]/g, '').trim() || 'Raspored';
+        const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = ime + '.json';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => this.toastService.show('JSON izvoz nije uspeo.', 'error')
+    });
+  }
+
+  // ============================================
+  // UVOZ I VERZIJE RASPOREDA
+  // ============================================
+
+  uveziFajl(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const fajl = input.files?.[0];
+    input.value = '';
+    if (!fajl) return;
+    const posalji = (godina?: number): Observable<UvozPregled> => {
+      const fd = new FormData();
+      fd.append('file', fajl);
+      const params: any = godina ? { godina: String(godina) } : {};
+      return this.http.post<UvozPregled>(`${this.API_URL}/ispit/uvoz/pregled`, fd, { params });
+    };
+    const godina = new Date().getFullYear();
+    posalji(godina).subscribe({
+      next: (pregled) => this.otvoriPregledUvoza(fajl.name, pregled, posalji, godina),
+      error: (err) => this.toastService.show(err.error?.error || err.error?.message || 'Fajl nije moguće uvesti.', 'error')
+    });
+  }
+
+  otvoriVerzije(): void {
+    this.dialog.open(VerzijeDialogComponent, {
+      width: '760px', maxWidth: '95vw', panelClass: 'potvrda-panel',
+      data: { imaNesacuvanih: this.hasUnsavedChanges }
+    }).afterClosed().subscribe((r) => {
+      if (r?.akcija !== 'ucitaj') return;
+      const ucitaj = (): Observable<UvozPregled> => this.http.post<UvozPregled>(`${this.API_URL}/verzije/${r.verzija.id}/pregled`, {});
+      ucitaj().subscribe({
+        next: (pregled) => this.otvoriPregledUvoza(r.verzija.naziv, pregled, ucitaj),
+        error: (err) => this.toastService.show(err.error?.error || 'Verzija nije učitana.', 'error')
+      });
+    });
+  }
+
+  private otvoriPregledUvoza(naslov: string, pregled: UvozPregled, ucitaj: (godina: number) => Observable<UvozPregled>, godina?: number): void {
+    this.dialog.open(UvozPregledDialogComponent, {
+      width: '1100px', maxWidth: '96vw', panelClass: 'potvrda-panel', disableClose: true,
+      data: { naslov, pregled, ucitaj, godina }
+    }).afterClosed().subscribe((stavke: UvozStavka[] | null) => {
+      if (stavke?.length) this.dodajUvezeneTermine(stavke);
+    });
+  }
+
+  // Uvezeni termini ulaze kao nesačuvane izmene, isto kao prevučeni iz banke predmeta
+  private dodajUvezeneTermine(stavke: UvozStavka[]): void {
+    const noviKljucevi = new Map<string, string>();
+    stavke.forEach(s => {
+      if (!s.predmet || !s.datum || !s.vreme) return;
+      const predmet: any = this.predmeti.find(p => p.id === s.predmet!.id) || s.predmet;
+      const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const boja = this.getGodinaColor(predmet.godina);
+      const sala = s.sala || '';
+      const kraj = s.vremeKraja || '';
+      const tip = s.tip || 'I';
+      let kljuc: string | null = null;
+      if (s.grupaKljuc) {
+        if (!noviKljucevi.has(s.grupaKljuc)) noviKljucevi.set(s.grupaKljuc, this.noviKljucGrupe());
+        kljuc = noviKljucevi.get(s.grupaKljuc)!;
+      }
+
+      this.unsavedEvents.push({
+        tempId, predmet_id: predmet.id, title: predmet.naziv, datum: s.datum, vreme: s.vreme, vreme_kraja: kraj,
+        sala, is_ispit: s.isIspit, tip_kolokvijuma: tip, dezurni_ids: s.dezurni.map(d => d.id), grupa_kljuc: kljuc,
+        backgroundColor: boja, borderColor: boja
+      });
+      this.allLoadedEvents.push({
+        id: tempId, title: `${predmet.naziv} (${sala || 'Bez sale'})`,
+        start: `${s.datum}T${s.vreme}:00`, end: kraj ? `${s.datum}T${kraj}:00` : undefined,
+        display: 'block', backgroundColor: s.isIspit ? boja : '#ffffff', borderColor: boja,
+        extendedProps: {
+          vreme: s.vreme, vremeKraja: kraj, vreme_kraja: kraj, sala,
+          predmetId: predmet.id, godina: predmet.godina, profesorId: predmet.profesor_id,
+          profesorIme: predmet.profesorImePrezime, is_ispit: s.isIspit, tip_kolokvijuma: tip,
+          dezurni: [...s.dezurni], grupa_kljuc: kljuc
+        }
+      });
+    });
+
+    this.hasUnsavedChanges = true;
+    this.applyFilters();
+    setTimeout(() => this.detectConflicts(), 150);
+    this.toastService.show(`Dodato ${stavke.length} termina. Kliknite „Sačuvaj“ da ih upišete.`, 'success');
   }
 
   obradiIzborDatumaZaIzvoz(kliknutiDatum: string): void {

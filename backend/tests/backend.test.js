@@ -358,3 +358,105 @@ test('PMF: nadjiEmail prepoznaje poznata polja i ugnježdene objekte, ignoriše 
     assert.equal(nadjiEmail({ ime: 'Pera', prezime: 'Peric' }), null);
     assert.equal(nadjiEmail('nije mejl'), null);
 });
+
+// ---------- Uvoz rasporeda ----------
+const uvozRasporeda = require('../src/services/uvozRasporeda');
+
+const napraviExcel = async (redovi, ime = 'Raspored') => {
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(ime);
+    redovi.forEach((r) => ws.addRow(r));
+    return wb.xlsx.writeBuffer();
+};
+
+test('uvoz: vreme, datum i tip iz teksta', () => {
+    const { citajVreme, citajDatum, citajTip } = uvozRasporeda._internal;
+    assert.equal(citajVreme('8h'), '08:00');
+    assert.equal(citajVreme('8.15h'), '08:15');
+    assert.equal(citajVreme('14:30'), '14:30');
+    assert.equal(citajVreme('25h'), null);
+    assert.equal(citajVreme('posle podne'), null);
+    assert.equal(citajDatum('26.09.2026.'), '2026-09-26');
+    assert.equal(citajDatum('3.2.2027'), '2027-02-03');
+    assert.equal(citajDatum('31.02.2026.'), null);
+    assert.equal(citajDatum('26.09.', 2027), '2027-09-26');
+    assert.equal(citajDatum('26.09.'), null, 'bez godine nema datuma');
+    assert.deepEqual(citajTip('II колоквијум'), { isIspit: false, tip: 'II' });
+    assert.deepEqual(citajTip('поправни колоквијум'), { isIspit: false, tip: 'Поправни I' });
+    assert.deepEqual(citajTip('поправни тест'), { isIspit: false, tip: 'поправни тест' });
+    assert.deepEqual(citajTip('тест'), { isIspit: false, tip: 'тест' });
+    assert.deepEqual(citajTip('испит'), { isIspit: true, tip: null });
+});
+
+test('uvoz: Excel sa kolokvijumima (nedeljni raspored kao pri izvozu)', async () => {
+    const buf = await napraviExcel([
+        ['Распоред колоквијума'],
+        [],
+        ['понедељак', 'уторак', 'среда', 'четвртак', 'петак', 'субота', 'недеља'],
+        ['26.10.2026.', '27.10.2026.', '28.10.2026.', '29.10.2026.', '30.10.2026.', '31.10.2026.', '01.11.2026.'],
+        ['Основи програмирања\n - I колоквијум - 8.15h', '', 'Математика 1\n - поправни колоквијум - 14h', '', '', '', ''],
+        ['Физика\n - тест -', '', '', '', '', '', '']
+    ]);
+    const { stavke, izvor } = await uvozRasporeda.parsirajExcel(buf);
+    assert.equal(izvor, 'excel-kolokvijumi');
+    assert.equal(stavke.length, 3);
+    assert.deepEqual(
+        stavke.map((s) => [s.predmetNaziv, s.datum, s.vreme, s.isIspit, s.tip]),
+        [
+            ['Основи програмирања', '2026-10-26', '08:15', false, 'I'],
+            ['Математика 1', '2026-10-28', '14:00', false, 'Поправни I'],
+            ['Физика', '2026-10-26', null, false, 'тест']
+        ]
+    );
+    assert.equal(stavke[2].greska, 'Nedostaje vreme početka');
+    assert.equal(stavke[0].dezurniOsobe, null, 'dežurni se uzimaju sa predmeta');
+});
+
+test('uvoz: Excel sa ispitima (tabela po godinama, datum bez godine)', async () => {
+    const buf = await napraviExcel([
+        ['ОАС Информатике'],
+        [],
+        ['I година'],
+        ['', 'Предмет', 'Јануарски\nрок', '', 'Фебруарски\nрок', ''],
+        [1, 'Основи програмирања', '20.01.', '9h', '10.02.', '12.30h'],
+        ['', '', '27.01.', '9h', '', ''],
+        [2, 'Математика 1', '45.01.', '9h', '', '']
+    ]);
+    const { stavke, izvor } = await uvozRasporeda.parsirajExcel(buf, { godina: 2027 });
+    assert.equal(izvor, 'excel-ispiti');
+    assert.deepEqual(
+        stavke.map((s) => [s.predmetNaziv, s.datum, s.vreme, s.isIspit]),
+        [
+            ['Основи програмирања', '2027-01-20', '09:00', true],
+            ['Основи програмирања', '2027-02-10', '12:30', true],
+            ['Основи програмирања', '2027-01-27', '09:00', true],
+            ['Математика 1', null, '09:00', true]
+        ]
+    );
+    assert.equal(stavke[3].greska, 'Neispravan datum');
+});
+
+test('uvoz: JSON izvoz se čita tačno, pogrešan format se odbija', () => {
+    const stavke = uvozRasporeda.parsirajJson({
+        format: 'raspored-termini',
+        verzija: 1,
+        termini: [{
+            predmet: { sifra: '19.INF012', naziv: 'Логичко програмирање' }, datum: '2026-11-03', vreme: '10:00', vreme_kraja: '12:00',
+            sala: 'A-0-15', is_ispit: false, tip_kolokvijuma: 'II', grupa_kljuc: 'g1', dezurni: [{ email: 'a@pmf.kg.ac.rs' }]
+        }]
+    });
+    assert.deepEqual(
+        [stavke[0].predmetSifra, stavke[0].datum, stavke[0].vreme, stavke[0].vremeKraja, stavke[0].sala, stavke[0].tip, stavke[0].dezurniOsobe],
+        ['19.INF012', '2026-11-03', '10:00', '12:00', 'A-0-15', 'II', [{ email: 'a@pmf.kg.ac.rs', ime: '', prezime: '' }]]
+    );
+    assert.throws(() => uvozRasporeda.parsirajJson({ format: 'raspored-rezervacije-sala', termini: [] }), /format/);
+    assert.throws(() => uvozRasporeda.parsirajJson(null));
+});
+
+test('uvoz: nazivi se porede bez obzira na pismo', () => {
+    const { kljucNaziva } = require('../src/utils/tekst');
+    assert.equal(kljucNaziva('Основи програмирања 1'), kljucNaziva('Osnovi  programiranja 1'));
+    assert.equal(kljucNaziva('Рачунарски системи'), kljucNaziva('RAČUNARSKI SISTEMI'));
+    assert.notEqual(kljucNaziva('Математика 1'), kljucNaziva('Математика 2'));
+});

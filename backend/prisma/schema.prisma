@@ -207,3 +207,17 @@ model Podesavanje {
   vrednost  String
   azurirano DateTime @default(now()) @updatedAt
 }
+
+// Sačuvane verzije rasporeda (snimak termina u istom JSON obliku kao izvoz)
+model SacuvaniRaspored {
+  id           Int      @id @default(autoincrement())
+  naziv        String
+  autor        String?
+  datum_od     String?
+  datum_do     String?
+  broj_termina Int      @default(0)
+  podaci       Json
+  created_at   DateTime @default(now())
+
+  @@index([created_at])
+}

@@ -35,3 +35,17 @@ CREATE TABLE IF NOT EXISTS "Podesavanje" (
     "azurirano" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "Podesavanje_pkey" PRIMARY KEY ("kljuc")
 );
+
+-- Sačuvane verzije rasporeda
+CREATE TABLE IF NOT EXISTS "SacuvaniRaspored" (
+    "id" SERIAL NOT NULL,
+    "naziv" TEXT NOT NULL,
+    "autor" TEXT,
+    "datum_od" TEXT,
+    "datum_do" TEXT,
+    "broj_termina" INTEGER NOT NULL DEFAULT 0,
+    "podaci" JSONB NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SacuvaniRaspored_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "SacuvaniRaspored_created_at_idx" ON "SacuvaniRaspored"("created_at");

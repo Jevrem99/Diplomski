@@ -23,6 +23,7 @@ const zameneRoutes = require('./routes/zameneRoutes');
 const grupaRoutes = require('./routes/grupaRoutes');
 const integracijeRoutes = require('./routes/integracijeRoutes');
 const integracijaPodesavanjaRoutes = require('./routes/integracijaPodesavanjaRoutes');
+const verzijeRoutes = require('./routes/verzijeRoutes');
 const app = express();
 
 app.disable('x-powered-by');
@@ -74,6 +75,7 @@ app.use('/termini-kolokvijuma', terminiKolokvijumaRoutes);
 app.use('/zamene', zameneRoutes);
 app.use('/grupe', grupaRoutes);
 app.use('/integracije', integracijeRoutes);
+app.use('/verzije', verzijeRoutes);
 
 // 404 + centralni handler grešaka (npr. multer: prevelik fajl, pogrešan tip fajla)
 app.use((req, res) => res.status(404).json({ message: 'Ruta ne postoji.' }));

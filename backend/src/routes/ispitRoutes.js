@@ -2,6 +2,8 @@ const express = require('express');
 const ispitController = require('../controllers/ispitController');
 const router = express.Router();
 const { protect, restrictTo } = require('../middlewares/authMiddleware');
+const { uploadUvoz } = require('../middlewares/uploadMiddleware');
+const uvozController = require('../controllers/uvozController');
 
 // Glavni raspored menja samo admin; profesori i asistenti samo čitaju objavljene termine
 const urednik = [protect, restrictTo('admin')];
@@ -13,6 +15,8 @@ router.post('/proveri-konflikte', ...urednik, ispitController.proveriRaspored);
 router.post('/bulk', ...urednik, ispitController.saveBulkIspiti);
 router.put('/publish-all', ...urednik, ispitController.publishAll);
 router.get('/rezervacije-sala', ...urednik, ispitController.getRezervacijeSala);
+router.get('/izvoz', ...urednik, uvozController.izvozJson);
+router.post('/uvoz/pregled', ...urednik, uploadUvoz.single('file'), uvozController.pregledUvoza);
 
 // 2. OSNOVNE GET I POST RUTE
 router.get('/', protect, ispitController.getAllIspiti);

@@ -376,6 +376,23 @@
           <span class="hidden sm:inline">Izvezi</span>
         </button>
 
+        <!-- Uvezi (Excel ili JSON) -->
+        <input #uvozFajl type="file" accept=".xlsx,.json" class="hidden" (change)="uveziFajl($event)">
+        <button (click)="uvozFajl.click()" class="header-btn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 4v12m0-12l-4 4m4-4l4 4"></path>
+          </svg>
+          <span class="hidden sm:inline">Uvezi</span>
+        </button>
+
+        <!-- Verzije rasporeda -->
+        <button (click)="otvoriVerzije()" class="header-btn">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3M3.05 11a9 9 0 111.5 5M3 20v-4h4"></path>
+          </svg>
+          <span class="hidden sm:inline">Verzije</span>
+        </button>
+
         <!-- Sačuvaj -->
         <button (click)="saveDraftSchedule()" [disabled]="!hasUnsavedChanges" [class.opacity-50]="!hasUnsavedChanges"
           class="header-btn btn-save-draft">
