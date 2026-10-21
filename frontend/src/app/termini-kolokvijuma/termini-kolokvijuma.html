@@ -1,17 +1,20 @@
-<div class="termini-page">
+<div class="termini-page bg-slate-50 dark:bg-slate-950">
   <header class="termini-header">
     <div>
       <h1>Termini kolokvijuma</h1>
       <p>
         @if (jeAdmin) {
-          Pregled željenih termina svih predmeta, koje su uneli profesori i saradnici.
+          Zbirni pregled željenih termina svih predmeta, koje su uneli profesori i saradnici.
         } @else {
           Unesite željene termine kolokvijuma za svoje predmete. Konačan raspored objavljuje administrator.
         }
       </p>
     </div>
+
     @if (jeAdmin) {
-      <button class="btn btn-export" (click)="izveziExcel()">Izvezi Excel</button>
+      <button class="btn btn-export" (click)="izveziExcel()">
+        Izvezi Excel
+      </button>
     }
   </header>
 
@@ -24,54 +27,307 @@
       Nema predmeta povezanih sa vašim nalogom. Proverite da li je vaš email u bazi povezan sa profilom nastavnika.
     </div>
   } @else {
-    @for (r of rows(); track r.id) {
-      <section class="predmet-card">
-        <div class="predmet-head">
-          <div>
-            <h2>{{ r.naziv }}</h2>
-            <span class="meta">
-              {{ r.godina }}. godina · {{ nazivSemestra(r.semestar) }} · {{ r.status === 'И' || r.status === 'I' ? 'Izborni' : 'Obavezni' }}
-              @if (r.profesor) { · {{ r.profesor.ime }} {{ r.profesor.prezime }} }
-            </span>
-          </div>
-          @if (r.izmenjen) { <span class="badge-unsaved">Nesačuvane izmene</span> }
+    @if (jeAdmin) {
+      <!-- PRETRAGA I FILTERI -->
+      <div class="admin-filters">
+        <div class="search-wrapper">
+          <input
+            type="text"
+            [(ngModel)]="tekstPretrage"
+            placeholder="Pretraži predmet ili nastavnika..."
+            class="filter-input"
+          />
         </div>
 
-        <div class="grid-kol">
-          <div class="grid-row grid-row-head">
-            <span>Kolokvijum</span><span>Datum</span><span>Trajanje (min)</span><span>Računarska sala</span><span>Potreban broj dežurnih</span>
-          </div>
-          @for (k of r.k; track $index) {
-            <div class="grid-row">
-              <span class="label">{{ $index + 1 }}. kolokvijum</span>
-              <input type="date" [(ngModel)]="k.datum" (ngModelChange)="oznaciIzmenu(r)" />
-              <input type="number" min="15" max="480" step="15" placeholder="npr. 90"
-                     [(ngModel)]="k.trajanje" (ngModelChange)="oznaciIzmenu(r)" />
-              <label class="check"><input type="checkbox" [(ngModel)]="k.racunarskaSala" (ngModelChange)="oznaciIzmenu(r)" /> Da</label>
-              <input type="number" min="0" max="20" step="1" placeholder="broj dežurnih" title="Potreban broj dežurnih"
-                     [(ngModel)]="k.dezurni" (ngModelChange)="oznaciIzmenu(r)" />
+        <div class="filter-selects">
+          <select [(ngModel)]="filterGodina" class="filter-input">
+            <option value="sve">Sve godine</option>
+            <option value="1">1. godina</option>
+            <option value="2">2. godina</option>
+            <option value="3">3. godina</option>
+            <option value="4">4. godina</option>
+          </select>
+
+          <select [(ngModel)]="filterSemestar" class="filter-input">
+            <option value="sve">Svi semestri</option>
+            <option value="zimski">Zimski</option>
+            <option value="letnji">Letnji</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- ADMINISTRATORSKA TABELA -->
+      <div class="table-container">
+        <table class="termini-table">
+          <colgroup>
+            <col class="col-godina" />
+            <col class="col-predmet" />
+            <col class="col-studenti" />
+            <col class="col-nastavnik" />
+            <col class="col-kolokvijum" />
+            <col class="col-kolokvijum" />
+            <col class="col-kolokvijum" />
+            <col class="col-popravni" />
+            <col class="col-napomena" />
+          </colgroup>
+
+          <thead>
+            <tr>
+              <th>God. / Sem.</th>
+              <th>Naziv predmeta</th>
+              <th class="text-center">Stud.</th>
+              <th>Nastavnik / Saradnici</th>
+              <th>1. kolokvijum</th>
+              <th>2. kolokvijum</th>
+              <th>3. kolokvijum</th>
+              <th>Popravni</th>
+              <th>Napomena</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            @for (r of filtriraniRedovi(); track r.id) {
+              <tr>
+                <td class="godina-cell">
+                  {{ r.godina }}. god.
+                  <span class="semester-text">{{ nazivSemestra(r.semestar) }}</span>
+                </td>
+
+                <td class="predmet-name">{{ r.naziv }}</td>
+
+                <td class="student-cell">{{ r.broj_studenata || '-' }}</td>
+
+                <td>
+                  @if (r.profesor) {
+                    <div class="professor-name">
+                      {{ r.profesor.ime }} {{ r.profesor.prezime }}
+                    </div>
+                  }
+                  @if (r.saradniciTekst) {
+                    <div class="assistant-names">
+                      Saradnici: {{ r.saradniciTekst }}
+                    </div>
+                  }
+                </td>
+
+                <!-- PRVI KOLOKVIJUM -->
+                <td>
+                  @if (r.terminiKolokvijuma?.k1_datum) {
+                    <strong>{{ r.terminiKolokvijuma.k1_datum }}</strong>
+                    <div>{{ r.terminiKolokvijuma.k1_trajanje }} min</div>
+                    @if (r.terminiKolokvijuma.k1_racunarska_sala) {
+                      <span class="computer-room">Računarska sala</span>
+                    }
+                  } @else {
+                    <span class="not-entered">Nije uneto</span>
+                  }
+                </td>
+
+                <!-- DRUGI KOLOKVIJUM -->
+                <td>
+                  @if (r.terminiKolokvijuma?.k2_datum) {
+                    <strong>{{ r.terminiKolokvijuma.k2_datum }}</strong>
+                    <div>{{ r.terminiKolokvijuma.k2_trajanje }} min</div>
+                    @if (r.terminiKolokvijuma.k2_racunarska_sala) {
+                      <span class="computer-room">Računarska sala</span>
+                    }
+                  } @else {
+                    <span class="not-entered">Nije uneto</span>
+                  }
+                </td>
+
+                <!-- TREĆI KOLOKVIJUM -->
+                <td>
+                  @if (r.terminiKolokvijuma?.k3_datum) {
+                    <strong>{{ r.terminiKolokvijuma.k3_datum }}</strong>
+                    <div>{{ r.terminiKolokvijuma.k3_trajanje }} min</div>
+                    @if (r.terminiKolokvijuma.k3_racunarska_sala) {
+                      <span class="computer-room">Računarska sala</span>
+                    }
+                  } @else {
+                    <span class="not-entered">-</span>
+                  }
+                </td>
+
+                <!-- POPRAVNI KOLOKVIJUM -->
+                <td>
+                  @if (r.popravniUTerminuIspita) {
+                    <span class="exam-badge">U terminu ispita</span>
+                  } @else {
+                    @if (r.popravniDatum) {
+                      <div><strong>{{ datumZaPrikaz(r.popravniDatum) }}</strong></div>
+                    }
+                    @if (r.popravniTrajanje) {
+                      <div>{{ r.popravniTrajanje }} min</div>
+                    } @else if (!r.popravniDatum) {
+                      <span class="not-entered">-</span>
+                    }
+                    @if (r.popravniRacunarskaSala) {
+                      <span class="computer-room">Računarska sala</span>
+                    }
+                  }
+                </td>
+
+                <!-- NAPOMENA -->
+                <td class="napomena-cell">{{ r.napomena || '-' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-results">
+                  Nema predmeta koji odgovaraju izabranim filterima.
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <!-- FORME ZA NASTAVNIKE I SARADNIKE -->
+      @for (r of rows(); track r.id) {
+        <section class="predmet-card">
+          <div class="predmet-head">
+            <div>
+              <h2>{{ r.naziv }}</h2>
+              <span class="meta">
+                {{ r.godina }}. godina · {{ nazivSemestra(r.semestar) }} ·
+                {{ r.status === 'И' || r.status === 'I' ? 'Izborni' : 'Obavezni' }}
+                @if (r.profesor) {
+                  · {{ r.profesor.ime }} {{ r.profesor.prezime }}
+                }
+              </span>
             </div>
-          }
-          <div class="grid-row">
-            <span class="label">Popravni</span>
-            <label class="check"><input type="checkbox" [(ngModel)]="r.popravniUTerminuIspita" (ngModelChange)="oznaciIzmenu(r)" /> u terminu ispita</label>
-            <input type="number" min="15" max="480" step="15" placeholder="npr. 90"
-                   [(ngModel)]="r.popravniTrajanje" (ngModelChange)="oznaciIzmenu(r)" />
-            <label class="check"><input type="checkbox" [(ngModel)]="r.popravniRacunarskaSala" (ngModelChange)="oznaciIzmenu(r)" /> Da</label>
-            <input type="number" min="0" max="20" step="1" placeholder="broj dežurnih" title="Potreban broj dežurnih"
-                   [(ngModel)]="r.popravniDezurni" (ngModelChange)="oznaciIzmenu(r)" />
+
+            @if (r.izmenjen) {
+              <span class="badge-unsaved">Nesačuvane izmene</span>
+            }
           </div>
-        </div>
 
-        <textarea rows="2" placeholder="Napomena (npr. kolokvijum samo posle 15h)"
-                  [(ngModel)]="r.napomena" (ngModelChange)="oznaciIzmenu(r)"></textarea>
+          <div class="grid-kol">
+            <div class="grid-row grid-row-head">
+              <span>Kolokvijum</span>
+              <span>Datum</span>
+              <span>Trajanje (min)</span>
+              <span>Računarska sala</span>
+              <span>Potreban broj dežurnih</span>
+            </div>
 
-        <div class="actions">
-          <button class="btn btn-save" [disabled]="r.cuva || !r.izmenjen" (click)="sacuvaj(r)">
-            {{ r.cuva ? 'Čuvanje…' : 'Sačuvaj' }}
-          </button>
-        </div>
-      </section>
+            @for (k of r.k; track $index) {
+              <div class="grid-row">
+                <span class="label">{{ $index + 1 }}. kolokvijum</span>
+
+                <input
+                  type="date"
+                  [(ngModel)]="k.datum"
+                  (ngModelChange)="oznaciIzmenu(r)"
+                />
+
+                <input
+                  type="number"
+                  min="15"
+                  max="480"
+                  step="15"
+                  placeholder="npr. 90"
+                  [(ngModel)]="k.trajanje"
+                  (ngModelChange)="oznaciIzmenu(r)"
+                />
+
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="k.racunarskaSala"
+                    (ngModelChange)="oznaciIzmenu(r)"
+                  />
+                  Da
+                </label>
+
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="1"
+                  placeholder="Broj dežurnih"
+                  [(ngModel)]="k.dezurni"
+                  (ngModelChange)="oznaciIzmenu(r)"
+                />
+              </div>
+            }
+
+            <!-- POPRAVNI: ista struktura kolona kao kod ostalih kolokvijuma -->
+            <div class="grid-row grid-row-popravni">
+              <span class="label">Popravni</span>
+
+              <!-- Datum je u istoj koloni kao datumi K1, K2 i K3 -->
+              <input
+                type="date"
+                [(ngModel)]="r.popravniDatum"
+                [disabled]="r.popravniUTerminuIspita"
+                (ngModelChange)="oznaciIzmenu(r)"
+                aria-label="Datum popravnog kolokvijuma"
+                title="Datum popravnog kolokvijuma"
+              />
+
+              <input
+                type="number"
+                min="15"
+                max="480"
+                step="15"
+                placeholder="Trajanje (min)"
+                [(ngModel)]="r.popravniTrajanje"
+                (ngModelChange)="oznaciIzmenu(r)"
+              />
+
+              <!-- Oba checkboxa su u koloni za računarsku salu -->
+              <div class="popravni-checkboxes">
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="r.popravniRacunarskaSala"
+                    (ngModelChange)="oznaciIzmenu(r)"
+                  />
+                  Da
+                </label>
+
+                <label class="check">
+                  <input
+                    type="checkbox"
+                    [(ngModel)]="r.popravniUTerminuIspita"
+                    (ngModelChange)="oznaciIzmenu(r)"
+                  />
+                  U terminu ispita
+                </label>
+              </div>
+
+              <input
+                type="number"
+                min="0"
+                max="20"
+                step="1"
+                placeholder="Broj dežurnih"
+                [(ngModel)]="r.popravniDezurni"
+                (ngModelChange)="oznaciIzmenu(r)"
+              />
+            </div>
+          </div>
+
+          <textarea
+            rows="5"
+            placeholder="Unesite napomenu"
+            [(ngModel)]="r.napomena"
+            (ngModelChange)="oznaciIzmenu(r)"
+            class="napomena-input"
+          ></textarea>
+
+          <div class="actions">
+            <button
+              class="btn btn-save"
+              [disabled]="r.cuva || !r.izmenjen"
+              (click)="sacuvaj(r)"
+            >
+              {{ r.cuva ? 'Čuvanje…' : 'Sačuvaj' }}
+            </button>
+          </div>
+        </section>
+      }
     }
   }
 </div>

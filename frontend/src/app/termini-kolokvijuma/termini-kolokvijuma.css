@@ -1,38 +1,564 @@
-:host { display: block; background: var(--bg); min-height: calc(100vh - 62px); }
-.termini-page { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; font-family: 'Montserrat', 'Open Sans', sans-serif; }
-.termini-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
-.termini-header h1 { margin: 0 0 4px; font-size: 1.6rem; color: var(--primary-text); }
-.termini-header p { margin: 0; color: var(--muted); font-size: .9rem; }
-
-.info-box { padding: 20px; border-radius: 12px; background: var(--primary-soft); color: var(--text); text-align: center; }
-.info-box-error { background: var(--tint-rose-bg); color: var(--tint-rose-fg); }
-
-.predmet-card { background: var(--surface); border: 1px solid var(--border);  border-radius: var(--radius); padding: 18px 20px; margin-bottom: 16px; box-shadow: var(--shadow); }
-.predmet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
-.predmet-head h2 { margin: 0; font-size: 1.1rem; color: var(--text); }
-.meta { font-size: .78rem; color: var(--muted); }
-.badge-unsaved { background: var(--tint-amber-bg); color: var(--tint-amber-fg); border-radius: 999px; padding: 3px 10px; font-size: .72rem; font-weight: 700; white-space: nowrap; }
-
-.grid-kol { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
-.grid-row { display: grid; grid-template-columns: 130px 1fr 1fr 1fr 1fr; gap: 10px; align-items: center; }
-.grid-row-head { font-size: .72rem; font-weight: 700; text-transform: uppercase; color: var(--muted); }
-.label { font-weight: 600; font-size: .85rem; color: var(--text-2); }
-.check { display: flex; align-items: center; gap: 6px; font-size: .85rem; color: var(--text-2); }
-
-input[type='date'], input[type='number'], textarea {
-  width: 100%; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 8px; font: inherit; font-size: .88rem; background: var(--surface-2); color: var(--text);
+:host {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: calc(100vh - 62px);
+  background: var(--bg);
+  box-sizing: border-box;
 }
-input:focus, textarea:focus { outline: 2px solid var(--primary); outline-offset: 0; border-color: var(--primary); }
-textarea { resize: vertical; }
 
-.actions { display: flex; justify-content: flex-end; margin-top: 12px; }
-.btn { border: 0; border-radius: 8px; padding: 9px 20px; font-weight: 700; font-size: .85rem; cursor: pointer; }
-.btn-save { background: var(--primary); color: #fff; }
-.btn-save:disabled { background: var(--border-strong); cursor: not-allowed; }
-.btn-export { background: var(--accent); color: #fff; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
 
+/* GLAVNA STRANICA */
+.termini-page {
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  min-height: calc(100vh - 62px);
+  margin: 0;
+  padding: 24px 24px 48px;
+  font-family: 'Montserrat', 'Open Sans', sans-serif;
+  background: var(--bg);
+}
+
+/* NASLOV */
+.termini-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.termini-header h1 {
+  margin: 0 0 6px;
+  font-size: 1.6rem;
+  color: var(--primary-text);
+}
+
+.termini-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* FILTERI */
+.admin-filters {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.search-wrapper {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.filter-selects {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.filter-input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.filter-selects select {
+  width: auto;
+  max-width: 100%;
+}
+
+/* INFO PORUKE */
+.info-box {
+  padding: 20px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--text);
+  text-align: center;
+}
+
+.info-box-error {
+  background: var(--tint-rose-bg);
+  color: var(--tint-rose-fg);
+}
+
+/* ADMINISTRATORSKA TABELA */
+.table-container {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 48px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.termini-table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.75rem;
+  color: var(--text);
+}
+
+/* Širine svih devet kolona zajedno iznose 100%. */
+.col-godina {
+  width: 8%;
+}
+
+.col-predmet {
+  width: 14%;
+}
+
+.col-studenti {
+  width: 5%;
+}
+
+.col-nastavnik {
+  width: 16%;
+}
+
+.col-kolokvijum {
+  width: 9%;
+}
+
+.col-popravni {
+  width: 10%;
+}
+
+.col-napomena {
+  width: 20%;
+}
+
+.termini-table th,
+.termini-table td {
+  padding: 12px 8px;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  border-bottom: 1px solid var(--border);
+}
+
+.termini-table th {
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.5;
+  font-size: 0.7rem;
+}
+
+.termini-table th + th,
+.termini-table td + td {
+  border-left: 1px solid var(--border);
+}
+
+.termini-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.termini-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.termini-table tbody tr:hover {
+  background: var(--primary-soft);
+}
+
+.text-center,
+.student-cell {
+  text-align: center;
+}
+
+.godina-cell {
+  font-weight: 700;
+  color: var(--text-2);
+}
+
+.semester-text {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 400;
+}
+
+.predmet-name {
+  font-weight: 800;
+  color: var(--primary-text);
+}
+
+.professor-name {
+  color: var(--primary);
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.assistant-names {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.5;
+}
+
+.computer-room {
+  display: inline-block;
+  margin-top: 5px;
+  color: var(--tint-amber-fg);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.not-entered {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.exam-badge {
+  display: inline-block;
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.empty-results {
+  padding: 24px !important;
+  text-align: center;
+  color: var(--muted);
+}
+
+/* NAPOMENA U ADMINISTRATORSKOJ TABELI */
+.napomena-cell {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* KARTICE PREDMETA */
+.predmet-card {
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 16px;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.predmet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.predmet-head h2 {
+  margin: 0 0 5px;
+  font-size: 1.1rem;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.badge-unsaved {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--tint-amber-bg);
+  color: var(--tint-amber-fg);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* FORME ZA TERMINE */
+.grid-kol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.grid-row {
+  display: grid;
+  grid-template-columns: 130px repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.grid-row > * {
+  min-width: 0;
+}
+
+.grid-row-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+/* POPRAVNI KORISTI ISTE KOLONE KAO OSTALI KOLOKVIJUMI */
+.grid-row-popravni {
+  grid-template-columns: 130px repeat(4, minmax(0, 1fr));
+}
+
+.grid-row-popravni > * {
+  min-width: 0;
+}
+
+/* Oba checkboxa stoje zajedno u koloni za računarsku salu,
+   pa datum i trajanje ostaju poravnati sa ostalim redovima. */
+.popravni-checkboxes {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.popravni-checkboxes .check {
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.85rem;
+  color: var(--text-2);
+}
+
+.check input {
+  flex-shrink: 0;
+}
+
+/* INPUTI */
+input[type='date'],
+input[type='number'],
+textarea {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.88rem;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+input:focus,
+textarea:focus {
+  outline: 2px solid var(--primary);
+  outline-offset: 0;
+  border-color: var(--primary);
+}
+
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Jasno sivo, onemogućeno polje datuma popravnog */
+.grid-row-popravni input[type='date']:disabled {
+  background: var(--border);
+  color: var(--muted);
+  border-color: var(--border);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.napomena-input {
+  display: block;
+  min-height: 120px;
+  margin-top: 12px;
+  resize: vertical;
+  line-height: 1.6;
+}
+
+/* DUGMAD */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-save {
+  background: var(--primary);
+  color: #fff;
+}
+
+.btn-save:disabled {
+  background: var(--border-strong);
+  cursor: not-allowed;
+}
+
+.btn-export {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #fff;
+}
+
+/* MANJI LAPTOPOVI I TABLETI */
+@media (max-width: 1100px) {
+  .termini-page {
+    padding: 20px 16px 40px;
+  }
+
+  .termini-table {
+    font-size: 0.7rem;
+  }
+
+  .termini-table th,
+  .termini-table td {
+    padding: 10px 6px;
+  }
+
+  .grid-row {
+    grid-template-columns: 110px repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .grid-row-popravni {
+    grid-template-columns: 110px repeat(4, minmax(0, 1fr));
+  }
+
+  .popravni-checkboxes {
+    gap: 6px 10px;
+  }
+}
+
+/* MOBILNI TELEFONI */
 @media (max-width: 720px) {
-  .grid-row { grid-template-columns: 1fr 1fr; }
-  .grid-row-head { display: none; }
-  .label { grid-column: 1 / -1; }
+  .termini-page {
+    padding: 16px 10px 32px;
+  }
+
+  .termini-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .admin-filters {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .filter-selects {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+  }
+
+  .filter-selects select {
+    width: 100%;
+  }
+
+  .termini-table {
+    font-size: 0.64rem;
+  }
+
+  .termini-table th,
+  .termini-table td {
+    padding: 8px 4px;
+    overflow-wrap: anywhere;
+  }
+
+  .termini-table th {
+    font-size: 0.61rem;
+  }
+
+  .predmet-card {
+    padding: 14px 12px;
+  }
+
+  .predmet-head {
+    flex-wrap: wrap;
+  }
+
+  .grid-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .grid-row-head {
+    display: none;
+  }
+
+  .label {
+    grid-column: 1 / -1;
+  }
+
+  .grid-row-popravni {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .grid-row-popravni .label {
+    grid-column: 1 / -1;
+  }
+
+  .popravni-checkboxes {
+    grid-column: 1 / -1;
+    align-items: flex-start;
+  }
+
+  .napomena-input {
+    min-height: 110px;
+  }
 }
