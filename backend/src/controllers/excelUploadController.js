@@ -80,8 +80,9 @@ async function findOrCreateProfesor(imePrezime, isSaradnik) {
     const ime = delovi[0];
     const prezime = delovi.slice(1).join(' ') || 'Nepoznato';
 
+    // Ista osoba bez obzira na velika/mala slova (inače bi novi uvoz napravio duplikat)
     let prof = await prisma.profesor.findFirst({
-        where: { ime: ime, prezime: prezime }
+        where: { ime: { equals: ime, mode: 'insensitive' }, prezime: { equals: prezime, mode: 'insensitive' } }
     });
 
     if (prof) {
