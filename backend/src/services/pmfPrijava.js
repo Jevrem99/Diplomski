@@ -8,8 +8,8 @@ const userModel = require('../models/userModel');
 // Prijava preko PMF (IMI) naloga.
 // Tok: korisnik se prijavi na IMI -> IMI ga vrati na našu stranicu /auth/callback?token=...
 //      -> naš server pita IMI da li je token ispravan i čiji je (verify_token.php) -> mi izdajemo svoju sesiju.
-// Pravila: uloga NIKAD ne dolazi od IMI-ja (uzima se iz naše baze), a pristup ima samo osoba čiji je e-mail
-// već u našoj bazi (korisnik ili profesor/saradnik).
+// Pravila: uloga NIKAD ne dolazi od IMI-ja. Poznata osoba dobija ulogu iz naše baze; nova osoba (IMI je potvrdio
+// nalog, a e-mail nije kod nas) dobija nalog asistenta i ulazi u spisak saradnika. Admin kasnije menja ulogu.
 
 class PmfGreska extends Error {
     constructor(kod, poruka, status) {
@@ -53,6 +53,25 @@ const nadjiKorisnickoIme = (v, dubina = 0) => {
         if (KLJUCEVI_IMENA.test(k) && typeof x === 'string' && /^[A-Za-z0-9._-]{2,64}$/.test(x.trim())) return x.trim();
     }
     for (const x of Object.values(v)) { const r = nadjiKorisnickoIme(x, dubina + 1); if (r) return r; }
+    return null;
+};
+
+// Ime i prezime iz odgovora (za novi nalog), ako ih IMI šalje
+const IME = /^(ime|first_?name|given_?name|firstname)$/i;
+const PREZIME = /^(prezime|last_?name|family_?name|surname|lastname)$/i;
+const PUNO_IME = /^(ime_prezime|imeprezime|full_?name|name|naziv|display_?name)$/i;
+const nadjiImePrezime = (v, dubina = 0) => {
+    if (dubina > 4 || !v || typeof v !== 'object' || Array.isArray(v)) return null;
+    let ime = null; let prezime = null; let puno = null;
+    for (const [k, x] of Object.entries(v)) {
+        if (typeof x !== 'string' || !x.trim()) continue;
+        if (IME.test(k)) ime = x.trim();
+        else if (PREZIME.test(k)) prezime = x.trim();
+        else if (PUNO_IME.test(k)) puno = x.trim();
+    }
+    if (ime || prezime) return { ime: ime || '', prezime: prezime || '' };
+    if (puno) { const [a, ...b] = puno.split(/\s+/); return { ime: a, prezime: b.join(' ') }; }
+    for (const x of Object.values(v)) { const r = nadjiImePrezime(x, dubina + 1); if (r) return r; }
     return null;
 };
 
@@ -101,10 +120,12 @@ const proveriToken = async (token) => {
         try { podaci = JSON.parse(podaci); } catch { podaci = null; }
     }
     if (javljaGresku(podaci)) throw new PmfGreska('TOKEN_NEVAZECI', NEVAZECI, 401);
+    console.log('[PMF prijava] oblik odgovora:', oblik(podaci));
     const email = nadjiEmail(podaci);
-    if (email) return { email: email.toLowerCase(), korisnickoIme: nadjiKorisnickoIme(podaci) };
+    const imePrezime = nadjiImePrezime(podaci);
+    if (email) return { email: email.toLowerCase(), korisnickoIme: nadjiKorisnickoIme(podaci), imePrezime };
     const korisnickoIme = nadjiKorisnickoIme(podaci);
-    if (korisnickoIme) return { email: null, korisnickoIme };
+    if (korisnickoIme) return { email: null, korisnickoIme, imePrezime };
     console.error('[PMF prijava] odgovor bez e-maila i korisničkog imena, oblik:', oblik(podaci));
     throw new PmfGreska('TOKEN_NEVAZECI', NEVAZECI, 401);
 };
@@ -118,32 +139,46 @@ const slobodnoKorisnickoIme = async (email) => {
     return ime;
 };
 
-// Postojeći nalog (po e-mailu) ili, ako je osoba poznata kao profesor/saradnik, novi nalog bez upotrebljive lozinke.
-// Vraća korisnika ili null kad je e-mail nepoznat.
-const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null) => {
+// Postojeći nalog (po e-mailu ili korisničkom imenu); inače novi nalog bez upotrebljive lozinke:
+// poznat profesor/saradnik dobija ulogu po tome, a potpuno nova osoba postaje asistent (i saradnik).
+// Vraća { korisnik, nov } ili null kad IMI nije poslao e-mail (bez njega se nalog ne pravi).
+const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime = null) => {
     const izbor = { id: true, username: true, email: true, uloga: true };
     if (email) {
         const postojeci = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: izbor });
-        if (postojeci) return postojeci;
+        if (postojeci) return { korisnik: postojeci, nov: false };
     }
     // Bez poklapanja po e-mailu: isto korisničko ime, ili e-mail čiji deo pre @ je to ime
     if (korisnickoIme) {
         const poImenu = await prisma.user.findFirst({ where: { username: { equals: korisnickoIme, mode: 'insensitive' } }, select: izbor })
             || await prisma.user.findFirst({ where: { email: { startsWith: `${korisnickoIme}@`, mode: 'insensitive' } }, select: izbor });
-        if (poImenu) return poImenu;
+        if (poImenu) return { korisnik: poImenu, nov: false };
     }
     if (!email) return null;
 
-    const osoba = await prisma.profesor.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
-    if (!osoba) return null;
+    let osoba = await prisma.profesor.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
+    if (!osoba) {
+        // Nova osoba: upis u spisak saradnika sa imenom iz IMI odgovora (ili iz e-maila)
+        const izMejla = email.split('@')[0].split(/[._-]+/).filter(Boolean).map((d) => d[0].toUpperCase() + d.slice(1));
+        osoba = await prisma.profesor.create({
+            data: {
+                ime: imePrezime?.ime || izMejla[0] || email,
+                prezime: imePrezime?.prezime || izMejla.slice(1).join(' '),
+                email,
+                is_saradnik: true
+            }
+        });
+    }
 
     const lozinka = crypto.randomBytes(24).toString('hex'); // niko je ne zna: prijava ide samo preko PMF-a
-    return userModel.registerUser(await slobodnoKorisnickoIme(email), email, lozinka, osoba.is_saradnik ? 'asistent' : 'profesor');
+    const korisnik = await userModel.registerUser(korisnickoIme && !(await prisma.user.findFirst({ where: { username: { equals: korisnickoIme, mode: 'insensitive' } } }))
+        ? korisnickoIme : await slobodnoKorisnickoIme(email), email, lozinka, osoba.is_saradnik ? 'asistent' : 'profesor');
+    return { korisnik, nov: true };
 };
 
 const izdajSesiju = (korisnik) => userModel.generateJwtToken(korisnik);
 
 module.exports = {
     proveriToken, nadjiIliNapraviKorisnika, izdajSesiju, PmfGreska,
-    _internal: { nadjiEmail, javljaGresku, nadjiKorisnickoIme, oblik }
+    _internal: { nadjiEmail, javljaGresku, nadjiKorisnickoIme, nadjiImePrezime, oblik }
 };

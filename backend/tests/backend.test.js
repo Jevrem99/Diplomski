@@ -303,7 +303,7 @@ test('PMF: ispravan token vraća e-mail malim slovima, token ide kao parametar',
     });
     try {
         const r = await pmf.proveriToken(TOKEN);
-        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs', korisnickoIme: null }); // uloga iz odgovora se ne vraća
+        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs', korisnickoIme: null, imePrezime: null }); // uloga iz odgovora se ne vraća
         assert.ok(videoUrl.includes(`token=${TOKEN}`));
     } finally { await stani(); }
 });
@@ -478,8 +478,15 @@ test('rezervacije sala: termin u više sala daje po jednu rezervaciju za svaku s
 test('PMF: odgovor samo sa korisničkim imenom i opis oblika bez vrednosti', async () => {
     const stani = await POKRENI_LAZNI_PMF((req, res) => res.end(JSON.stringify({ status: 'ok', data: { username: 'luka.vuksanovic', ime: 'Luka' } })));
     try {
-        assert.deepEqual(await pmf.proveriToken(TOKEN), { email: null, korisnickoIme: 'luka.vuksanovic' });
+        assert.deepEqual(await pmf.proveriToken(TOKEN), { email: null, korisnickoIme: 'luka.vuksanovic', imePrezime: { ime: 'Luka', prezime: '' } });
     } finally { await stani(); }
     const { oblik } = pmf._internal;
     assert.equal(oblik({ ok: true, user: { ime: 'Pera', tel: 123 } }), '{ok:boolean, user:{ime:string, tel:number}}');
+});
+
+test('PMF: ime i prezime iz odgovora (posebna polja ili puno ime)', () => {
+    const { nadjiImePrezime } = pmf._internal;
+    assert.deepEqual(nadjiImePrezime({ korisnik: { ime: 'Ana', prezime: 'Anić' } }), { ime: 'Ana', prezime: 'Anić' });
+    assert.deepEqual(nadjiImePrezime({ full_name: 'Petar Petrović Njegoš' }), { ime: 'Petar', prezime: 'Petrović Njegoš' });
+    assert.equal(nadjiImePrezime({ email: 'a@b.rs' }), null);
 });
