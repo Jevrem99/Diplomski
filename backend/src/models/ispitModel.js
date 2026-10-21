@@ -7,6 +7,7 @@ const getAllIspiti = async (where = {}) => {
         include: {
             predmet: { include: { profesor: true } },
             sala: true,
+            dodatneSale: true,
             dezurstva: {
                 include: {
                     saradnik: true

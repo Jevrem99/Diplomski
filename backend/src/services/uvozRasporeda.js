@@ -1,6 +1,6 @@
 const ExcelJS = require('exceljs');
 const prisma = require('../db/prisma');
-const { normalizujNazivSale } = require('../utils/sale');
+const { normalizujNazivSale, saleTermina } = require('../utils/sale');
 const { kljucNaziva } = require('../utils/tekst');
 const { hhmm } = require('./rezervacijeSala');
 
@@ -72,6 +72,7 @@ const parsirajJson = (obj) => {
             vreme,
             vremeKraja: citajVreme(t?.vreme_kraja),
             sala: t?.sala || null,
+            sale: Array.isArray(t?.sale) ? t.sale.filter(Boolean).map(String) : (t?.sala ? [t.sala] : []),
             isIspit: t?.is_ispit !== false,
             tip: t?.tip_kolokvijuma || null,
             grupaKljuc: t?.grupa_kljuc || null,
@@ -239,8 +240,10 @@ const pripremiStavke = async (stavke) => {
             if (dezurni.length < s.dezurniOsobe.length) napomene.push('Neki dežurni nisu u bazi');
         }
 
-        const sala = s.sala ? (saleMapa.get(normalizujNazivSale(s.sala).toLowerCase()) || normalizujNazivSale(s.sala)) : null;
-        if (s.sala && !saleMapa.has(normalizujNazivSale(s.sala).toLowerCase())) napomene.push('Nova sala');
+        const imenaSala = (s.sale && s.sale.length ? s.sale : (s.sala ? [s.sala] : []))
+            .map((x) => saleMapa.get(normalizujNazivSale(x).toLowerCase()) || normalizujNazivSale(x));
+        if (imenaSala.some((x) => !saleMapa.has(x.toLowerCase()))) napomene.push('Nova sala');
+        const sala = imenaSala[0] || null;
 
         let status = 'ok';
         let razlog = null;
@@ -260,6 +263,7 @@ const pripremiStavke = async (stavke) => {
             vreme: s.vreme,
             vremeKraja: s.vremeKraja,
             sala,
+            sale: imenaSala,
             isIspit: s.isIspit,
             tip: s.isIspit ? null : (s.tip || 'I'),
             grupaKljuc: s.grupaKljuc,
@@ -286,7 +290,7 @@ const izveziTermine = async ({ od = null, doDatuma = null, tip = null } = {}) =>
     const ispiti = await prisma.ispit.findMany({
         where,
         orderBy: [{ datum: 'asc' }, { vreme: 'asc' }],
-        include: { predmet: true, sala: true, dezurstva: { include: { saradnik: true } } }
+        include: { predmet: true, sala: true, dodatneSale: true, dezurstva: { include: { saradnik: true } } }
     });
     return {
         format: FORMAT,
@@ -298,6 +302,7 @@ const izveziTermine = async ({ od = null, doDatuma = null, tip = null } = {}) =>
             vreme: hhmm(i.vreme),
             vreme_kraja: hhmm(i.vreme_kraja) || null,
             sala: i.sala?.naziv || null,
+            sale: saleTermina(i).map((x) => x.naziv),
             is_ispit: i.is_ispit,
             tip_kolokvijuma: i.is_ispit ? null : (i.tip_kolokvijuma || 'I'),
             grupa_kljuc: i.grupa_kljuc || null,

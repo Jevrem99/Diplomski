@@ -20,7 +20,8 @@ class PmfGreska extends Error {
     }
 }
 
-const TOKEN_OBLIK = /^[A-Fa-f0-9]{64}$/;
+// Token od IMI-ja (u primeru 64 heksadecimalna znaka); prihvatamo i drugu dužinu, ali samo bezbedne znakove
+const TOKEN_OBLIK = /^[A-Za-z0-9_-]{16,256}$/;
 const EMAIL = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/;
 
 // Autentifikacija nikad ne prelazi na nesigurnu vezu sama od sebe (za razliku od preuzimanja podataka o salama)
@@ -42,6 +43,25 @@ const nadjiEmail = (v, dubina = 0) => {
         for (const x of Object.values(v)) { const e = nadjiEmail(x, dubina + 1); if (e) return e; }
     }
     return null;
+};
+
+// Ako odgovor nema e-mail: korisničko ime iz poznatih polja (npr. "luka.vuksanovic")
+const KLJUCEVI_IMENA = /^(username|user_name|korisnicko_ime|korisnik|login|uid|user)$/i;
+const nadjiKorisnickoIme = (v, dubina = 0) => {
+    if (dubina > 4 || !v || typeof v !== 'object') return null;
+    for (const [k, x] of Object.entries(v)) {
+        if (KLJUCEVI_IMENA.test(k) && typeof x === 'string' && /^[A-Za-z0-9._-]{2,64}$/.test(x.trim())) return x.trim();
+    }
+    for (const x of Object.values(v)) { const r = nadjiKorisnickoIme(x, dubina + 1); if (r) return r; }
+    return null;
+};
+
+// Opis oblika odgovora za dnevnik servera: samo imena polja, bez vrednosti
+const oblik = (v, dubina = 0) => {
+    if (v === null || typeof v !== 'object') return typeof v;
+    if (dubina > 2) return '{…}';
+    if (Array.isArray(v)) return `[${v.length ? oblik(v[0], dubina + 1) : ''}]`;
+    return `{${Object.entries(v).map(([k, x]) => `${k}:${oblik(x, dubina + 1)}`).join(', ')}}`;
 };
 
 const javljaGresku = (podaci) => {
@@ -80,9 +100,13 @@ const proveriToken = async (token) => {
     if (typeof podaci === 'string') {
         try { podaci = JSON.parse(podaci); } catch { podaci = null; }
     }
-    const email = !javljaGresku(podaci) ? nadjiEmail(podaci) : null;
-    if (!email) throw new PmfGreska('TOKEN_NEVAZECI', NEVAZECI, 401);
-    return { email: email.toLowerCase() };
+    if (javljaGresku(podaci)) throw new PmfGreska('TOKEN_NEVAZECI', NEVAZECI, 401);
+    const email = nadjiEmail(podaci);
+    if (email) return { email: email.toLowerCase(), korisnickoIme: nadjiKorisnickoIme(podaci) };
+    const korisnickoIme = nadjiKorisnickoIme(podaci);
+    if (korisnickoIme) return { email: null, korisnickoIme };
+    console.error('[PMF prijava] odgovor bez e-maila i korisničkog imena, oblik:', oblik(podaci));
+    throw new PmfGreska('TOKEN_NEVAZECI', NEVAZECI, 401);
 };
 
 const slobodnoKorisnickoIme = async (email) => {
@@ -96,12 +120,19 @@ const slobodnoKorisnickoIme = async (email) => {
 
 // Postojeći nalog (po e-mailu) ili, ako je osoba poznata kao profesor/saradnik, novi nalog bez upotrebljive lozinke.
 // Vraća korisnika ili null kad je e-mail nepoznat.
-const nadjiIliNapraviKorisnika = async (email) => {
-    const postojeci = await prisma.user.findFirst({
-        where: { email: { equals: email, mode: 'insensitive' } },
-        select: { id: true, username: true, email: true, uloga: true }
-    });
-    if (postojeci) return postojeci;
+const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null) => {
+    const izbor = { id: true, username: true, email: true, uloga: true };
+    if (email) {
+        const postojeci = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: izbor });
+        if (postojeci) return postojeci;
+    }
+    // Bez poklapanja po e-mailu: isto korisničko ime, ili e-mail čiji deo pre @ je to ime
+    if (korisnickoIme) {
+        const poImenu = await prisma.user.findFirst({ where: { username: { equals: korisnickoIme, mode: 'insensitive' } }, select: izbor })
+            || await prisma.user.findFirst({ where: { email: { startsWith: `${korisnickoIme}@`, mode: 'insensitive' } }, select: izbor });
+        if (poImenu) return poImenu;
+    }
+    if (!email) return null;
 
     const osoba = await prisma.profesor.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
     if (!osoba) return null;
@@ -114,5 +145,5 @@ const izdajSesiju = (korisnik) => userModel.generateJwtToken(korisnik);
 
 module.exports = {
     proveriToken, nadjiIliNapraviKorisnika, izdajSesiju, PmfGreska,
-    _internal: { nadjiEmail, javljaGresku }
+    _internal: { nadjiEmail, javljaGresku, nadjiKorisnickoIme, oblik }
 };

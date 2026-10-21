@@ -60,6 +60,7 @@ model Sala {
   naziv     String   @unique
   kapacitet Int?     
   ispiti    Ispit[]
+  ispitiDodatne Ispit[] @relation("DodatneSale")
   redovnaNastava RedovnaNastava[]
 }
 model Ispit {
@@ -77,6 +78,8 @@ model Ispit {
   sala       Sala?       @relation(fields: [sala_id], references: [id])
   // Termini nastali jednim prevlacenjem grupe predmeta dele isti kljuc i ponasaju se kao celina
   grupa_kljuc String?
+  // Termin u više sala: sala_id je prva, ovde su ostale
+  dodatneSale Sala[]  @relation("DodatneSale")
   
   dezurstva  Dezurstva[] 
 

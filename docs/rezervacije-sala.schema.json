@@ -26,7 +26,7 @@
       "additionalProperties": false,
       "required": ["id", "izmena", "sala", "datum", "od", "do", "do_pretpostavljen", "namena", "tip", "tip_opis", "racunarska_sala", "predmeti", "ukupno_studenata"],
       "properties": {
-        "id": { "type": "string", "pattern": "^kol-[0-9]+$", "description": "Stalan identifikator rezervacije." },
+        "id": { "type": "string", "pattern": "^kol-[0-9]+(-s[0-9]+)?$", "description": "Stalan identifikator rezervacije; termin u više sala ima po jednu rezervaciju za svaku salu (kol-45, kol-45-s12)." },
         "izmena": { "type": "boolean", "description": "Termin je posle prethodne objave izmenjen." },
         "sala": { "type": "string", "minLength": 1, "description": "Naziv sale, npr. A-0-15." },
         "datum": { "type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$" },

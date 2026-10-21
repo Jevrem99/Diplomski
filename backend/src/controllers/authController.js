@@ -57,12 +57,13 @@ const pmfPodesavanja = (req, res) => res.status(200).json({ prijavaUrl: config.p
 // POST /auth/pmf { token }: prijava preko PMF (IMI) naloga; vraća isti { token } kao /auth/login
 const pmfLogin = async (req, res) => {
     try {
-        const { email } = await pmfPrijava.proveriToken(req.body && req.body.token);
-        const korisnik = await pmfPrijava.nadjiIliNapraviKorisnika(email);
+        const { email, korisnickoIme } = await pmfPrijava.proveriToken(req.body && req.body.token);
+        const korisnik = await pmfPrijava.nadjiIliNapraviKorisnika(email, korisnickoIme);
         if (!korisnik) {
-            await logAction(email.slice(0, 60), 'LOGIN_FAILED', 'Sesija', 'PMF prijava: e-mail nije u bazi');
+            const ko = email || korisnickoIme;
+            await logAction(String(ko).slice(0, 60), 'LOGIN_FAILED', 'Sesija', 'PMF prijava: nalog nije u bazi');
             return res.status(403).json({
-                error: 'Vaš PMF nalog je ispravan, ali nemate pristup aplikaciji. Obratite se administratoru da vas doda.',
+                error: `PMF nalog ${ko} nije povezan ni sa jednim korisnikom aplikacije. Administrator treba da upiše ovaj e-mail kod vašeg korisnika ili saradnika.`,
                 kod: 'NEMA_PRISTUPA'
             });
         }

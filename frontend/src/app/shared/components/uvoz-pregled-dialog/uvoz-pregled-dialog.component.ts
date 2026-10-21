@@ -15,6 +15,7 @@ export interface UvozStavka {
   vreme: string | null;
   vremeKraja: string | null;
   sala: string | null;
+  sale?: string[];
   isIspit: boolean;
   tip: string | null;
   grupaKljuc: string | null;
@@ -62,7 +63,7 @@ const OZNAKE: Record<string, string> = {
                 <td>{{ s.vreme || '–' }}{{ s.vremeKraja ? '–' + s.vremeKraja : '' }}</td>
                 <td>{{ s.predmet?.naziv || s.predmetNaziv }}</td>
                 <td>{{ s.isIspit ? 'ispit' : s.tip }}</td>
-                <td>{{ s.sala || '–' }}</td>
+                <td>{{ s.sale?.length ? s.sale!.join(', ') : (s.sala || '–') }}</td>
                 <td class="uv-dez">{{ dezurni(s) }}</td>
                 <td>
                   <span class="uv-status" [class]="'uv-status uv-' + s.status">{{ oznaka(s.status) }}</span>

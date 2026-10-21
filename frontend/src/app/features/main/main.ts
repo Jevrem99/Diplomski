@@ -305,8 +305,7 @@ export class Main implements OnInit, AfterViewInit {
       const godina = arg.event.extendedProps['godina'] || 1;
       const jeNastava = !!arg.event.extendedProps['isNastava'];
       const boja = jeNastava ? NASTAVA_BOJA : this.getGodinaColor(godina);
-      const salaProp = arg.event.extendedProps['sala'];
-      const salaNaziv = (typeof salaProp === 'object' ? salaProp?.naziv : salaProp) || '';
+      const salaNaziv = this.saleDogadjaja(arg.event.extendedProps).join(', ');
       const salaTag = salaNaziv && salaNaziv !== 'Bez sale' ? `<small class="cal-card-sala">${salaNaziv}</small>` : '';
       const krajSirov = String(arg.event.extendedProps['vremeKraja'] || arg.event.extendedProps['vreme_kraja'] || '').substring(0, 5);
       const vremeTekst = krajSirov && krajSirov !== '00:00' && krajSirov !== '0:00' ? `${String(vreme).substring(0, 5)}<span class="cal-card-kraj">–${krajSirov}</span>` : String(vreme).substring(0, 5);
@@ -340,7 +339,7 @@ export class Main implements OnInit, AfterViewInit {
       const k = props['vremeKraja'] || props['vreme_kraja'];
       const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
       const vremePocetka = props['vreme'] || '09:00';
-      const sala = props['sala'] || 'Bez sale';
+      const sala = this.saleDogadjaja(props).join(', ') || 'Bez sale';
       const naslov = jeNastava ? info.event.title.replace(/^Nastava:\s*/, '').split(' (')[0] : info.event.title.split(' (')[0];
       const dezurniImena = (props['dezurni'] || []).map((d: any) => `${d.ime} ${d.prezime}`).join(', ') || 'Nema dodeljenih';
       const uGrupiSa = props['grupa_kljuc']
@@ -462,6 +461,7 @@ export class Main implements OnInit, AfterViewInit {
           vreme: stari.extendedProps.vreme,
           vreme_kraja: stari.extendedProps.vreme_kraja || stari.extendedProps.vremeKraja || '',
           sala: stari.extendedProps.sala,
+          sale: stari.extendedProps.sale,
           is_ispit: stari.extendedProps.is_ispit,
           tip_kolokvijuma: stari.extendedProps.tip_kolokvijuma || 'I',
           grupa_kljuc: kljucKopije,
@@ -516,6 +516,7 @@ export class Main implements OnInit, AfterViewInit {
           vreme: stari.extendedProps.vreme,
           vreme_kraja: stari.extendedProps.vreme_kraja || stari.extendedProps.vremeKraja || '',
           sala: stari.extendedProps.sala,
+          sale: stari.extendedProps.sale,
           is_ispit: stari.extendedProps.is_ispit,
           tip_kolokvijuma: stari.extendedProps.tip_kolokvijuma || 'I',
           grupa_kljuc: kljucKopije,
@@ -770,14 +771,22 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   // Zauzeća sala tog dana (uključuje i redovnu nastavu, čak i kad je sakrivena filterom)
-  private zauzecaNaDan(datum: string, iskljuci: string[]): { sala: string; vreme: string; vremeKraja: string }[] {
+  private zauzecaNaDan(datum: string, iskljuci: string[]): { sala: string; vreme: string; vremeKraja: string; naziv: string }[] {
     return this.allLoadedEvents
       .filter(e => String(e.start || '').split('T')[0] === datum && !iskljuci.includes(String(e.id)))
-      .map(e => ({
-        sala: e.extendedProps?.sala,
+      .flatMap(e => this.saleDogadjaja(e.extendedProps).map(sala => ({
+        sala,
         vreme: e.extendedProps?.vreme,
-        vremeKraja: e.extendedProps?.vreme_kraja || e.extendedProps?.vremeKraja || ''
-      }));
+        vremeKraja: e.extendedProps?.vreme_kraja || e.extendedProps?.vremeKraja || '',
+        naziv: String(e.title || '').replace(/^Nastava:\s*/, 'Nastava: ').split(' (')[0]
+      })));
+  }
+
+  // Sve sale termina (prva + dodatne); stari termini imaju samo "sala"
+  private saleDogadjaja(p: any): string[] {
+    if (Array.isArray(p?.sale) && p.sale.length) return p.sale;
+    const s = typeof p?.sala === 'object' ? p.sala?.naziv : p?.sala;
+    return s && s !== 'Bez sale' && s !== 'undefined' ? [s] : [];
   }
 
   private unijaSaradnika(predmetiLista: any[]): any[] {
@@ -807,6 +816,7 @@ export class Main implements OnInit, AfterViewInit {
         startTime: p.vreme,
         endTime: p.vreme_kraja || p.vremeKraja || '',
         room: p.sala,
+        sale: this.saleDogadjaja(p),
         predmetId: p.predmetId,
         tip_kolokvijuma: p.tip_kolokvijuma || 'I',
         is_ispit: p.is_ispit ?? true,
@@ -873,6 +883,7 @@ export class Main implements OnInit, AfterViewInit {
         draftEvt.vreme = result.startTime;
         draftEvt.vreme_kraja = krajVreme;
         draftEvt.sala = result.room;
+        draftEvt.sale = result.sale;
         draftEvt.is_ispit = isIspit;
         draftEvt.tip_kolokvijuma = tipKolokvijuma;
         draftEvt.dezurni_ids = dezurniIds;
@@ -884,6 +895,7 @@ export class Main implements OnInit, AfterViewInit {
         vreme: result.startTime,
         vreme_kraja: krajVreme,
         sala: result.room,
+        sale: result.sale,
         predmet_id: sp.predmetId,
         is_ispit: isIspit,
         tip_kolokvijuma: tipKolokvijuma,
@@ -900,7 +912,7 @@ export class Main implements OnInit, AfterViewInit {
       ...stari,
       start: eventDate + 'T' + result.startTime + ':00',
       end: krajVreme ? (eventDate + 'T' + krajVreme + ':00') : undefined,
-      title: cistNaslov + ' (' + result.room + ')',
+      title: cistNaslov + ' (' + (result.sale || [result.room]).join(', ') + ')',
       backgroundColor: isIspit ? boja : '#ffffff',
       textColor: isIspit ? '#ffffff' : boja,
       borderColor: boja,
@@ -911,6 +923,7 @@ export class Main implements OnInit, AfterViewInit {
         vremeKraja: krajVreme,
         tip_kolokvijuma: tipKolokvijuma,
         sala: result.room,
+        sale: result.sale,
         is_ispit: isIspit,
         dezurni: izabraniSaradnici
       }
@@ -961,6 +974,7 @@ export class Main implements OnInit, AfterViewInit {
             vreme: result.startTime,
             vreme_kraja: result.endTime,
             sala: result.room,
+            sale: result.sale,
             is_ispit: isIspit,
             tip_kolokvijuma: tipKolokvijuma,
             dezurni_ids: [...dezurniIds],
@@ -970,12 +984,12 @@ export class Main implements OnInit, AfterViewInit {
           });
 
           this.allLoadedEvents.push({
-            id: tempId, title: `${predmet.naziv} (${result.room})`,
+            id: tempId, title: `${predmet.naziv} (${(result.sale || [result.room]).join(', ')})`,
             start: `${eventDate}T${result.startTime}:00`, end: result.endTime ? `${eventDate}T${result.endTime}:00` : undefined,
             display: 'block', backgroundColor: isIspit ? boja : '#ffffff',
             borderColor: boja,
             extendedProps: {
-              vreme: result.startTime, vremeKraja: result.endTime, vreme_kraja: result.endTime, sala: result.room,
+              vreme: result.startTime, vremeKraja: result.endTime, vreme_kraja: result.endTime, sala: result.room, sale: result.sale,
               predmetId: predmet.id, godina: predmet.godina, profesorId: predmet.profesor_id,
               profesorIme: predmet.profesorImePrezime, is_ispit: isIspit, tip_kolokvijuma: tipKolokvijuma,
               dezurni: [...izabraniSaradnici], grupa_kljuc: kljuc
@@ -1018,6 +1032,7 @@ export class Main implements OnInit, AfterViewInit {
         vreme: vreme,
         vreme_kraja: kraj,
         sala: sp.sala || 'Bez sale',
+        sale: sp.sale,
         predmet_id: sp.predmetId,
         is_ispit: sp.is_ispit ?? true,
         tip_kolokvijuma: sp.tip_kolokvijuma || 'I',
@@ -1396,10 +1411,8 @@ export class Main implements OnInit, AfterViewInit {
 
     if (this.filterSala !== 'sve') {
       filtered = filtered.filter(e => {
-        const eventSala = e.extendedProps?.sala;
-        const salaVal = typeof eventSala === 'object' ? eventSala?.naziv : eventSala;
         const selectedSalaVal = typeof this.filterSala === 'object' ? (this.filterSala as any)?.naziv : this.filterSala;
-        return salaVal === selectedSalaVal;
+        return this.saleDogadjaja(e.extendedProps).includes(selectedSalaVal);
       });
     }
 
@@ -1522,6 +1535,7 @@ export class Main implements OnInit, AfterViewInit {
 
           const isIspit = i.is_ispit ?? true;
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
+          const saleTermina = [...new Set([i.sala?.naziv, ...(i.dodatneSale || []).map((s: any) => s.naziv)].filter(Boolean))] as string[];
 
           // 1. ČIŠĆENJE DATUMA KOJI STIGNE IZ BAZE
           // 1. ČIŠĆENJE DATUMA
@@ -1554,7 +1568,7 @@ export class Main implements OnInit, AfterViewInit {
 
           return {
             id: String(i.id),
-            title: nazivPredmeta + ' (' + salaNaziv + ')',
+            title: nazivPredmeta + ' (' + (saleTermina.join(', ') || salaNaziv) + ')',
             start: cistDatum + 'T' + formatiranoVreme + ':00',
             end: formatiranoVremeKraja ? (cistDatum + 'T' + formatiranoVremeKraja + ':00') : undefined,
             display: 'block',
@@ -1565,6 +1579,7 @@ export class Main implements OnInit, AfterViewInit {
               vreme: formatiranoVreme,
               vreme_kraja: formatiranoVremeKraja, // SAMO JEDNO POLJE
               sala: salaNaziv,
+              sale: saleTermina,
               predmetId: i.predmet_id || i.predmet?.id,
               godina: godina,
               tip_kolokvijuma: i.tip_kolokvijuma || 'I',
@@ -1716,13 +1731,12 @@ export class Main implements OnInit, AfterViewInit {
           const opseg = (e: any, kraj: string) => kraj ? `${e.extendedProps['vreme']}–${kraj.substring(0, 5)}` : `${e.extendedProps['vreme']}`;
 
           if (start1 < end2 && start2 < end1) {
-            const s1 = String(e1.extendedProps['sala'] || '').trim();
-            const s2 = String(e2.extendedProps['sala'] || '').trim();
-            if (s1 && s2 && s1 === s2 && s1 !== 'Bez sale' && s1 !== 'undefined') {
+            const sale2 = this.saleDogadjaja(e2.extendedProps);
+            this.saleDogadjaja(e1.extendedProps).filter(s => sale2.includes(s)).forEach(s1 => {
               const n1 = String(e1.title).split(' (')[0];
               const n2 = String(e2.title).split(' (')[0];
               razlozi.push(`Sala ${s1}: „${n1}“ (${opseg(e1, kraj1)}) i „${n2}“ (${opseg(e2, kraj2)}) se preklapaju.`);
-            }
+            });
             const dezurni1: any[] = e1.extendedProps['dezurni'] || [];
             const dezurni2: any[] = e2.extendedProps['dezurni'] || [];
             dezurni1.forEach(d1 => {
@@ -1930,6 +1944,7 @@ export class Main implements OnInit, AfterViewInit {
       const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
       const boja = this.getGodinaColor(predmet.godina);
       const sala = s.sala || '';
+      const sale = s.sale?.length ? s.sale : (sala ? [sala] : []);
       const kraj = s.vremeKraja || '';
       const tip = s.tip || 'I';
       let kljuc: string | null = null;
@@ -1940,15 +1955,15 @@ export class Main implements OnInit, AfterViewInit {
 
       this.unsavedEvents.push({
         tempId, predmet_id: predmet.id, title: predmet.naziv, datum: s.datum, vreme: s.vreme, vreme_kraja: kraj,
-        sala, is_ispit: s.isIspit, tip_kolokvijuma: tip, dezurni_ids: s.dezurni.map(d => d.id), grupa_kljuc: kljuc,
+        sala, sale, is_ispit: s.isIspit, tip_kolokvijuma: tip, dezurni_ids: s.dezurni.map(d => d.id), grupa_kljuc: kljuc,
         backgroundColor: boja, borderColor: boja
       });
       this.allLoadedEvents.push({
-        id: tempId, title: `${predmet.naziv} (${sala || 'Bez sale'})`,
+        id: tempId, title: `${predmet.naziv} (${sale.join(', ') || 'Bez sale'})`,
         start: `${s.datum}T${s.vreme}:00`, end: kraj ? `${s.datum}T${kraj}:00` : undefined,
         display: 'block', backgroundColor: s.isIspit ? boja : '#ffffff', borderColor: boja,
         extendedProps: {
-          vreme: s.vreme, vremeKraja: kraj, vreme_kraja: kraj, sala,
+          vreme: s.vreme, vremeKraja: kraj, vreme_kraja: kraj, sala, sale,
           predmetId: predmet.id, godina: predmet.godina, profesorId: predmet.profesor_id,
           profesorIme: predmet.profesorImePrezime, is_ispit: s.isIspit, tip_kolokvijuma: tip,
           dezurni: [...s.dezurni], grupa_kljuc: kljuc

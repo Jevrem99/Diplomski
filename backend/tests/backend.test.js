@@ -303,7 +303,7 @@ test('PMF: ispravan token vraća e-mail malim slovima, token ide kao parametar',
     });
     try {
         const r = await pmf.proveriToken(TOKEN);
-        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs' }); // uloga iz odgovora se ne vraća
+        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs', korisnickoIme: null }); // uloga iz odgovora se ne vraća
         assert.ok(videoUrl.includes(`token=${TOKEN}`));
     } finally { await stani(); }
 });
@@ -312,7 +312,7 @@ test('PMF: pogrešan oblik tokena -> 400 bez poziva IMI-ja', async () => {
     let pozvan = false;
     const stani = await POKRENI_LAZNI_PMF((req, res) => { pozvan = true; res.end('{}'); });
     try {
-        for (const losi of [undefined, '', 'abc', 'z'.repeat(64), `${TOKEN}0`, { $ne: 1 }]) {
+        for (const losi of [undefined, '', 'abc', 'a'.repeat(300), 'ab"<script>'.repeat(3), `${TOKEN} OR 1=1`, { $ne: 1 }]) {
             await assert.rejects(pmf.proveriToken(losi), (e) => e.status === 400 && e.kod === 'TOKEN_OBLIK');
         }
         assert.equal(pozvan, false);
@@ -459,4 +459,27 @@ test('uvoz: nazivi se porede bez obzira na pismo', () => {
     assert.equal(kljucNaziva('Основи програмирања 1'), kljucNaziva('Osnovi  programiranja 1'));
     assert.equal(kljucNaziva('Рачунарски системи'), kljucNaziva('RAČUNARSKI SISTEMI'));
     assert.notEqual(kljucNaziva('Математика 1'), kljucNaziva('Математика 2'));
+});
+
+test('rezervacije sala: termin u više sala daje po jednu rezervaciju za svaku salu', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const { naziviSala } = require('../src/utils/sale');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const ispit = {
+        id: 7, is_ispit: false, datum: new Date('2026-11-02T00:00:00.000Z'), vreme: utc('10:00'), vreme_kraja: utc('12:00'),
+        sala: { id: 1, naziv: 'A-0-15' }, dodatneSale: [{ id: 2, naziv: 'A-0-3' }, { id: 1, naziv: 'A-0-15' }],
+        predmet: { sifra: 'S7', naziv: 'Programiranje', godina: 1, broj_studenata: 120 }, tip_kolokvijuma: 'I'
+    };
+    const r = napraviRezervacije([ispit]);
+    assert.deepEqual(r.rezervacije.map((x) => [x.id, x.sala]), [['kol-7', 'A-0-15'], ['kol-7-s2', 'A-0-3']]);
+    assert.equal(naziviSala(ispit), 'A-0-15, A-0-3');
+});
+
+test('PMF: odgovor samo sa korisničkim imenom i opis oblika bez vrednosti', async () => {
+    const stani = await POKRENI_LAZNI_PMF((req, res) => res.end(JSON.stringify({ status: 'ok', data: { username: 'luka.vuksanovic', ime: 'Luka' } })));
+    try {
+        assert.deepEqual(await pmf.proveriToken(TOKEN), { email: null, korisnickoIme: 'luka.vuksanovic' });
+    } finally { await stani(); }
+    const { oblik } = pmf._internal;
+    assert.equal(oblik({ ok: true, user: { ime: 'Pera', tel: 123 } }), '{ok:boolean, user:{ime:string, tel:number}}');
 });

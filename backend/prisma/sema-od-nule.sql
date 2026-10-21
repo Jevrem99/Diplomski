@@ -312,3 +312,13 @@ CREATE TABLE IF NOT EXISTS "SacuvaniRaspored" (
     CONSTRAINT "SacuvaniRaspored_pkey" PRIMARY KEY ("id")
 );
 CREATE INDEX IF NOT EXISTS "SacuvaniRaspored_created_at_idx" ON "SacuvaniRaspored"("created_at");
+
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "_DodatneSale" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+    CONSTRAINT "_DodatneSale_A_fkey" FOREIGN KEY ("A") REFERENCES "Ispit"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "_DodatneSale_B_fkey" FOREIGN KEY ("B") REFERENCES "Sala"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "_DodatneSale_AB_unique" ON "_DodatneSale"("A", "B");
+CREATE INDEX IF NOT EXISTS "_DodatneSale_B_index" ON "_DodatneSale"("B");

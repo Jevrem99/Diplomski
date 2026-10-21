@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const { _proveriKonflikte: proveriKonflikte } = require('./ispitController');
 const { logAction } = require('../services/auditService');
+const { naziviSala } = require('../utils/sale');
 
 // Zamena dežurstva: asistent traži zamenu (uz razlog, a može i da predloži kolegu sa istog predmeta),
 // a administrator odobrava ili odbija. Asistent nikada ne vidi tuđi raspored - samo imena kolega
@@ -74,7 +75,7 @@ const uPrikaz = (z) => ({
             vreme: vremeStr(z.dezurstvo.ispit.vreme),
             vreme_kraja: z.dezurstvo.ispit.vreme_kraja ? vremeStr(z.dezurstvo.ispit.vreme_kraja) : null,
             predmet: z.dezurstvo.ispit.predmet?.naziv || '',
-            sala: z.dezurstvo.ispit.sala?.naziv || ''
+            sala: naziviSala(z.dezurstvo.ispit) || ''
         }
         : null
 });
@@ -82,7 +83,7 @@ const uPrikaz = (z) => ({
 const UKLJUCI_PRIKAZ = {
     trazilac: true,
     predlozeni: true,
-    dezurstvo: { include: { ispit: { include: { predmet: true, sala: true } } } }
+    dezurstvo: { include: { ispit: { include: { predmet: true, sala: true, dodatneSale: true } } } }
 };
 
 // ---------- asistent ----------

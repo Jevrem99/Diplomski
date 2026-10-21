@@ -71,15 +71,19 @@
       }
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full">
-        <mat-label>Izaberi salu*</mat-label>
-        <mat-select [(ngModel)]="formData.room">
+        <mat-label>Sale*</mat-label>
+        <mat-select [(ngModel)]="formData.sale" multiple>
+          <mat-select-trigger>{{ formData.sale.join(', ') }}</mat-select-trigger>
           @for (sala of sveUcionice; track sala.id || sala) {
-            <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</mat-option>
+            <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}@if (isSalaZauzeta(sala.naziv || sala)) { <span class="sala-zauzeta">zauzeta</span> }</mat-option>
           } @empty {
             <mat-option disabled>Nema učionica za prikaz</mat-option>
           }
         </mat-select>
       </mat-form-field>
+      @for (z of zauzeteIzabrane; track z) {
+        <div class="text-sm font-bold" style="color: var(--danger-text);" role="alert">⚠ Sala {{ z }}</div>
+      }
 
       <!-- Izabrani dežurni saradnici -->
       <div class="selected-box">

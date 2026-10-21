@@ -4,7 +4,7 @@ const isoWeek = require('dayjs/plugin/isoWeek');
 dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
-const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
+const { normalizujNazivSale, nadjiIliNapraviSalu, naziviSala } = require('../utils/sale');
 const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
@@ -207,7 +207,7 @@ const prikazDatuma = (dan) => dan.split('-').reverse().slice(0, 2).join('.') + '
 // grupa_kljuc: termini nastali jednim postavljanjem grupe predmeta dele salu, vreme i dežurne,
 //              pa se međusobno ne prijavljuju kao konflikt
 // planirani: termini koji se tek čuvaju u istoj seriji ({ datum, vreme, vreme_kraja, sala_id, dezurni_ids, naziv, saradnici })
-const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, db = prisma }) => {
+const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, sale_ids = [], excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, db = prisma }) => {
     const dan = String(datum).split('T')[0];
     const ispitDatum = new Date(`${dan}T00:00:00.000Z`);
     const pocetak = formatTimeToDateTime(dan, vreme);
@@ -221,6 +221,7 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
     const konflikti = [];
     const preklapa = (poc, zav) => minutaOdPonoci(poc) < minutaOdPonoci(kraj) && minutaOdPonoci(zav) > minutaOdPonoci(pocetak);
     const imenaSaradnika = new Map();
+    const saleIds = [...new Set([sala_id, ...(sale_ids || [])].map(Number).filter((x) => Number.isInteger(x) && x > 0))];
 
     // 1. Obaveze / odsustva
     if (ids.length > 0) {
@@ -265,22 +266,45 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         });
     }
 
-    // 3. Zauzeta sala drugim ispitom (već sačuvanim)
-    if (sala_id) {
+    // 3. Zauzeta sala drugim ispitom (već sačuvanim), u bilo kojoj od sala termina
+    if (saleIds.length > 0) {
         const uSali = await db.ispit.findMany({
-            where: { sala_id: Number(sala_id), datum: ispitDatum, ...notIn },
-            include: { predmet: true, sala: true }
+            where: {
+                datum: ispitDatum,
+                ...notIn,
+                AND: [{ OR: [{ sala_id: { in: saleIds } }, { dodatneSale: { some: { id: { in: saleIds } } } }] }]
+            },
+            include: { predmet: true, sala: true, dodatneSale: true }
         });
         uSali.forEach((i) => {
             const poc = vremeUDate(i.vreme);
             if (!poc) return;
             const zav = vremeUDate(i.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
-            if (preklapa(poc, zav)) {
+            if (!preklapa(poc, zav)) return;
+            [i.sala, ...(i.dodatneSale || [])].filter((s) => s && saleIds.includes(s.id)).forEach((s) => {
                 konflikti.push({
                     tip: 'sala',
-                    tekst: `Sala ${i.sala?.naziv || ''} je zauzeta: „${i.predmet?.naziv || 'drugi ispit'}“ (${hhmm(poc)}–${hhmm(zav)}).`
+                    tekst: `Sala ${s.naziv} je zauzeta: „${i.predmet?.naziv || 'drugi ispit'}“ (${hhmm(poc)}–${hhmm(zav)}).`
                 });
-            }
+            });
+        });
+
+        // Redovna nastava (IMI raspored); datum se u toj tabeli čuva po lokalnom vremenu, zato opseg ±12 h
+        const nastava = await db.redovnaNastava.findMany({
+            where: {
+                sala_id: { in: saleIds },
+                datum: { gte: new Date(ispitDatum.getTime() - 12 * 3600 * 1000), lt: new Date(ispitDatum.getTime() + 12 * 3600 * 1000) }
+            },
+            include: { sala: true }
+        });
+        nastava.forEach((n) => {
+            const poc = formatTimeToDateTime(dan, n.vreme_pocetka);
+            const zav = formatTimeToDateTime(dan, n.vreme_kraja);
+            if (!poc || !zav || !preklapa(poc, zav)) return;
+            konflikti.push({
+                tip: 'sala',
+                tekst: `Sala ${n.sala?.naziv || ''} je zauzeta nastavom: „${n.predmet}“ (${hhmm(poc)}–${hhmm(zav)}).`
+            });
         });
     }
 
@@ -292,9 +316,11 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         if (!poc) continue;
         const zav = formatTimeToDateTime(dan, o.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
         if (!preklapa(poc, zav)) continue;
-        if (sala_id && o.sala_id && Number(o.sala_id) === Number(sala_id)) {
-            konflikti.push({ tip: 'sala', tekst: `Sala ${o.salaNaziv || ''} je zauzeta: „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
-        }
+        const saleDrugog = [o.sala_id, ...(o.sale_ids || [])].map(Number).filter(Boolean);
+        const naziviDrugog = o.naziviSala || new Map();
+        saleIds.filter((id) => saleDrugog.includes(id)).forEach((id) => {
+            konflikti.push({ tip: 'sala', tekst: `Sala ${naziviDrugog.get(id) || o.salaNaziv || ''} je zauzeta: „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
+        });
         const zajednicki = ids.filter((id) => (o.dezurni_ids || []).map(Number).includes(id));
         zajednicki.forEach((id) => {
             konflikti.push({
@@ -315,6 +341,17 @@ const odrediSalaId = async (sala, cache = new Map(), db = prisma) => {
     if (!naziv || naziv === 'Bez sale') return null;
     const nadjena = await nadjiIliNapraviSalu(db, naziv, cache);
     return nadjena ? nadjena.id : null;
+};
+
+// Dodatne sale (sve osim prve) iz liste naziva; vraća id-jeve bez ponavljanja
+const odrediDodatneSale = async (sale, prvaId, cache = new Map(), db = prisma) => {
+    if (!Array.isArray(sale)) return null;
+    const ids = [];
+    for (const s of sale.slice(1)) {
+        const id = await odrediSalaId(s, cache, db);
+        if (id && id !== prvaId && !ids.includes(id)) ids.push(id);
+    }
+    return ids;
 };
 
 const createIspit = async (req, res) => {
@@ -346,12 +383,13 @@ const createIspit = async (req, res) => {
             }
         }
 
-        const salaId = await odrediSalaId(finalSala);
+        const salaId = await odrediSalaId(Array.isArray(req.body.sale) && req.body.sale.length ? req.body.sale[0] : finalSala);
+        const dodatne = (await odrediDodatneSale(req.body.sale, salaId)) || [];
 
         // PROVERA KONFLIKATA
         const konflikti = await proveriKonflikte({
             datum: finalDatum, vreme: finalVreme, vreme_kraja: finalVremeKraja, dezurni_ids: finalDezurni, sala_id: salaId,
-            grupa_kljuc: grupaKljuc
+            sale_ids: dodatne, grupa_kljuc: grupaKljuc
         });
         if (konflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({
@@ -373,6 +411,9 @@ const createIspit = async (req, res) => {
             prisma,
             grupaKljuc
         );
+        if (dodatne.length) {
+            await prisma.ispit.update({ where: { id: newIspit.id }, data: { dodatneSale: { set: dodatne.map((id) => ({ id })) } } });
+        }
         await logAction(
             req.user?.username || 'Korisnik',
             'CREATE',
@@ -454,7 +495,8 @@ const updateIspit = async (req, res) => {
       return res.status(400).json({ error: g, polja: { vreme_kraja: g } });
     }
 
-    // 3. Sala
+    // 3. Sala (prva iz liste "sale", ako je poslata)
+    if (Array.isArray(body.sale) && body.sale.length) body.sala = body.sale[0];
     let salaConnect = undefined;
     if (body.sala_id && Number(body.sala_id)) {
       salaConnect = { connect: { id: Number(body.sala_id) } };
@@ -486,12 +528,20 @@ const updateIspit = async (req, res) => {
 
     // Provera konflikata (ispit koji menjamo se ne računa kao konflikt sam sa sobom)
     const salaZaProveru = salaConnect ? salaConnect.connect.id : postojeciIspit.sala_id;
+    // Dodatne sale: ako ih zahtev ne pominje, ostaju postojeće
+    let dodatne = await odrediDodatneSale(body.sale, salaZaProveru);
+    const menjajDodatne = dodatne !== null;
+    if (!menjajDodatne) {
+      const stare = await prisma.ispit.findUnique({ where: { id: numericId }, select: { dodatneSale: { select: { id: true } } } });
+      dodatne = (stare?.dodatneSale || []).map((s) => s.id);
+    }
     const konflikti = await proveriKonflikte({
       datum: noviDatum instanceof Date ? noviDatum.toISOString() : String(noviDatum),
       vreme: vremeUDate(novoVreme)?.toISOString().substring(11, 19) || null,
       vreme_kraja: vremeUDate(novoVremeKraja)?.toISOString().substring(11, 19) || null,
       dezurni_ids: dezurniIds,
       sala_id: salaZaProveru,
+      sale_ids: dodatne,
       excludeIspitId: numericId,
       grupa_kljuc: grupaKljuc
     });
@@ -517,6 +567,7 @@ const updateIspit = async (req, res) => {
           grupa_kljuc: grupaKljuc,
           ...(predmetConnect ? { predmet: predmetConnect } : {}),
           ...(salaConnect ? { sala: salaConnect } : {}),
+          ...(menjajDodatne ? { dodatneSale: { set: dodatne.map((sid) => ({ id: sid })) } } : {}),
           ...izmenaObjavljenog,
           dezurstva: {
             create: dezurniIds.map(dId => ({
@@ -527,6 +578,7 @@ const updateIspit = async (req, res) => {
         include: {
           predmet: true,
           sala: true,
+          dodatneSale: true,
           dezurstva: { include: { saradnik: true } }
         }
       });
@@ -586,12 +638,14 @@ const saveBulkIspiti = async (req, res) => {
             }
             const greskaVremena = proveriVremena(vreme, vremeKraja);
             if (greskaVremena) return res.status(400).json({ error: `${greskaVremena} (termin: ${ispit.title || ispit.naziv || datum})` });
-            const salaId = await odrediSalaId(ispit.sala || ispit.room, salaCache);
+            const prvaSala = Array.isArray(ispit.sale) && ispit.sale.length ? ispit.sale[0] : (ispit.sala || ispit.room);
+            const salaId = await odrediSalaId(prvaSala, salaCache);
+            const dodatne = (await odrediDodatneSale(ispit.sale, salaId, salaCache)) || [];
             const dezurni = ispit.dezurni_ids || [];
             const grupaKljuc = ocistiGrupaKljuc(ispit.grupa_kljuc);
-            const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, grupa_kljuc: grupaKljuc });
+            const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, sale_ids: dodatne, grupa_kljuc: grupaKljuc });
             sviKonflikti.push(...konflikti);
-            pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dezurni, grupaKljuc });
+            pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dodatne, dezurni, grupaKljuc });
         }
         if (sviKonflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: tekstovi(sviKonflikti), konflikti: sviKonflikti });
@@ -613,6 +667,10 @@ const saveBulkIspiti = async (req, res) => {
                     tx,
                     p.grupaKljuc
                 ));
+                if (p.dodatne.length) {
+                    const novi = rezultat[rezultat.length - 1];
+                    await tx.ispit.update({ where: { id: novi.id }, data: { dodatneSale: { set: p.dodatne.map((id) => ({ id })) } } });
+                }
             }
             return rezultat;
         });
@@ -655,12 +713,19 @@ const proveriRaspored = async (req, res) => {
             const datum = t.datum || t.date;
             const vreme = t.vreme || t.startTime;
             if (!datum || !vreme) return null;
-            let salaId = t.sala_id ? Number(t.sala_id) : null;
+            const listaSala = Array.isArray(t.sale) && t.sale.length ? t.sale : null;
+            let salaId = !listaSala && t.sala_id ? Number(t.sala_id) : null;
             let salaNaziv = '';
             if (!salaId) {
-                const r = await trazi(t.sala || t.room);
+                const r = await trazi(listaSala ? listaSala[0] : (t.sala || t.room));
                 salaId = r.id;
                 salaNaziv = r.naziv;
+            }
+            const saleIdsT = [];
+            const naziviSalaT = new Map(salaId ? [[salaId, salaNaziv]] : []);
+            for (const s of (listaSala || []).slice(1)) {
+                const r = await trazi(s);
+                if (r.id && r.id !== salaId && !saleIdsT.includes(r.id)) { saleIdsT.push(r.id); naziviSalaT.set(r.id, r.naziv); }
             }
             const predmetId = Number(t.predmet_id || t.predmetId || t.predmet?.id) || null;
             if (predmetId && !predmetNazivi.has(predmetId)) {
@@ -677,6 +742,8 @@ const proveriRaspored = async (req, res) => {
                     : null,
                 sala_id: salaId,
                 salaNaziv,
+                sale_ids: saleIdsT,
+                naziviSala: naziviSalaT,
                 dezurni_ids: dezurni,
                 grupa_kljuc: ocistiGrupaKljuc(t.grupa_kljuc),
                 naziv: predmetNazivi.get(predmetId) || t.title || 'Ispit'
@@ -702,6 +769,7 @@ const proveriRaspored = async (req, res) => {
         for (const p of planirani) {
             const konflikti = await proveriKonflikte({
                 datum: p.datum, vreme: p.vreme, vreme_kraja: p.vreme_kraja, dezurni_ids: p.dezurni_ids, sala_id: p.sala_id,
+                sale_ids: p.sale_ids,
                 excludeIspitIds: izuzeti,
                 grupa_kljuc: p.grupa_kljuc,
                 planirani: planirani.filter((o) => o !== p)
@@ -725,6 +793,7 @@ const publishAll = async (req, res) => {
             include: {
                 predmet: { include: { profesor: true, terminiKolokvijuma: true } },
                 sala: true,
+                dodatneSale: true,
                 dezurstva: { include: { saradnik: true } }
             }
         });
@@ -743,7 +812,7 @@ const publishAll = async (req, res) => {
             // vreme stiže iz baze kao tekst ili kao Date; oba se čitaju (inače bi vreme kraja ispadalo prazno)
             const vremeStr = vremeHHMM(ispit.vreme) || '00:00';
             const vremeKrajaStr = vremeHHMM(ispit.vreme_kraja) || '';
-            const salaNaziv = ispit.sala?.naziv || 'Bez sale';
+            const salaNaziv = naziviSala(ispit) || 'Bez sale';
             const predmetNaziv = ispit.predmet?.naziv || 'Ispit';
 
             ispit.dezurstva.forEach(d => {

@@ -73,7 +73,10 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
             }
             const kraj = hhmm(i.vreme_kraja);
             const doVreme = kraj || (od ? dodajMinute(od, DEFAULT_TRAJANJE_MIN) : null);
-            const kljuc = [i.sala.naziv, dan(i.datum), od, doVreme, i.tip_kolokvijuma || 'I', i.grupa_kljuc || `bez-grupe-${i.id}`].join('|');
+            // Termin u više sala: po jedna rezervacija za svaku salu (prva zadržava id "kol-<id>")
+            const sale = [i.sala, ...(i.dodatneSale || []).filter((s) => s && s.naziv && s.id !== i.sala.id)];
+            sale.forEach((sala, rb) => {
+            const kljuc = [sala.naziv, dan(i.datum), od, doVreme, i.tip_kolokvijuma || 'I', i.grupa_kljuc || `bez-grupe-${i.id}`].join('|');
             const predmet = {
                 sifra: i.predmet?.sifra || null,
                 naziv,
@@ -89,9 +92,9 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
                 return;
             }
             poKljucu.set(kljuc, {
-                id: `kol-${i.id}`,
+                id: rb === 0 ? `kol-${i.id}` : `kol-${i.id}-s${sala.id}`,
                 izmena: Boolean(i.is_izmenjen),
-                sala: i.sala.naziv,
+                sala: sala.naziv,
                 datum: dan(i.datum),
                 od,
                 do: doVreme,
@@ -101,6 +104,7 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
                 tip_opis: opisTipa(i),
                 racunarska_sala: trazenaRacunarskaSala(i),
                 predmeti: [predmet]
+            });
             });
         });
 
@@ -129,7 +133,7 @@ const ucitajObjavljeneRezervacije = async ({ od, doDatuma = null, objavio = null
             is_published: true,
             datum: { gte: new Date(`${od}T00:00:00.000Z`), ...(doDatuma ? { lte: new Date(`${doDatuma}T00:00:00.000Z`) } : {}) }
         },
-        include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true }
+        include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true, dodatneSale: true }
     });
     return napraviRezervacije(ispiti, { objavio });
 };

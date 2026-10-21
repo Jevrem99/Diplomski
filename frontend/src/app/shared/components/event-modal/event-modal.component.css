@@ -740,3 +740,5 @@
   position: absolute; right: 6px; width: 22px; height: 22px; border: none; border-radius: 50%;
   background: transparent; color: var(--muted); font-size: 1.1rem; line-height: 1; cursor: pointer;
 }
+
+.sala-zauzeta { margin-left: 8px; padding: 1px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: var(--danger-soft); color: var(--danger-text); }

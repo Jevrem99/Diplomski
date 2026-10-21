@@ -37,6 +37,7 @@ export class EventModal implements OnInit {
     endTime: '',
     tip_kolokvijuma: 'I',
     room: '',
+    sale: [] as string[],
     is_ispit: true,
     dezurni_ids: [] as number[]
   };
@@ -104,13 +105,14 @@ export class EventModal implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; sale?: string[]; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
       satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[],
       potrebnoDezurnih?: { k1_dezurni?: number | null; k2_dezurni?: number | null; k3_dezurni?: number | null; popravni_dezurni?: number | null } | null } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
     if (this.data.room) this.formData.room = this.data.room;
+    this.formData.sale = this.data.sale?.length ? [...this.data.sale] : (this.data.room && this.data.room !== 'Bez sale' ? [this.data.room] : []);
     if (this.data.is_ispit !== undefined) this.formData.is_ispit = this.data.is_ispit;
     if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma;
     if (this.data.dezurni) {
@@ -208,17 +210,26 @@ export class EventModal implements OnInit {
     return (h * 60) + m;
   }
 
-  isSalaZauzeta(salaNaziv: string): boolean {
-    if (!this.formData.startTime || !this.data.zauzeteSaleNaDan) return false;
+  // Ko zauzima salu u izabranom vremenu (drugi termin ili redovna nastava); null ako je slobodna
+  zauzetoSa(salaNaziv: string): string | null {
+    if (!this.formData.startTime || !this.data.zauzeteSaleNaDan) return null;
     const start1 = this.timeToMins(this.formData.startTime);
     const end1 = this.formData.endTime ? this.timeToMins(this.formData.endTime) : (start1 + 120);
-
-    return this.data.zauzeteSaleNaDan.some((z: any) => {
-      if (z.sala !== salaNaziv || z.sala === 'Bez sale') return false;
-      const start2 = this.timeToMins(z.vreme);
-      const end2 = z.vremeKraja ? this.timeToMins(z.vremeKraja) : (start2 + 120);
-      return start1 < end2 && start2 < end1; 
+    const z = this.data.zauzeteSaleNaDan.find((x: any) => {
+      if (x.sala !== salaNaziv || x.sala === 'Bez sale') return false;
+      const start2 = this.timeToMins(x.vreme);
+      const end2 = x.vremeKraja ? this.timeToMins(x.vremeKraja) : (start2 + 120);
+      return start1 < end2 && start2 < end1;
     });
+    return z ? `${z.naziv || 'drugi termin'} (${z.vreme}${z.vremeKraja ? '–' + z.vremeKraja : ''})` : null;
+  }
+
+  isSalaZauzeta(salaNaziv: string): boolean {
+    return this.zauzetoSa(salaNaziv) !== null;
+  }
+
+  get zauzeteIzabrane(): string[] {
+    return this.formData.sale.filter((s) => this.isSalaZauzeta(s)).map((s) => `${s}: ${this.zauzetoSa(s)}`);
   }
 
   onCancel(): void {
@@ -242,9 +253,10 @@ export class EventModal implements OnInit {
       return;
     }
 
-    if (this.formData.startTime && this.formData.endTime && this.formData.room) {
+    if (this.formData.startTime && this.formData.endTime && this.formData.sale.length) {
       this.showError = false;
       this.odsustvoErrorPoruka = '';
+      this.formData.room = this.formData.sale[0];
       this.dialogRef.close({ 
         ...this.data, 
         ...this.formData, 

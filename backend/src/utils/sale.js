@@ -21,4 +21,12 @@ const nadjiIliNapraviSalu = async (db, naziv, cache = new Map()) => {
     return sala;
 };
 
-module.exports = { normalizujNazivSale, nadjiIliNapraviSalu };
+// Sve sale termina: prva (sala) pa dodatne, bez ponavljanja
+const saleTermina = (ispit) => {
+    const sve = [ispit?.sala, ...(ispit?.dodatneSale || [])].filter((s) => s && s.naziv);
+    const vidjene = new Set();
+    return sve.filter((s) => (vidjene.has(s.id) ? false : vidjene.add(s.id)));
+};
+const naziviSala = (ispit) => saleTermina(ispit).map((s) => s.naziv).join(', ');
+
+module.exports = { normalizujNazivSale, nadjiIliNapraviSalu, saleTermina, naziviSala };
