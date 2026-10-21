@@ -8,8 +8,9 @@ const userModel = require('../models/userModel');
 // Prijava preko PMF (IMI) naloga.
 // Tok: korisnik se prijavi na IMI -> IMI ga vrati na našu stranicu /auth/callback?token=...
 //      -> naš server pita IMI da li je token ispravan i čiji je (verify_token.php) -> mi izdajemo svoju sesiju.
-// Pravila: uloga NIKAD ne dolazi od IMI-ja. Poznata osoba dobija ulogu iz naše baze; nova osoba (IMI je potvrdio
-// nalog, a e-mail nije kod nas) dobija nalog asistenta i ulazi u spisak saradnika. Admin kasnije menja ulogu.
+// Pravila: uloga u aplikaciji NIKAD ne dolazi od IMI-ja. Osoba koja je već u našoj bazi ulazi sa svojom ulogom.
+// Nova osoba dobija nalog asistenta (i ulazi u spisak saradnika) samo ako IMI u odgovoru kaže da je zaposlena;
+// studenti se uvek odbijaju, a bez podatka o vrsti naloga ulaze samo poznate osobe.
 
 class PmfGreska extends Error {
     constructor(kod, poruka, status) {
@@ -75,6 +76,27 @@ const nadjiImePrezime = (v, dubina = 0) => {
     return null;
 };
 
+// Vrsta naloga iz odgovora IMI-ja (npr. "zaposleni", "student"); tekst ili lista, malim slovima
+const KLJUCEVI_VRSTE = /^(uloga|uloge|role|roles|tip|type|tip_korisnika|vrsta|vrsta_korisnika|kategorija|grupa|groups?|user_type|account_type)$/i;
+const nadjiVrstu = (v, dubina = 0) => {
+    if (dubina > 4 || !v || typeof v !== 'object' || Array.isArray(v)) return null;
+    for (const [k, x] of Object.entries(v)) {
+        if (!KLJUCEVI_VRSTE.test(k)) continue;
+        if (typeof x === 'string' && x.trim()) return [x.trim().toLowerCase()];
+        if (Array.isArray(x)) {
+            const l = x.filter((y) => typeof y === 'string').map((y) => y.trim().toLowerCase());
+            if (l.length) return l;
+        }
+    }
+    for (const x of Object.values(v)) { const r = nadjiVrstu(x, dubina + 1); if (r) return r; }
+    return null;
+};
+
+const ULOGE_ZAPOSLENIH = (process.env.PMF_ULOGE_ZAPOSLENIH || 'zaposlen,zaposleni,zaposlena,nastavnik,profesor,asistent,saradnik,staff,employee,teacher,faculty,admin')
+    .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+const jeStudent = (vrsta) => (vrsta || []).some((x) => /student|студент/.test(x));
+const jeZaposlen = (vrsta) => !jeStudent(vrsta) && (vrsta || []).some((x) => ULOGE_ZAPOSLENIH.some((u) => x.includes(u)));
+
 // Opis oblika odgovora za dnevnik servera: samo imena polja, bez vrednosti
 const oblik = (v, dubina = 0) => {
     if (v === null || typeof v !== 'object') return typeof v;
@@ -123,9 +145,10 @@ const proveriToken = async (token) => {
     console.log('[PMF prijava] oblik odgovora:', oblik(podaci));
     const email = nadjiEmail(podaci);
     const imePrezime = nadjiImePrezime(podaci);
-    if (email) return { email: email.toLowerCase(), korisnickoIme: nadjiKorisnickoIme(podaci), imePrezime };
+    const vrsta = nadjiVrstu(podaci);
+    if (email) return { email: email.toLowerCase(), korisnickoIme: nadjiKorisnickoIme(podaci), imePrezime, vrsta };
     const korisnickoIme = nadjiKorisnickoIme(podaci);
-    if (korisnickoIme) return { email: null, korisnickoIme, imePrezime };
+    if (korisnickoIme) return { email: null, korisnickoIme, imePrezime, vrsta };
     console.error('[PMF prijava] odgovor bez e-maila i korisničkog imena, oblik:', oblik(podaci));
     throw new PmfGreska('TOKEN_NEVAZECI', NEVAZECI, 401);
 };
@@ -141,8 +164,8 @@ const slobodnoKorisnickoIme = async (email) => {
 
 // Postojeći nalog (po e-mailu ili korisničkom imenu); inače novi nalog bez upotrebljive lozinke:
 // poznat profesor/saradnik dobija ulogu po tome, a potpuno nova osoba postaje asistent (i saradnik).
-// Vraća { korisnik, nov } ili null kad IMI nije poslao e-mail (bez njega se nalog ne pravi).
-const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime = null) => {
+// Vraća { korisnik, nov } ili { odbijen: 'student' | 'nepoznat' | 'bez_emaila' }.
+const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime = null, vrsta = null) => {
     const izbor = { id: true, username: true, email: true, uloga: true };
     if (email) {
         const postojeci = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: izbor });
@@ -154,9 +177,11 @@ const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime 
             || await prisma.user.findFirst({ where: { email: { startsWith: `${korisnickoIme}@`, mode: 'insensitive' } }, select: izbor });
         if (poImenu) return { korisnik: poImenu, nov: false };
     }
-    if (!email) return null;
+    if (jeStudent(vrsta)) return { odbijen: 'student' };
+    if (!email) return { odbijen: 'bez_emaila' };
 
     let osoba = await prisma.profesor.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
+    if (!osoba && !jeZaposlen(vrsta)) return { odbijen: 'nepoznat' };
     if (!osoba) {
         // Nova osoba: upis u spisak saradnika sa imenom iz IMI odgovora (ili iz e-maila)
         const izMejla = email.split('@')[0].split(/[._-]+/).filter(Boolean).map((d) => d[0].toUpperCase() + d.slice(1));
@@ -180,5 +205,5 @@ const izdajSesiju = (korisnik) => userModel.generateJwtToken(korisnik);
 
 module.exports = {
     proveriToken, nadjiIliNapraviKorisnika, izdajSesiju, PmfGreska,
-    _internal: { nadjiEmail, javljaGresku, nadjiKorisnickoIme, nadjiImePrezime, oblik }
+    _internal: { nadjiEmail, javljaGresku, nadjiKorisnickoIme, nadjiImePrezime, nadjiVrstu, jeStudent, jeZaposlen, oblik }
 };

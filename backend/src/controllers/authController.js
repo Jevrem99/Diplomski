@@ -57,14 +57,17 @@ const pmfPodesavanja = (req, res) => res.status(200).json({ prijavaUrl: config.p
 // POST /auth/pmf { token }: prijava preko PMF (IMI) naloga; vraća isti { token } kao /auth/login
 const pmfLogin = async (req, res) => {
     try {
-        const { email, korisnickoIme, imePrezime } = await pmfPrijava.proveriToken(req.body && req.body.token);
-        const nalog = await pmfPrijava.nadjiIliNapraviKorisnika(email, korisnickoIme, imePrezime);
-        if (!nalog) {
-            await logAction(String(korisnickoIme).slice(0, 60), 'LOGIN_FAILED', 'Sesija', 'PMF prijava: IMI nije poslao e-mail');
-            return res.status(403).json({
-                error: 'PMF sistem nije poslao e-mail adresu ovog naloga, pa nalog ne može da se napravi. Obratite se administratoru.',
-                kod: 'NEMA_PRISTUPA'
-            });
+        const { email, korisnickoIme, imePrezime, vrsta } = await pmfPrijava.proveriToken(req.body && req.body.token);
+        const nalog = await pmfPrijava.nadjiIliNapraviKorisnika(email, korisnickoIme, imePrezime, vrsta);
+        if (nalog.odbijen) {
+            const ko = String(email || korisnickoIme).slice(0, 60);
+            const poruke = {
+                student: 'Aplikacija je namenjena zaposlenima. Studentski nalozi nemaju pristup.',
+                nepoznat: `Nalog ${ko} nije u aplikaciji. Obratite se administratoru da vas doda.`,
+                bez_emaila: 'PMF sistem nije poslao e-mail adresu ovog naloga. Obratite se administratoru.'
+            };
+            await logAction(ko, 'LOGIN_FAILED', 'Sesija', `PMF prijava odbijena: ${nalog.odbijen}`);
+            return res.status(403).json({ error: poruke[nalog.odbijen], kod: 'NEMA_PRISTUPA' });
         }
         const korisnik = nalog.korisnik;
         if (nalog.nov) await logAction(korisnik.username, 'CREATE', 'Korisnik', 'Nalog napravljen pri prvoj PMF prijavi (asistent)');

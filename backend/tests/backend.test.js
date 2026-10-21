@@ -303,7 +303,7 @@ test('PMF: ispravan token vraća e-mail malim slovima, token ide kao parametar',
     });
     try {
         const r = await pmf.proveriToken(TOKEN);
-        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs', korisnickoIme: null, imePrezime: null }); // uloga iz odgovora se ne vraća
+        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs', korisnickoIme: null, imePrezime: null, vrsta: ['admin'] }); // vrsta služi samo za proveru zaposlen/student, uloga u aplikaciji je iz naše baze
         assert.ok(videoUrl.includes(`token=${TOKEN}`));
     } finally { await stani(); }
 });
@@ -478,7 +478,7 @@ test('rezervacije sala: termin u više sala daje po jednu rezervaciju za svaku s
 test('PMF: odgovor samo sa korisničkim imenom i opis oblika bez vrednosti', async () => {
     const stani = await POKRENI_LAZNI_PMF((req, res) => res.end(JSON.stringify({ status: 'ok', data: { username: 'luka.vuksanovic', ime: 'Luka' } })));
     try {
-        assert.deepEqual(await pmf.proveriToken(TOKEN), { email: null, korisnickoIme: 'luka.vuksanovic', imePrezime: { ime: 'Luka', prezime: '' } });
+        assert.deepEqual(await pmf.proveriToken(TOKEN), { email: null, korisnickoIme: 'luka.vuksanovic', imePrezime: { ime: 'Luka', prezime: '' }, vrsta: null });
     } finally { await stani(); }
     const { oblik } = pmf._internal;
     assert.equal(oblik({ ok: true, user: { ime: 'Pera', tel: 123 } }), '{ok:boolean, user:{ime:string, tel:number}}');
@@ -489,4 +489,17 @@ test('PMF: ime i prezime iz odgovora (posebna polja ili puno ime)', () => {
     assert.deepEqual(nadjiImePrezime({ korisnik: { ime: 'Ana', prezime: 'Anić' } }), { ime: 'Ana', prezime: 'Anić' });
     assert.deepEqual(nadjiImePrezime({ full_name: 'Petar Petrović Njegoš' }), { ime: 'Petar', prezime: 'Petrović Njegoš' });
     assert.equal(nadjiImePrezime({ email: 'a@b.rs' }), null);
+});
+
+test('PMF: vrsta naloga - studenti se odbijaju, nalog se pravi samo zaposlenima', () => {
+    const { nadjiVrstu, jeStudent, jeZaposlen } = pmf._internal;
+    assert.deepEqual(nadjiVrstu({ email: 'a@b.rs', korisnik: { tip: 'Student' } }), ['student']);
+    assert.deepEqual(nadjiVrstu({ roles: ['Zaposleni', 'Nastavnik'] }), ['zaposleni', 'nastavnik']);
+    assert.equal(nadjiVrstu({ email: 'a@b.rs', ime: 'Ana' }), null);
+    assert.equal(jeStudent(['student']), true);
+    assert.equal(jeStudent(['студент']), true);
+    assert.equal(jeZaposlen(['zaposleni']), true);
+    assert.equal(jeZaposlen(['asistent']), true);
+    assert.equal(jeZaposlen(['student', 'asistent']), false, 'student nikad ne dobija nalog');
+    assert.equal(jeZaposlen(null), false, 'bez podatka nema automatskog naloga');
 });
