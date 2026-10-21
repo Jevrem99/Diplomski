@@ -166,6 +166,8 @@ const slobodnoKorisnickoIme = async (email) => {
 // poznat profesor/saradnik dobija ulogu po tome, a potpuno nova osoba postaje asistent (i saradnik).
 // Vraća { korisnik, nov } ili { odbijen: 'student' | 'nepoznat' | 'bez_emaila' }.
 const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime = null, vrsta = null) => {
+    // Student se odbija uvek, i kad je već u bazi (npr. nalog napravljen pre ove provere)
+    if (jeStudent(vrsta)) return { odbijen: 'student' };
     const izbor = { id: true, username: true, email: true, uloga: true };
     if (email) {
         const postojeci = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: izbor });
@@ -177,7 +179,6 @@ const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime 
             || await prisma.user.findFirst({ where: { email: { startsWith: `${korisnickoIme}@`, mode: 'insensitive' } }, select: izbor });
         if (poImenu) return { korisnik: poImenu, nov: false };
     }
-    if (jeStudent(vrsta)) return { odbijen: 'student' };
     if (!email) return { odbijen: 'bez_emaila' };
 
     let osoba = await prisma.profesor.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
