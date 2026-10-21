@@ -503,3 +503,15 @@ test('PMF: vrsta naloga - studenti se odbijaju, nalog se pravi samo zaposlenima'
     assert.equal(jeZaposlen(['student', 'asistent']), false, 'student nikad ne dobija nalog');
     assert.equal(jeZaposlen(null), false, 'bez podatka nema automatskog naloga');
 });
+
+test('PMF: grupe iz polja ismemberof (LDAP oblik sa brojem "count")', () => {
+    const { nadjiVrstu, jeStudent, jeZaposlen } = pmf._internal;
+    const odgovor = (grupe) => ({ username: 'x', ime: 'X', prezime: 'Y', email: 'x@y.rs', ismemberof: { ...grupe, count: Object.keys(grupe).length } });
+    const student = nadjiVrstu(odgovor({ 0: 'cn=studenti,ou=groups,dc=pmf', 1: 'cn=imi,ou=groups,dc=pmf' }));
+    assert.deepEqual(student, ['cn=studenti,ou=groups,dc=pmf', 'cn=imi,ou=groups,dc=pmf']);
+    assert.equal(jeStudent(student), true);
+    assert.equal(jeZaposlen(student), false);
+    const zaposlen = nadjiVrstu(odgovor({ 0: 'cn=zaposleni,ou=groups,dc=pmf', 1: 'cn=nastavnici,ou=groups,dc=pmf' }));
+    assert.equal(jeZaposlen(zaposlen), true);
+    assert.equal(jeZaposlen(nadjiVrstu(odgovor({ 0: 'cn=imi,ou=groups,dc=pmf' }))), false, 'nepoznata grupa: bez automatskog naloga');
+});
