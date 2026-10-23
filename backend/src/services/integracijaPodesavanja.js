@@ -83,8 +83,12 @@ const oceniOdgovor = (httpStatus, telo) => {
         ? (j.poruka || j.message || j.error || j.greska || j.opis || JSON.stringify(j))
         : String(telo ?? '').replace(/\s+/g, ' ').trim();
     const skraceno = String(opis).slice(0, 300);
-    return { poslato: false, greska: httpStatus >= 400 ? `Server je odgovorio sa ${httpStatus}: ${skraceno}` : `Odgovor nije {"status":"ok"}: ${skraceno}` };
+    if (httpStatus >= 400) return { poslato: false, greska: `Server je odgovorio sa ${httpStatus}: ${skraceno}` };
+    // JSON sa porukom primaoca (npr. da rezervacija već postoji) se prikazuje kakav jeste
+    return { poslato: false, greska: j && typeof j === 'object' ? skraceno : `Odgovor nije {"status":"ok"}: ${skraceno}` };
 };
+
+const adresaSlanja = () => procitaj(K_POST_URL);
 
 // Šalje JSON rezervacija na podešenu adresu. Nikad ne baca grešku: objavljivanje ne sme da zavisi od tuđeg servera.
 const posaljiRezervacije = async (rezervacije) => {
@@ -107,5 +111,5 @@ const posaljiRezervacije = async (rezervacije) => {
 };
 
 module.exports = {
-    oceniOdgovor, ocekivaniKljuc, napraviKljuc, ukloniKljucIzBaze, stanje, postaviSlanje, posaljiRezervacije, jeAdresa, sazetakHex
+    oceniOdgovor, adresaSlanja, ocekivaniKljuc, napraviKljuc, ukloniKljucIzBaze, stanje, postaviSlanje, posaljiRezervacije, jeAdresa, sazetakHex
 };

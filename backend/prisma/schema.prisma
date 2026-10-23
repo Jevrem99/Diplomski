@@ -80,6 +80,10 @@ model Ispit {
   grupa_kljuc String?
   // Termin u više sala: sala_id je prva, ovde su ostale
   dodatneSale Sala[]  @relation("DodatneSale")
+  // Slanje rezervacije sistemu fakulteta: 'ok' | 'greska' (null = nije poslato); izmena termina briše upis
+  rezervacija_status String?
+  rezervacija_poruka String?
+  rezervacija_vreme  DateTime?
   
   dezurstva  Dezurstva[] 
 

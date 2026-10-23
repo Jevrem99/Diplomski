@@ -9,7 +9,7 @@ const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
-const integracijaPodesavanja = require('../services/integracijaPodesavanja');
+const slanjeRezervacija = require('../services/slanjeRezervacija');
 
 exports.exportKalendar = async (req, res) => {
     try {
@@ -569,6 +569,9 @@ const updateIspit = async (req, res) => {
           ...(salaConnect ? { sala: salaConnect } : {}),
           ...(menjajDodatne ? { dodatneSale: { set: dodatne.map((sid) => ({ id: sid })) } } : {}),
           ...izmenaObjavljenog,
+          rezervacija_status: null,
+          rezervacija_poruka: null,
+          rezervacija_vreme: null,
           dezurstva: {
             create: dezurniIds.map(dId => ({
               saradnik_id: Number(dId)
@@ -861,10 +864,10 @@ const publishAll = async (req, res) => {
         // (samo nove: sistem fakulteta odbija rezervaciju koja već postoji). Greška ne ruši objavljivanje.
         let slanje = { ukljuceno: false, poslato: false, status: null, greska: null };
         try {
-            if (rezervacije.rezervacije.length > 0) slanje = await integracijaPodesavanja.posaljiRezervacije(rezervacije);
+            slanje = await slanjeRezervacija.posaljiIZabelezi(rezervacije);
             if (slanje.ukljuceno) {
                 await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
-                    slanje.poslato ? 'Rezervacije sala poslate na podešenu adresu' : `Slanje rezervacija nije uspelo: ${slanje.greska}`);
+                    slanje.poslato ? `Rezervisano ${slanje.uspesno} sala` : `Slanje rezervacija: ${slanje.greska}`);
             }
         } catch (err) {
             console.error('Greška pri slanju rezervacija:', err);
@@ -889,7 +892,9 @@ const getRezervacijeSala = async (req, res) => {
         const danas = new Date().toISOString().substring(0, 10);
         const od = jeDatum(req.query.od) ? req.query.od : danas;
         const doDatuma = jeDatum(req.query.do) ? req.query.do : null;
-        res.status(200).json(await ucitajObjavljeneRezervacije({ od, doDatuma, objavio: req.user?.username || null }));
+        const paket = await ucitajObjavljeneRezervacije({ od, doDatuma, objavio: req.user?.username || null });
+        // statusi slanja su samo za pregled u aplikaciji (nisu deo fajla ni odgovora za fakultet)
+        res.status(200).json({ ...paket, statusi: await slanjeRezervacija.statusiRezervacija(paket) });
     } catch (err) {
         console.error('Greška pri pravljenju rezervacija sala:', err);
         res.status(500).json({ error: 'Internal server error' });

@@ -531,3 +531,19 @@ test('slanje rezervacija: prošlo je samo {"status":"ok"}, ostalo je greška sa 
     assert.match(oceniOdgovor(500, 'Greška servera').greska, /500/);
     assert.equal(oceniOdgovor(200, '{"status":"ok"}'.repeat(1)).poslato, true);
 });
+
+test('rezervacije sala: termini koji čine rezervaciju su zapamćeni, ali ne idu u JSON', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const d = new Date('2026-11-02T00:00:00.000Z');
+    const sala = { id: 1, naziv: 'A-0-15' };
+    const p = (n) => ({ sifra: n, naziv: n, godina: 1, broj_studenata: 10 });
+    const r = napraviRezervacije([
+        { id: 11, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('12:00'), sala, grupa_kljuc: 'g', predmet: p('A'), tip_kolokvijuma: 'I' },
+        { id: 12, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('12:00'), sala, grupa_kljuc: 'g', predmet: p('B'), tip_kolokvijuma: 'I' }
+    ]);
+    assert.equal(r.rezervacije.length, 1);
+    assert.deepEqual(r.rezervacije[0].ispitIds, [11, 12]);
+    assert.equal(JSON.stringify(r).includes('ispitIds'), false);
+    assert.equal(JSON.stringify(r).includes('_ispiti'), false);
+});

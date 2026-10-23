@@ -9,6 +9,6 @@ router.get('/', ctrl.getStanje);
 router.post('/kljuc', ctrl.noviKljuc);
 router.delete('/kljuc', ctrl.ukloniKljuc);
 router.put('/slanje', ctrl.postaviSlanje);
-router.post('/slanje/proba', ctrl.probnoSlanje);
+router.post('/slanje/neposlate', ctrl.neposlate);
 
 module.exports = router;

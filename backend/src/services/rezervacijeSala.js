@@ -87,11 +87,13 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
             const postojeca = poKljucu.get(kljuc);
             if (postojeca) {
                 postojeca.predmeti.push(predmet);
+                if (!postojeca._ispiti.includes(i.id)) postojeca._ispiti.push(i.id);
                 postojeca.izmena = postojeca.izmena || Boolean(i.is_izmenjen);
                 postojeca.racunarska_sala = postojeca.racunarska_sala || trazenaRacunarskaSala(i);
                 return;
             }
             poKljucu.set(kljuc, {
+                _ispiti: [i.id],
                 id: rb === 0 ? `kol-${i.id}` : `kol-${i.id}-s${sala.id}`,
                 izmena: Boolean(i.is_izmenjen),
                 sala: sala.naziv,
@@ -108,10 +110,11 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
             });
         });
 
-    const rezervacije = [...poKljucu.values()].map((r) => ({
+    // ispitIds (termini koji čine rezervaciju) je nevidljivo polje: ne ide u JSON, služi za beleženje slanja
+    const rezervacije = [...poKljucu.values()].map(({ _ispiti, ...r }) => Object.defineProperty({
         ...r,
         ukupno_studenata: r.predmeti.reduce((zbir, p) => zbir + (p.broj_studenata || 0), 0)
-    }));
+    }, 'ispitIds', { value: _ispiti, enumerable: false }));
 
     return {
         format: 'raspored-rezervacije-sala',

@@ -689,7 +689,7 @@ export class Main implements OnInit, AfterViewInit {
           if (broj > 0) {
             this.preuzmiRezervacije(rez);
             const bezSale = rez.bez_sale?.length ? ` Bez sale: ${rez.bez_sale.length} (nisu u fajlu).` : '';
-            const poslato = odgovor?.slanje?.poslato ? ' Rezervacije su poslate na podešenu adresu.' : '';
+            const poslato = odgovor?.slanje?.poslato ? ` Rezervisano na fakultetu: ${odgovor.slanje.uspesno}.` : '';
             this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}${poslato}`, 'success');
           } else {
             this.toastService.show('Raspored je uspešno objavljen! Među objavljenim terminima nema kolokvijuma sa izabranom salom, pa nema rezervacija.', 'success');
@@ -719,7 +719,8 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   private preuzmiRezervacije(rez: any): void {
-    const blob = new Blob([JSON.stringify(rez, null, 2)], { type: 'application/json' });
+    const { statusi, ...bezStatusa } = rez || {};
+    const blob = new Blob([JSON.stringify(bezStatusa, null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

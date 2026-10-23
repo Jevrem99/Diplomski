@@ -16,7 +16,7 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
       <div class="rez-lista">
         <table class="rez-tabela">
           <thead>
-            <tr><th>Datum</th><th>Vreme</th><th>Sala</th><th>Predmeti</th><th class="num">Studenata</th></tr>
+            <tr><th>Datum</th><th>Vreme</th><th>Sala</th><th>Predmeti</th><th class="num">Studenata</th><th>Fakultet</th></tr>
           </thead>
           <tbody>
             @for (r of data.rez.rezervacije; track r.id) {
@@ -26,6 +26,13 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
                 <td>{{ r.sala }}@if (r.racunarska_sala) { <span class="rez-oznaka">račun.</span> }</td>
                 <td>{{ nazivi(r) }}</td>
                 <td class="num">{{ r.ukupno_studenata }}</td>
+                <td>
+                  @switch (data.rez.statusi?.[r.id]?.status) {
+                    @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
+                    @case ('greska') { <span class="rez-st rez-st-greska" [title]="data.rez.statusi[r.id].poruka || ''">Odbijeno</span><div class="rez-poruka">{{ data.rez.statusi[r.id].poruka }}</div> }
+                    @default { <span class="rez-st">Nije poslato</span> }
+                  }
+                </td>
               </tr>
             }
           </tbody>
@@ -53,6 +60,10 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
     .num { text-align: right; white-space: nowrap; }
     .rez-oznaka { margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-size: 0.66rem; font-weight: 700; background: var(--primary-soft); color: var(--primary-text); }
     .rez-napomena { margin-left: 3px; color: var(--muted); }
+    .rez-st { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; white-space: nowrap; background: var(--surface-3); color: var(--muted); }
+    .rez-st-ok { background: var(--tint-green-bg); color: var(--tint-green-fg); }
+    .rez-st-greska { background: var(--danger-soft); color: var(--danger-text); }
+    .rez-poruka { margin-top: 3px; font-size: 0.7rem; color: var(--muted); max-width: 220px; }
     .rez-upozorenje { margin: 12px 0 0; font-size: 0.8rem; color: var(--danger-text); }
     .rez-dugmad { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
     .rez-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--primary); background: var(--primary); color: #fff; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }

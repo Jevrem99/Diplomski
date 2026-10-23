@@ -322,3 +322,9 @@ CREATE TABLE IF NOT EXISTS "_DodatneSale" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "_DodatneSale_AB_unique" ON "_DodatneSale"("A", "B");
 CREATE INDEX IF NOT EXISTS "_DodatneSale_B_index" ON "_DodatneSale"("B");
+
+-- AlterTable
+ALTER TABLE "Ispit"
+    ADD COLUMN IF NOT EXISTS "rezervacija_status" TEXT,
+    ADD COLUMN IF NOT EXISTS "rezervacija_poruka" TEXT,
+    ADD COLUMN IF NOT EXISTS "rezervacija_vreme" TIMESTAMP(3);

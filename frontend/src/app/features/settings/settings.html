@@ -132,8 +132,8 @@
               <div class="flex gap-2 flex-wrap">
                 <button type="button" class="btn-save-colors" (click)="sacuvajSlanje()">Sačuvaj</button>
                 @if (integracija?.postUrl) {
-                  <button type="button" class="btn-reset-colors" [disabled]="slanjeUToku" (click)="probnoSlanje()">
-                    {{ slanjeUToku ? 'Šaljem...' : 'Probaj' }}
+                  <button type="button" class="btn-reset-colors" [disabled]="slanjeUToku" (click)="posaljiNeposlate()">
+                    {{ slanjeUToku ? 'Šaljem...' : 'Pošalji neposlate' }}
                   </button>
                 }
                 @if (integracija?.postKljucPodesen) {

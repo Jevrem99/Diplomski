@@ -1,5 +1,5 @@
 const pod = require('../services/integracijaPodesavanja');
-const { ucitajObjavljeneRezervacije } = require('../services/rezervacijeSala');
+const { posaljiNeposlate } = require('../services/slanjeRezervacija');
 const { logAction } = require('../services/auditService');
 
 const korisnik = (req) => req.user?.username || 'Administrator';
@@ -59,17 +59,19 @@ const postaviSlanje = async (req, res) => {
     }
 };
 
-// POST /admin/integracija/slanje/proba: šalje trenutne rezervacije na podešenu adresu
-const probnoSlanje = async (req, res) => {
+// POST /admin/integracija/slanje/neposlate: šalje objavljene kolokvijume (od danas) koji još nisu rezervisani
+const neposlate = async (req, res) => {
     try {
-        const danas = new Date().toISOString().substring(0, 10);
-        const rez = await ucitajObjavljeneRezervacije({ od: danas, objavio: korisnik(req) });
-        const ishod = await pod.posaljiRezervacije(rez);
-        if (!ishod.ukljuceno) return res.status(400).json({ error: 'Adresa za slanje nije podešena.' });
-        res.status(200).json({ ...ishod, broj: rez.rezervacije.length });
+        if (!(await pod.adresaSlanja())) return res.status(400).json({ error: 'Adresa za slanje nije podešena.' });
+        const ishod = await posaljiNeposlate(korisnik(req));
+        if (ishod.ukupno) {
+            await logAction(korisnik(req), 'UPDATE', 'Integracija',
+                ishod.poslato ? `Rezervisano ${ishod.uspesno} sala` : `Slanje rezervacija: ${ishod.greska}`);
+        }
+        res.status(200).json(ishod);
     } catch (err) {
-        greska(res, err, 'Greška pri probnom slanju:');
+        greska(res, err, 'Greška pri slanju neposlatih rezervacija:');
     }
 };
 
-module.exports = { getStanje, noviKljuc, ukloniKljuc, postaviSlanje, probnoSlanje };
+module.exports = { getStanje, noviKljuc, ukloniKljuc, postaviSlanje, neposlate };

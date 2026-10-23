@@ -149,12 +149,13 @@ export class Settings implements OnInit {
     });
   }
 
-  probnoSlanje(): void {
+  posaljiNeposlate(): void {
     this.slanjeUToku = true;
-    this.http.post<any>(`${this.API_URL}/admin/integracija/slanje/proba`, {}).subscribe({
+    this.http.post<any>(`${this.API_URL}/admin/integracija/slanje/neposlate`, {}).subscribe({
       next: (r) => {
         this.slanjeUToku = false;
-        this.toast.show(r.poslato ? `Poslato (${r.broj}).` : `Slanje nije uspelo: ${r.greska}`, r.poslato ? 'success' : 'error');
+        if (!r.ukupno) this.toast.show('Sve rezervacije su već poslate.', 'success');
+        else this.toast.show(r.poslato ? `Rezervisano ${r.uspesno} od ${r.ukupno}.` : r.greska, r.poslato ? 'success' : 'error');
         this.cdr.detectChanges();
       },
       error: (err) => {
