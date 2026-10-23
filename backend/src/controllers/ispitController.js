@@ -857,12 +857,11 @@ const publishAll = async (req, res) => {
             'Raspored',
             `Objavljen raspored sa ${result.count} ispita i poslata obaveštenja saradnicima`
         );
-        // Opciono: stanje rezervacija šaljemo i na adresu koju je administrator podesio (greška ne ruši objavljivanje)
+        // Opciono: rezervacije upravo objavljenih kolokvijuma šaljemo i na adresu koju je administrator podesio
+        // (samo nove: sistem fakulteta odbija rezervaciju koja već postoji). Greška ne ruši objavljivanje.
         let slanje = { ukljuceno: false, poslato: false, status: null, greska: null };
         try {
-            const danas = new Date().toISOString().substring(0, 10);
-            const stanjeSala = await ucitajObjavljeneRezervacije({ od: danas, objavio: req.user?.username || null });
-            slanje = await integracijaPodesavanja.posaljiRezervacije(stanjeSala);
+            if (rezervacije.rezervacije.length > 0) slanje = await integracijaPodesavanja.posaljiRezervacije(rezervacije);
             if (slanje.ukljuceno) {
                 await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
                     slanje.poslato ? 'Rezervacije sala poslate na podešenu adresu' : `Slanje rezervacija nije uspelo: ${slanje.greska}`);

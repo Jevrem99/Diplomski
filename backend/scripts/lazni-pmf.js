@@ -3,7 +3,7 @@
 //   u backend/.env:  PMF_VERIFY_URL=http://localhost:5050/cp/verify_token.php
 //   u frontend/src/environments/environment.ts:  pmfPrijavaUrl: 'http://localhost:5050/cp/'
 // Stranica /cp/ nudi unos e-maila (ili LAZNI_PMF_EMAIL iz okruženja) i vraća pregledač na redirect_uri sa ?token=...
-// Oblik odgovora verify_token.php je POGAĐAN ({ email, ime, prezime }) dok ne stigne primer od fakulteta.
+// Oblik odgovora verify_token.php je isti kao kod IMI-ja (username, ime, prezime, email, ismemberof).
 const http = require('http');
 const crypto = require('crypto');
 
@@ -52,7 +52,12 @@ const server = http.createServer((req, res) => {
         }
         tokeni.delete(url.searchParams.get('token')); // jednokratan
         res.writeHead(200);
-        return res.end(JSON.stringify({ success: true, email: t.email, ime: 'Lazni', prezime: 'Korisnik' }));
+        // Oblik odgovora kao pravi IMI; predavač ima grupu "rezervacija", e-mail sa rečju "student" je student
+        const grupe = ['aktivan', 'imi', ...(/student/i.test(t.email) ? [] : ['rezervacija']), 'eduroam'];
+        return res.end(JSON.stringify({
+            username: t.email.split('@')[0], ime: 'Lazni', prezime: 'Korisnik', email: t.email,
+            ismemberof: { count: grupe.length, ...Object.fromEntries(grupe.map((g, i) => [String(i), g])) }
+        }));
     }
 
     html(res, 404, '<h3>404</h3>');

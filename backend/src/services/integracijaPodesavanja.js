@@ -69,6 +69,23 @@ const postaviSlanje = async ({ url, kljuc }) => {
     else if (typeof kljuc === 'string') await upisi(K_POST_KLJUC, kljuc);
 };
 
+// Odgovor primaoca: rezervacija je prošla samo ako je telo JSON {"status":"ok"}; svaki drugi odgovor je greška
+// i njegov tekst (npr. poruka da rezervacija već postoji) se vraća da ga administrator vidi.
+const oceniOdgovor = (httpStatus, telo) => {
+    let j = telo;
+    if (typeof telo === 'string') {
+        try { j = JSON.parse(telo); } catch { j = null; }
+    }
+    if (httpStatus >= 200 && httpStatus < 300 && j && typeof j === 'object' && String(j.status).toLowerCase() === 'ok') {
+        return { poslato: true, greska: null };
+    }
+    const opis = j && typeof j === 'object'
+        ? (j.poruka || j.message || j.error || j.greska || j.opis || JSON.stringify(j))
+        : String(telo ?? '').replace(/\s+/g, ' ').trim();
+    const skraceno = String(opis).slice(0, 300);
+    return { poslato: false, greska: httpStatus >= 400 ? `Server je odgovorio sa ${httpStatus}: ${skraceno}` : `Odgovor nije {"status":"ok"}: ${skraceno}` };
+};
+
 // Šalje JSON rezervacija na podešenu adresu. Nikad ne baca grešku: objavljivanje ne sme da zavisi od tuđeg servera.
 const posaljiRezervacije = async (rezervacije) => {
     const url = await procitaj(K_POST_URL);
@@ -79,15 +96,16 @@ const posaljiRezervacije = async (rezervacije) => {
             timeout: 10000,
             maxRedirects: 0,
             validateStatus: () => true,
+            responseType: 'text',
+            transformResponse: (x) => x,
             headers: { 'Content-Type': 'application/json', ...(kljuc ? { 'X-API-Key': kljuc } : {}) }
         });
-        const ok = r.status >= 200 && r.status < 300;
-        return { ukljuceno: true, poslato: ok, status: r.status, greska: ok ? null : `Server je odgovorio sa ${r.status}` };
+        return { ukljuceno: true, status: r.status, ...oceniOdgovor(r.status, r.data) };
     } catch (err) {
         return { ukljuceno: true, poslato: false, status: null, greska: err.code || err.message };
     }
 };
 
 module.exports = {
-    ocekivaniKljuc, napraviKljuc, ukloniKljucIzBaze, stanje, postaviSlanje, posaljiRezervacije, jeAdresa, sazetakHex
+    oceniOdgovor, ocekivaniKljuc, napraviKljuc, ukloniKljucIzBaze, stanje, postaviSlanje, posaljiRezervacije, jeAdresa, sazetakHex
 };

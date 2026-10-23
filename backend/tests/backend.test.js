@@ -498,20 +498,36 @@ test('PMF: vrsta naloga - studenti se odbijaju, nalog se pravi samo zaposlenima'
     assert.equal(nadjiVrstu({ email: 'a@b.rs', ime: 'Ana' }), null);
     assert.equal(jeStudent(['student']), true);
     assert.equal(jeStudent(['студент']), true);
-    assert.equal(jeZaposlen(['zaposleni']), true);
-    assert.equal(jeZaposlen(['asistent']), true);
-    assert.equal(jeZaposlen(['student', 'asistent']), false, 'student nikad ne dobija nalog');
+    assert.equal(jeZaposlen(['rezervacija']), true);
+    assert.equal(jeZaposlen(['zaposleni']), false, 'samo grupa rezervacija znači predavača');
+    assert.equal(jeZaposlen(['student', 'rezervacija']), false, 'student nikad ne dobija nalog');
     assert.equal(jeZaposlen(null), false, 'bez podatka nema automatskog naloga');
 });
 
-test('PMF: grupe iz polja ismemberof (LDAP oblik sa brojem "count")', () => {
+test('PMF: grupa "rezervacija" u ismemberof znači predavač (stvaran oblik odgovora IMI-ja)', () => {
     const { nadjiVrstu, jeStudent, jeZaposlen } = pmf._internal;
-    const odgovor = (grupe) => ({ username: 'x', ime: 'X', prezime: 'Y', email: 'x@y.rs', ismemberof: { ...grupe, count: Object.keys(grupe).length } });
-    const student = nadjiVrstu(odgovor({ 0: 'cn=studenti,ou=groups,dc=pmf', 1: 'cn=imi,ou=groups,dc=pmf' }));
-    assert.deepEqual(student, ['cn=studenti,ou=groups,dc=pmf', 'cn=imi,ou=groups,dc=pmf']);
-    assert.equal(jeStudent(student), true);
-    assert.equal(jeZaposlen(student), false);
-    const zaposlen = nadjiVrstu(odgovor({ 0: 'cn=zaposleni,ou=groups,dc=pmf', 1: 'cn=nastavnici,ou=groups,dc=pmf' }));
-    assert.equal(jeZaposlen(zaposlen), true);
-    assert.equal(jeZaposlen(nadjiVrstu(odgovor({ 0: 'cn=imi,ou=groups,dc=pmf' }))), false, 'nepoznata grupa: bez automatskog naloga');
+    const stvaran = { username: 'miomir.kovacevic', ime: 'Miomir', prezime: 'Kovačević', email: 'imi.servis@gmail.com',
+        ismemberof: { count: 5, 0: 'aktivan', 1: 'imi', 2: 'ms', 3: 'rezervacija', 4: 'eduroam' } };
+    const grupe = nadjiVrstu(stvaran);
+    assert.deepEqual(grupe, ['aktivan', 'imi', 'ms', 'rezervacija', 'eduroam']);
+    assert.equal(jeZaposlen(grupe), true);
+    const student = nadjiVrstu({ ...stvaran, ismemberof: { count: 4, 0: 'aktivan', 1: 'imi', 2: 'ms', 3: 'eduroam' } });
+    assert.equal(jeZaposlen(student), false, 'bez grupe "rezervacija" nije predavač');
+    assert.equal(jeStudent(student), false);
+    assert.equal(jeZaposlen(['rezervacija-nesto']), false, 'poredi se tačno ime grupe');
+    assert.equal(jeZaposlen(['student', 'rezervacija']), false, 'grupa student uvek isključuje');
+});
+
+test('slanje rezervacija: prošlo je samo {"status":"ok"}, ostalo je greška sa tekstom primaoca', () => {
+    const { oceniOdgovor } = require('../src/services/integracijaPodesavanja');
+    assert.deepEqual(oceniOdgovor(200, '{"status":"ok"}'), { poslato: true, greska: null });
+    assert.equal(oceniOdgovor(200, '{"status":"OK"}').poslato, true);
+    const postoji = oceniOdgovor(200, '{"status":"greska","poruka":"Rezervacija A-0-15 već postoji"}');
+    assert.equal(postoji.poslato, false);
+    assert.match(postoji.greska, /već postoji/);
+    const eho = oceniOdgovor(200, '--- Kompletan sirovi POST sadržaj ---\n{"format":"x"}');
+    assert.equal(eho.poslato, false);
+    assert.match(eho.greska, /Odgovor nije/);
+    assert.match(oceniOdgovor(500, 'Greška servera').greska, /500/);
+    assert.equal(oceniOdgovor(200, '{"status":"ok"}'.repeat(1)).poslato, true);
 });

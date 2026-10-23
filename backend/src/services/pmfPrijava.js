@@ -10,7 +10,7 @@ const userModel = require('../models/userModel');
 //      -> naš server pita IMI da li je token ispravan i čiji je (verify_token.php) -> mi izdajemo svoju sesiju.
 // Pravila: uloga u aplikaciji NIKAD ne dolazi od IMI-ja. Korisnik koji već postoji ulazi sa svojom ulogom.
 // Novi nalog (asistent, i upis u spisak saradnika) dobija samo osoba koju IMI svrstava u zaposlene
-// (polje ismemberof: grupe naloga). Studentima se nalog nikad ne pravi; bez podatka o grupi ulaze samo poznati.
+// (polje ismemberof sadrži grupu "rezervacija" = predavač, prema fakultetu). Studentima se nalog nikad ne pravi.
 
 class PmfGreska extends Error {
     constructor(kod, poruka, status) {
@@ -96,10 +96,11 @@ const nadjiVrstu = (v, dubina = 0) => {
     return null;
 };
 
-const ULOGE_ZAPOSLENIH = (process.env.PMF_ULOGE_ZAPOSLENIH || 'zaposl,nastavn,profesor,asistent,saradn,osoblje,staff,employee,teacher,faculty')
+// Grupa koja kod IMI-ja označava predavača (tačno to ime grupe; može se promeniti u .env)
+const ULOGE_ZAPOSLENIH = (process.env.PMF_ULOGE_ZAPOSLENIH || 'rezervacija')
     .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
 const jeStudent = (vrsta) => (vrsta || []).some((x) => /student|студент/.test(x));
-const jeZaposlen = (vrsta) => !jeStudent(vrsta) && (vrsta || []).some((x) => ULOGE_ZAPOSLENIH.some((u) => x.includes(u)));
+const jeZaposlen = (vrsta) => !jeStudent(vrsta) && (vrsta || []).some((x) => ULOGE_ZAPOSLENIH.includes(x));
 
 // Opis oblika odgovora za dnevnik servera: samo imena polja, bez vrednosti
 const oblik = (v, dubina = 0) => {
