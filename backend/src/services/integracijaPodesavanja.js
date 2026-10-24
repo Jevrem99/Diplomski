@@ -79,13 +79,11 @@ const oceniOdgovor = (httpStatus, telo) => {
     if (httpStatus >= 200 && httpStatus < 300 && j && typeof j === 'object' && String(j.status).toLowerCase() === 'ok') {
         return { poslato: true, greska: null };
     }
-    const opis = j && typeof j === 'object'
-        ? (j.poruka || j.message || j.error || j.greska || j.opis || JSON.stringify(j))
-        : String(telo ?? '').replace(/\s+/g, ' ').trim();
-    const skraceno = String(opis).slice(0, 300);
-    if (httpStatus >= 400) return { poslato: false, greska: `Server je odgovorio sa ${httpStatus}: ${skraceno}` };
-    // JSON sa porukom primaoca (npr. da rezervacija već postoji) se prikazuje kakav jeste
-    return { poslato: false, greska: j && typeof j === 'object' ? skraceno : `Odgovor nije {"status":"ok"}: ${skraceno}` };
+    // Poruka primaoca (npr. da rezervacija već postoji) se prikazuje; sirov odgovor (HTML, eho) ide samo u dnevnik servera
+    const poruka = j && typeof j === 'object' ? (j.poruka || j.message || j.error || j.greska || j.opis || null) : null;
+    if (!poruka) console.warn(`[slanje rezervacija] odgovor bez {"status":"ok"} (HTTP ${httpStatus}):`, String(telo ?? '').replace(/\s+/g, ' ').slice(0, 300));
+    if (httpStatus >= 400) return { poslato: false, greska: `Server fakulteta je vratio grešku (HTTP ${httpStatus})${poruka ? `: ${String(poruka).slice(0, 300)}` : '.'}` };
+    return { poslato: false, greska: poruka ? String(poruka).slice(0, 300) : 'Server fakulteta nije potvrdio rezervaciju.' };
 };
 
 const adresaSlanja = () => procitaj(K_POST_URL);

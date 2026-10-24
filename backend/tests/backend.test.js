@@ -527,7 +527,7 @@ test('slanje rezervacija: prošlo je samo {"status":"ok"}, ostalo je greška sa 
     assert.match(postoji.greska, /već postoji/);
     const eho = oceniOdgovor(200, '--- Kompletan sirovi POST sadržaj ---\n{"format":"x"}');
     assert.equal(eho.poslato, false);
-    assert.match(eho.greska, /Odgovor nije/);
+    assert.equal(eho.greska, 'Server fakulteta nije potvrdio rezervaciju.', 'bez sirovog HTML-a u poruci');
     assert.match(oceniOdgovor(500, 'Greška servera').greska, /500/);
     assert.equal(oceniOdgovor(200, '{"status":"ok"}'.repeat(1)).poslato, true);
 });
