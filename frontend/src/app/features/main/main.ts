@@ -133,7 +133,7 @@ export class Main implements OnInit, AfterViewInit {
     firstDay: 1,
     displayEventEnd: false,
     dayMaxEvents: 4,
-    datesSet: () => { setTimeout(() => this.azurirajPrazno(), 0); },
+    datesSet: () => { setTimeout(() => this.azurirajPrazno(), 0); this.detectConflicts(); },
     // ispiti i kolokvijumi uvek ispred redovne nastave, da ih "+N još" nikad ne sakrije
     eventOrder: (a: any, b: any) => (a.extendedProps?.isNastava ? 1 : 0) - (b.extendedProps?.isNastava ? 1 : 0) || String(a.start).localeCompare(String(b.start)),
     moreLinkContent: (arg) => `+${arg.num} još`,
@@ -1472,6 +1472,7 @@ export class Main implements OnInit, AfterViewInit {
 
     this.cdr.detectChanges();
     setTimeout(() => this.azurirajPrazno(), 50);
+    this.detectConflicts();
   }
 
   fetchStats(): void {
@@ -1704,23 +1705,28 @@ export class Main implements OnInit, AfterViewInit {
     }
 
     document.querySelectorAll('body > .custom-conflict-tooltip').forEach(el => el.remove()); // ostaci prethodnog crtanja
-    const allEvents = this.calendarComponent.getApi().getEvents();
+    // Svi učitani termini, i redovna nastava sakrivena filterom: zauzeta sala je zauzeta i kad se ne prikazuje
     const conflictsByDate = new Map<string, string[]>();
     const eventsByDate: Record<string, any[]> = {};
+    const daniSaTerminima = new Set<string>();
 
-    allEvents.forEach(evt => {
-      const dateStr = evt.start?.toISOString().split('T')[0] || evt.startStr.split('T')[0];
+    this.allLoadedEvents.forEach(evt => {
+      const dateStr = String(evt.start || '').split('T')[0];
+      if (!dateStr) return;
       if (!eventsByDate[dateStr]) eventsByDate[dateStr] = [];
       eventsByDate[dateStr].push(evt);
+      if (!evt.extendedProps?.isNastava) daniSaTerminima.add(dateStr);
     });
 
-    for (const date in eventsByDate) {
+    for (const date of daniSaTerminima) {
       const evts = eventsByDate[date];
       const razlozi: string[] = [];
       for (let i = 0; i < evts.length; i++) {
         for (let j = i + 1; j < evts.length; j++) {
           const e1 = evts[i];
           const e2 = evts[j];
+          // preklapanja unutar samog rasporeda nastave (podaci sa IMI sajta) nisu naš konflikt
+          if (e1.extendedProps?.isNastava && e2.extendedProps?.isNastava) continue;
           const g1 = e1.extendedProps['grupa_kljuc'];
           if (g1 && g1 === e2.extendedProps['grupa_kljuc']) continue;
           const kraj1 = String(e1.extendedProps['vremeKraja'] || e1.extendedProps['vreme_kraja'] || '').trim();
