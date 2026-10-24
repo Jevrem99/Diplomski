@@ -21,7 +21,7 @@ export class ToastService {
     this.tajmer = setTimeout(() => {
       this.showToast.set(false);
       this.action.set(null);
-    }, akcija ? 7000 : 3000);
+    }, akcija ? 7000 : Math.min(3000 + msg.length * 50, 10000)); // duža poruka ostaje duže
   }
 
   pokreniAkciju() {

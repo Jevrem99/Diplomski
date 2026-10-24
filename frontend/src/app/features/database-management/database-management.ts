@@ -16,7 +16,7 @@ interface ColumnDef {
   hideInTable?: boolean; // da li je kolona sakrivena u tabeli
 }
 
-import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
+import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
 import { PotvrdaService } from '../../core/services/potvrda.service';
 @Component({
   selector: 'app-database-management',
@@ -319,7 +319,7 @@ export class DatabaseManagement implements OnInit {
 
   // Podaci koji su po prirodi latinični (ne preslovljavaju se u ćirilicu)
   jeLatinicnaKolona(colKey: string): boolean {
-    return ['username', 'email', 'korisnik', 'password', 'sifra'].includes(colKey);
+    return ['username', 'email', 'korisnik', 'password', 'sifra', 'akcija'].includes(colKey);
   }
 
   formatCellValue(row: any, colKey: string): string {

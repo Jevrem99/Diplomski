@@ -23,7 +23,7 @@ import { MESECI } from './calendar-config';
 import { trajanjeUSatima, semestarOpseg } from '../../core/utils/vreme';
 import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
-import { environment } from '../../../environments/environment';
+import { environment } from '../../../environments/environment';
 import { PotvrdaService } from '../../core/services/potvrda.service';
 import { RezervacijeSalaDialogComponent } from '../../shared/components/rezervacije-sala-dialog/rezervacije-sala-dialog.component';
 import { UvozPregledDialogComponent, UvozPregled, UvozStavka } from '../../shared/components/uvoz-pregled-dialog/uvoz-pregled-dialog.component';
@@ -675,25 +675,28 @@ export class Main implements OnInit, AfterViewInit {
       this.http.put<any>(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
         next: (odgovor) => {
           if (odgovor?.objavljeno === 0) {
-            // Svi termini su već objavljeni: nema šta novo da se rezerviše
-            this.toastService.show('Nema novih termina za objavljivanje. Fajl sa rezervacijama za već objavljene kolokvijume pogledajte dugmetom „Pregled rezervacija sala“.', 'error');
+            this.potvrda.obavesti('Svi termini su već objavljeni. Rezervacije za objavljene kolokvijume su u „Pregled rezervacija sala“.', 'Nema novih termina');
             return;
           }
+          // Rezultat ostaje na ekranu dok ga korisnik ne zatvori (obaveštenje bi nestalo pre nego što se pročita)
           const rez = odgovor?.rezervacije;
           const broj = rez?.rezervacije?.length ?? 0;
-          if (odgovor?.slanje?.ukljuceno && !odgovor.slanje.poslato) {
-            this.toastService.show(`Raspored je objavljen, ali slanje rezervacija na podešenu adresu nije uspelo (${odgovor.slanje.greska}). Proverite Podešavanja.`, 'error');
-            if (broj > 0) this.preuzmiRezervacije(rez);
-            return;
-          }
+          const slanje = odgovor?.slanje;
+          const redovi = [`Objavljeno termina: ${odgovor?.objavljeno ?? 0}.`];
           if (broj > 0) {
             this.preuzmiRezervacije(rez);
-            const bezSale = rez.bez_sale?.length ? ` Bez sale: ${rez.bez_sale.length} (nisu u fajlu).` : '';
-            const poslato = odgovor?.slanje?.poslato ? ` Rezervisano na fakultetu: ${odgovor.slanje.uspesno}.` : '';
-            this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}${poslato}`, 'success');
+            redovi.push(`Rezervacija sala za kolokvijume: ${broj} (fajl je preuzet).`);
           } else {
-            this.toastService.show('Raspored je uspešno objavljen! Među objavljenim terminima nema kolokvijuma sa izabranom salom, pa nema rezervacija.', 'success');
+            redovi.push('Među objavljenim terminima nema kolokvijuma sa salom, pa nema rezervacija.');
           }
+          if (rez?.bez_sale?.length) redovi.push(`Kolokvijumi bez izabrane sale: ${rez.bez_sale.length} (nisu rezervisani).`);
+          if (slanje?.ukljuceno) {
+            redovi.push(slanje.poslato
+              ? `Fakultet: rezervisano ${slanje.uspesno} od ${slanje.ukupno}.`
+              : `Fakultet: rezervisano ${slanje.uspesno ?? 0} od ${slanje.ukupno ?? broj}. ${slanje.greska || ''}`.trim());
+            if (!slanje.poslato) redovi.push('Nerezervisane možete poslati ponovo: Podešavanja → Integracija → „Pošalji neposlate“.');
+          }
+          this.potvrda.obavesti(redovi.join('\n'), slanje?.ukljuceno && !slanje.poslato ? 'Raspored je objavljen, rezervacija nije potpuna' : 'Raspored je objavljen');
         },
         error: (err) => {
           console.error('Greška:', err);
