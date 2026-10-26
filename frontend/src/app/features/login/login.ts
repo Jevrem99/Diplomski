@@ -84,7 +84,7 @@ export class Login implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.toast.show('Pogrešno korisničko ime ili lozinka!', 'error');
+        this.toast.show('Pogrešno korisničko ime ili lozinka. Za PMF (IMI) nalog koristite dugme „Prijava preko PMF naloga“.', 'error');
       }
     });
   }
