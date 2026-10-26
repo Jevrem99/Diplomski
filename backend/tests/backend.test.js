@@ -547,3 +547,13 @@ test('rezervacije sala: termini koji čine rezervaciju su zapamćeni, ali ne idu
     assert.equal(JSON.stringify(r).includes('ispitIds'), false);
     assert.equal(JSON.stringify(r).includes('_ispiti'), false);
 });
+
+test('PMF: fakultetska adresa (Microsoft prijava) se svodi na IMI korisničko ime, druge adrese ne', () => {
+    const { imeIzFakultetskeAdrese, nadjiKorisnickoIme } = pmf._internal;
+    assert.equal(imeIzFakultetskeAdrese('Luka.Vuksanovic@pmf.kg.ac.rs'), 'luka.vuksanovic');
+    assert.equal(imeIzFakultetskeAdrese('ana.anic@imi.pmf.kg.ac.rs'), 'ana.anic');
+    assert.equal(imeIzFakultetskeAdrese('luka.vuksanovic@gmail.com'), null, 'tuđ domen se ne svodi na ime');
+    assert.equal(imeIzFakultetskeAdrese('x@pmf.kg.ac.rs.zlo.com'), null);
+    assert.equal(nadjiKorisnickoIme({ username: 'luka.vuksanovic@pmf.kg.ac.rs' }), 'luka.vuksanovic');
+    assert.equal(nadjiKorisnickoIme({ username: 'neko@gmail.com' }), null);
+});

@@ -48,10 +48,23 @@ const nadjiEmail = (v, dubina = 0) => {
 
 // Ako odgovor nema e-mail: korisničko ime iz poznatih polja (npr. "luka.vuksanovic")
 const KLJUCEVI_IMENA = /^(username|user_name|korisnicko_ime|korisnik|login|uid|user)$/i;
+
+// Fakultetski domeni: adresa ime.prezime@pmf.kg.ac.rs je isto što i IMI korisničko ime ime.prezime
+// (Microsoft prijava šalje tu adresu umesto e-maila iz IMI profila). Drugi domeni se nikad ne svode na ime.
+const FAKULTETSKI_DOMENI = (process.env.PMF_DOMENI || 'pmf.kg.ac.rs')
+    .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean);
+const imeIzFakultetskeAdrese = (adresa) => {
+    const m = String(adresa || '').trim().toLowerCase().match(/^([a-z0-9._-]{2,64})@([a-z0-9.-]+)$/);
+    return m && FAKULTETSKI_DOMENI.some((d) => m[2] === d || m[2].endsWith(`.${d}`)) ? m[1] : null;
+};
+
 const nadjiKorisnickoIme = (v, dubina = 0) => {
     if (dubina > 4 || !v || typeof v !== 'object') return null;
     for (const [k, x] of Object.entries(v)) {
-        if (KLJUCEVI_IMENA.test(k) && typeof x === 'string' && /^[A-Za-z0-9._-]{2,64}$/.test(x.trim())) return x.trim();
+        if (!KLJUCEVI_IMENA.test(k) || typeof x !== 'string') continue;
+        if (/^[A-Za-z0-9._-]{2,64}$/.test(x.trim())) return x.trim();
+        const izAdrese = imeIzFakultetskeAdrese(x);
+        if (izAdrese) return izAdrese;
     }
     for (const x of Object.values(v)) { const r = nadjiKorisnickoIme(x, dubina + 1); if (r) return r; }
     return null;
@@ -177,10 +190,11 @@ const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime 
         const postojeci = await prisma.user.findFirst({ where: { email: { equals: email, mode: 'insensitive' } }, select: izbor });
         if (postojeci) return { korisnik: postojeci, nov: false };
     }
-    // Bez poklapanja po e-mailu: isto korisničko ime, ili e-mail čiji deo pre @ je to ime
-    if (korisnickoIme) {
-        const poImenu = await prisma.user.findFirst({ where: { username: { equals: korisnickoIme, mode: 'insensitive' } }, select: izbor })
-            || await prisma.user.findFirst({ where: { email: { startsWith: `${korisnickoIme}@`, mode: 'insensitive' } }, select: izbor });
+    // Bez poklapanja po e-mailu: isto korisničko ime (od IMI-ja, ili iz fakultetske adrese), ili e-mail čiji deo pre @ je to ime
+    const imena = [...new Set([korisnickoIme, imeIzFakultetskeAdrese(email)].filter(Boolean).map((x) => x.toLowerCase()))];
+    for (const ime of imena) {
+        const poImenu = await prisma.user.findFirst({ where: { username: { equals: ime, mode: 'insensitive' } }, select: izbor })
+            || await prisma.user.findFirst({ where: { email: { startsWith: `${ime}@`, mode: 'insensitive' } }, select: izbor });
         if (poImenu) return { korisnik: poImenu, nov: false };
     }
     // Postojeći korisnik je prošao gore (admin ga je dodao ili zadržao). Odavde se pravi novi nalog:
@@ -213,5 +227,5 @@ const izdajSesiju = (korisnik) => userModel.generateJwtToken(korisnik);
 
 module.exports = {
     proveriToken, nadjiIliNapraviKorisnika, izdajSesiju, PmfGreska,
-    _internal: { nadjiEmail, javljaGresku, nadjiKorisnickoIme, nadjiImePrezime, nadjiVrstu, jeStudent, jeZaposlen, oblik }
+    _internal: { imeIzFakultetskeAdrese, nadjiEmail, javljaGresku, nadjiKorisnickoIme, nadjiImePrezime, nadjiVrstu, jeStudent, jeZaposlen, oblik }
 };
