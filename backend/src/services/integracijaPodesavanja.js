@@ -5,11 +5,12 @@ const config = require('../config/config');
 
 // Podešavanja integracije sa sistemom fakulteta (menjaju se u aplikaciji, bez restarta servera):
 //  - ključ kojim sistem fakulteta preuzima rezervacije (u bazi se čuva samo njegov SHA-256, ne i sam ključ)
-//  - opciona adresa na koju aplikacija sama šalje JSON posle objavljivanja (POST), i opcioni ključ za tu adresu
+//  - adresa sistema fakulteta za rezervaciju sala (POST), lozinka koju taj sistem traži i IMI nalog koji rezerviše
 // Ključ iz baze ima prednost nad INTEGRACIJA_API_KLJUC iz .env.
 const K_HASH = 'integracija_kljuc_hash';
 const K_POST_URL = 'integracija_post_url';
-const K_POST_KLJUC = 'integracija_post_kljuc';
+const K_POST_KLJUC = 'integracija_post_kljuc';        // lozinka za rezervacije (polje "password" u zahtevu)
+const K_POST_USERNAME = 'integracija_post_username';  // IMI korisnik u čije ime se rezerviše (prazno = ko objavljuje)
 
 const sazetakHex = (v) => crypto.createHash('sha256').update(String(v)).digest('hex');
 
@@ -53,31 +54,41 @@ const stanje = async () => {
         kljucPodesen: izvor !== null,
         kljucIzvor: izvor,
         postUrl: await procitaj(K_POST_URL),
-        postKljucPodesen: Boolean(await procitaj(K_POST_KLJUC))
+        postKljucPodesen: Boolean(await procitaj(K_POST_KLJUC)),
+        postUsername: await procitaj(K_POST_USERNAME)
     };
 };
 
-// url === '': isključi slanje; kljuc: undefined = ne menjaj, '' = obriši
-const postaviSlanje = async ({ url, kljuc }) => {
+// url === '': isključi slanje; kljuc i username: undefined = ne menjaj, '' = obriši
+const postaviSlanje = async ({ url, kljuc, username }) => {
     if (url === '') {
         await obrisi(K_POST_URL);
         await obrisi(K_POST_KLJUC);
+        await obrisi(K_POST_USERNAME);
         return;
     }
     await upisi(K_POST_URL, url);
     if (kljuc === '') await obrisi(K_POST_KLJUC);
     else if (typeof kljuc === 'string') await upisi(K_POST_KLJUC, kljuc);
+    if (username === '') await obrisi(K_POST_USERNAME);
+    else if (typeof username === 'string') await upisi(K_POST_USERNAME, username.trim());
 };
 
-// Odgovor primaoca: rezervacija je prošla samo ako je telo JSON {"status":"ok"}; svaki drugi odgovor je greška
-// i njegov tekst (npr. poruka da rezervacija već postoji) se vraća da ga administrator vidi.
+const podesavanjaSlanja = async () => ({
+    url: await procitaj(K_POST_URL),
+    lozinka: await procitaj(K_POST_KLJUC),
+    username: await procitaj(K_POST_USERNAME)
+});
+
+// Odgovor sistema fakulteta: uspeh je JSON sa "status": "uspeh" (ili "ok"); svaki drugi odgovor je greška
+// i njegova poruka (npr. "Termin je zauzet.") se vraća da je administrator vidi.
 const oceniOdgovor = (httpStatus, telo) => {
     let j = telo;
     if (typeof telo === 'string') {
         try { j = JSON.parse(telo); } catch { j = null; }
     }
-    if (httpStatus >= 200 && httpStatus < 300 && j && typeof j === 'object' && String(j.status).toLowerCase() === 'ok') {
-        return { poslato: true, greska: null };
+    if (httpStatus >= 200 && httpStatus < 300 && j && typeof j === 'object' && ['ok', 'uspeh'].includes(String(j.status).toLowerCase())) {
+        return { poslato: true, greska: null, idRezervacije: j.idRezervacije ?? null };
     }
     // Poruka primaoca (npr. da rezervacija već postoji) se prikazuje; sirov odgovor (HTML, eho) ide samo u dnevnik servera
     const poruka = j && typeof j === 'object' ? (j.poruka || j.message || j.error || j.greska || j.opis || null) : null;
@@ -88,26 +99,26 @@ const oceniOdgovor = (httpStatus, telo) => {
 
 const adresaSlanja = () => procitaj(K_POST_URL);
 
-// Šalje JSON rezervacija na podešenu adresu. Nikad ne baca grešku: objavljivanje ne sme da zavisi od tuđeg servera.
-const posaljiRezervacije = async (rezervacije) => {
+// Šalje JSON na adresu sistema fakulteta. Nikad ne baca grešku: objavljivanje ne sme da zavisi od tuđeg servera.
+// Vraća { httpStatus, telo } ili { greska } kad server nije dostupan.
+const posaljiJson = async (telo) => {
     const url = await procitaj(K_POST_URL);
-    if (!url) return { ukljuceno: false, poslato: false, status: null, greska: null };
-    const kljuc = await procitaj(K_POST_KLJUC);
+    if (!url) return { greska: 'Adresa za slanje nije podešena.' };
     try {
-        const r = await axios.post(url, rezervacije, {
+        const r = await axios.post(url, telo, {
             timeout: 10000,
             maxRedirects: 0,
             validateStatus: () => true,
             responseType: 'text',
             transformResponse: (x) => x,
-            headers: { 'Content-Type': 'application/json', ...(kljuc ? { 'X-API-Key': kljuc } : {}) }
+            headers: { 'Content-Type': 'application/json' }
         });
-        return { ukljuceno: true, status: r.status, ...oceniOdgovor(r.status, r.data) };
+        return { httpStatus: r.status, telo: r.data };
     } catch (err) {
-        return { ukljuceno: true, poslato: false, status: null, greska: err.code || err.message };
+        return { greska: `Sistem fakulteta nije dostupan (${err.code || err.message}).` };
     }
 };
 
 module.exports = {
-    oceniOdgovor, adresaSlanja, ocekivaniKljuc, napraviKljuc, ukloniKljucIzBaze, stanje, postaviSlanje, posaljiRezervacije, jeAdresa, sazetakHex
+    oceniOdgovor, adresaSlanja, podesavanjaSlanja, posaljiJson, ocekivaniKljuc, napraviKljuc, ukloniKljucIzBaze, stanje, postaviSlanje, jeAdresa, sazetakHex
 };

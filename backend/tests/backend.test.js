@@ -520,7 +520,7 @@ test('PMF: grupa "rezervacija" u ismemberof znači predavač (stvaran oblik odgo
 
 test('slanje rezervacija: prošlo je samo {"status":"ok"}, ostalo je greška sa tekstom primaoca', () => {
     const { oceniOdgovor } = require('../src/services/integracijaPodesavanja');
-    assert.deepEqual(oceniOdgovor(200, '{"status":"ok"}'), { poslato: true, greska: null });
+    assert.deepEqual(oceniOdgovor(200, '{"status":"ok"}'), { poslato: true, greska: null, idRezervacije: null });
     assert.equal(oceniOdgovor(200, '{"status":"OK"}').poslato, true);
     const postoji = oceniOdgovor(200, '{"status":"greska","poruka":"Rezervacija A-0-15 već postoji"}');
     assert.equal(postoji.poslato, false);
@@ -556,4 +556,30 @@ test('PMF: fakultetska adresa (Microsoft prijava) se svodi na IMI korisničko im
     assert.equal(imeIzFakultetskeAdrese('x@pmf.kg.ac.rs.zlo.com'), null);
     assert.equal(nadjiKorisnickoIme({ username: 'luka.vuksanovic@pmf.kg.ac.rs' }), 'luka.vuksanovic');
     assert.equal(nadjiKorisnickoIme({ username: 'neko@gmail.com' }), null);
+});
+
+test('rezervacija na fakultetu: oznaka prostorije, telo zahteva i odgovor "uspeh"', () => {
+    const { _internal: { idProstorije, zahtevZaRezervaciju } } = require('../src/services/slanjeRezervacija');
+    const { oceniOdgovor } = require('../src/services/integracijaPodesavanja');
+    assert.equal(idProstorije('A-II-1'), 1);
+    assert.equal(idProstorije('А-II-1'), 1, 'ćirilično А');
+    assert.equal(idProstorije('A-II-24R'), 3);
+    assert.equal(idProstorije('A-II-24r'), 3);
+    assert.equal(idProstorije('A-II-24'), 24);
+    assert.equal(idProstorije('A-0-15'), 103);
+    assert.equal(idProstorije('Свечана сала'), 104);
+    assert.equal(idProstorije('Физика Рачунарска'), 102);
+    assert.equal(idProstorije('A-I-1'), null, 'sala koju fakultet nema');
+    const r = { id: 'kol-45', sala: 'A-0-15', datum: '2027-10-25', od: '08:00', do: '09:30', tip_opis: 'I колоквијум', predmeti: [{ naziv: 'Математика 1' }, { naziv: 'Физика' }] };
+    assert.deepEqual(zahtevZaRezervaciju(r, { lozinka: 'tajna', username: 'pera.peric', rezervisao: 'Pera Perić' }), {
+        password: 'tajna',
+        termin: { datum: '2027-10-25', vreme_od: '08:00', trajanje_minuta: 90, idProstorije: 103 },
+        rezervisao: 'Pera Perić',
+        username: 'pera.peric',
+        naziv: 'I колоквијум – Математика 1, Физика'
+    });
+    assert.deepEqual(oceniOdgovor(200, '{"status":"uspeh","poruka":"Rezervacija je uspešno kreirana.","idRezervacije":338240}'),
+        { poslato: true, greska: null, idRezervacije: 338240 });
+    assert.deepEqual(oceniOdgovor(200, '{"status":"greska","poruka":"Termin je zauzet.","idRezervacije":338239}'),
+        { poslato: false, greska: 'Termin je zauzet.' });
 });

@@ -604,6 +604,13 @@ const updateIspit = async (req, res) => {
 const deleteIspit = async (req, res) => {
     const { id } = req.params;
     try {
+        // Rezervacija sale u sistemu fakulteta se briše zajedno sa terminom (neuspeh ne sprečava brisanje)
+        try {
+            const { upozorenja } = await slanjeRezervacija.otkaziZaIspite([Number(id)]);
+            if (upozorenja.length) await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija', upozorenja.join(' | ').slice(0, 500));
+        } catch (e) {
+            console.error('Brisanje rezervacije na fakultetu nije uspelo:', e.message);
+        }
         const deletedIspit = await ispitModel.deleteIspit(id);
         if (!deletedIspit || deletedIspit.count === 0) {
             return res.status(404).json({ error: 'Ispit not found' });
@@ -864,7 +871,7 @@ const publishAll = async (req, res) => {
         // (samo nove: sistem fakulteta odbija rezervaciju koja već postoji). Greška ne ruši objavljivanje.
         let slanje = { ukljuceno: false, poslato: false, status: null, greska: null };
         try {
-            slanje = await slanjeRezervacija.posaljiIZabelezi(rezervacije);
+            slanje = await slanjeRezervacija.posaljiIZabelezi(rezervacije, req.user);
             if (slanje.ukljuceno) {
                 await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
                     slanje.poslato ? `Rezervisano ${slanje.uspesno} sala` : `Slanje rezervacija: ${slanje.greska}`);

@@ -42,16 +42,19 @@ const ukloniKljuc = async (req, res) => {
 // PUT /admin/integracija/slanje { url, kljuc? }: adresa na koju se šalje JSON posle objavljivanja ('' = isključeno)
 const postaviSlanje = async (req, res) => {
     try {
-        const { url, kljuc } = req.body || {};
+        const { url, kljuc, username } = req.body || {};
         const prazno = url === '' || url === null || url === undefined;
         const cistaAdresa = prazno ? '' : String(url).trim();
         if (!prazno && !pod.jeAdresa(cistaAdresa)) {
             return res.status(400).json({ error: 'Adresa mora počinjati sa http:// ili https://.' });
         }
         if (kljuc !== undefined && (typeof kljuc !== 'string' || kljuc.length > 200)) {
-            return res.status(400).json({ error: 'Ključ za slanje je predugačak.' });
+            return res.status(400).json({ error: 'Lozinka za rezervacije je predugačka.' });
         }
-        await pod.postaviSlanje({ url: cistaAdresa, kljuc });
+        if (username !== undefined && (typeof username !== 'string' || (username !== '' && !/^[A-Za-z0-9._-]{2,64}$/.test(username.trim())))) {
+            return res.status(400).json({ error: 'IMI korisničko ime nije ispravno.' });
+        }
+        await pod.postaviSlanje({ url: cistaAdresa, kljuc, username });
         await logAction(korisnik(req), 'UPDATE', 'Integracija', prazno ? 'Isključeno slanje JSON-a' : 'Podešena adresa za slanje JSON-a');
         res.status(200).json(await pod.stanje());
     } catch (err) {
@@ -63,7 +66,7 @@ const postaviSlanje = async (req, res) => {
 const neposlate = async (req, res) => {
     try {
         if (!(await pod.adresaSlanja())) return res.status(400).json({ error: 'Adresa za slanje nije podešena.' });
-        const ishod = await posaljiNeposlate(korisnik(req));
+        const ishod = await posaljiNeposlate(req.user);
         if (ishod.ukupno) {
             await logAction(korisnik(req), 'UPDATE', 'Integracija',
                 ishod.poslato ? `Rezervisano ${ishod.uspesno} sala` : `Slanje rezervacija: ${ishod.greska}`);

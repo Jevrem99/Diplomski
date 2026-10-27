@@ -64,10 +64,11 @@ export class Settings implements OnInit {
   }
 
   // Integracija (samo administrator)
-  integracija: { kljucPodesen: boolean; kljucIzvor: string | null; postUrl: string | null; postKljucPodesen: boolean } | null = null;
+  integracija: { kljucPodesen: boolean; kljucIzvor: string | null; postUrl: string | null; postKljucPodesen: boolean; postUsername?: string | null } | null = null;
   noviKljuc: string | null = null;
   postUrlUnos = '';
   postKljucUnos = '';
+  postUsernameUnos = '';
   slanjeUToku = false;
 
   get jeAdmin(): boolean {
@@ -83,6 +84,7 @@ export class Settings implements OnInit {
     this.integracija = i;
     this.postUrlUnos = i.postUrl || '';
     this.postKljucUnos = '';
+    this.postUsernameUnos = i.postUsername || '';
     this.cdr.detectChanges();
   }
 
@@ -134,7 +136,7 @@ export class Settings implements OnInit {
   }
 
   sacuvajSlanje(): void {
-    const telo: any = { url: this.postUrlUnos.trim() };
+    const telo: any = { url: this.postUrlUnos.trim(), username: this.postUsernameUnos.trim() };
     if (this.postKljucUnos) telo.kljuc = this.postKljucUnos;
     this.http.put<any>(`${this.API_URL}/admin/integracija/slanje`, telo).subscribe({
       next: (i) => { this.primeniIntegraciju(i); this.toast.show('Sačuvano.', 'success'); },

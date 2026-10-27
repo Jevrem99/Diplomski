@@ -328,3 +328,18 @@ ALTER TABLE "Ispit"
     ADD COLUMN IF NOT EXISTS "rezervacija_status" TEXT,
     ADD COLUMN IF NOT EXISTS "rezervacija_poruka" TEXT,
     ADD COLUMN IF NOT EXISTS "rezervacija_vreme" TIMESTAMP(3);
+
+-- CreateTable
+CREATE TABLE IF NOT EXISTS "RezervacijaFakulteta" (
+    "id" SERIAL NOT NULL,
+    "kljuc" TEXT NOT NULL,
+    "id_rezervacije" INTEGER NOT NULL,
+    "ispiti" INTEGER[] NOT NULL DEFAULT '{}',
+    "sala" TEXT NOT NULL,
+    "datum" TEXT NOT NULL,
+    "vreme_od" TEXT NOT NULL,
+    "vreme_do" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "RezervacijaFakulteta_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "RezervacijaFakulteta_id_rezervacije_idx" ON "RezervacijaFakulteta"("id_rezervacije");

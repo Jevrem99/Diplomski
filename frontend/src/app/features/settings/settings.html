@@ -125,9 +125,14 @@
                 <input type="text" [(ngModel)]="postUrlUnos" name="postUrl" class="custom-input-field" data-lat placeholder="https://...">
               </div>
               <div class="form-group">
-                <label class="form-label">Ključ za slanje</label>
+                <label class="form-label">Lozinka za rezervacije</label>
                 <input type="password" [(ngModel)]="postKljucUnos" name="postKljuc" class="custom-input-field" autocomplete="off"
                        [placeholder]="integracija?.postKljucPodesen ? 'Podešen' : ''">
+              </div>
+              <div class="form-group">
+                <label class="form-label">IMI nalog koji rezerviše</label>
+                <input type="text" [(ngModel)]="postUsernameUnos" name="postUsername" class="custom-input-field" data-lat
+                       placeholder="prazno = ko objavljuje">
               </div>
               <div class="flex gap-2 flex-wrap">
                 <button type="button" class="btn-save-colors" (click)="sacuvajSlanje()">Sačuvaj</button>
@@ -137,7 +142,7 @@
                   </button>
                 }
                 @if (integracija?.postKljucPodesen) {
-                  <button type="button" class="btn-reset-colors" (click)="obrisiKljucZaSlanje()">Obriši ključ</button>
+                  <button type="button" class="btn-reset-colors" (click)="obrisiKljucZaSlanje()">Obriši lozinku</button>
                 }
               </div>
             </div>

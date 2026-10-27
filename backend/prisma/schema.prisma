@@ -228,3 +228,18 @@ model SacuvaniRaspored {
 
   @@index([created_at])
 }
+
+// Rezervacije napravljene u sistemu fakulteta (IMI): id je potreban za brisanje kad se termin izmeni ili obriše
+model RezervacijaFakulteta {
+  id             Int      @id @default(autoincrement())
+  kljuc          String
+  id_rezervacije Int
+  ispiti         Int[]
+  sala           String
+  datum          String
+  vreme_od       String
+  vreme_do       String
+  created_at     DateTime @default(now())
+
+  @@index([id_rezervacije])
+}
