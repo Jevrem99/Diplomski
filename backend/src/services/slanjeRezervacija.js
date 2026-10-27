@@ -47,12 +47,13 @@ const odrediRezervisao = async (korisnik, usernameIzPodesavanja) => {
     return { username, rezervisao: ime || username };
 };
 
-// Briše u sistemu fakulteta sve naše rezervacije u kojima učestvuje neki od ovih termina.
-// Vraća id-jeve OSTALIH termina iz tih rezervacija (njih treba ponovo rezervisati) i upozorenja.
-const otkaziZaIspite = async (ispitIds) => {
+// Briše u sistemu fakulteta naše rezervacije u kojima učestvuje neki od ovih termina; zadrzi(red) = true ostavlja red
+// (npr. sala koja je već rezervisana i ne šalje se ponovo). Vraća id-jeve OSTALIH termina iz obrisanih rezervacija
+// (njih treba ponovo rezervisati) i upozorenja.
+const otkaziZaIspite = async (ispitIds, zadrzi = () => false) => {
     const ids = [...new Set((ispitIds || []).map(Number).filter(Boolean))];
     if (!ids.length) return { ostali: [], upozorenja: [] };
-    const redovi = await prisma.rezervacijaFakulteta.findMany({ where: { ispiti: { hasSome: ids } } });
+    const redovi = (await prisma.rezervacijaFakulteta.findMany({ where: { ispiti: { hasSome: ids } } })).filter((red) => !zadrzi(red));
     if (!redovi.length) return { ostali: [], upozorenja: [] };
     const { lozinka } = await pod.podesavanjaSlanja();
     const upozorenja = [];
@@ -72,15 +73,25 @@ const otkaziZaIspite = async (ispitIds) => {
 
 const BEZ_SLANJA = { ukljuceno: false, poslato: false, uspesno: 0, ukupno: 0, greska: null };
 
-// paket: rezultat napraviRezervacije (rezervacije imaju nevidljivo polje ispitIds); korisnik: ko objavljuje
-const posaljiIZabelezi = async (paket, korisnik = null) => {
+// Rezervacija je ista kao zapamćeni red ako su sala, datum i vreme isti
+const istiTermin = (red, r) => red.kljuc === r.id && red.sala === r.sala && red.datum === r.datum && red.vreme_od === r.od && red.vreme_do === r.do;
+
+// paket: rezultat napraviRezervacije (rezervacije imaju nevidljivo polje ispitIds); korisnik: ko objavljuje.
+// sve: sve trenutne rezervacije tih termina (kad se šalje samo deo, npr. neposlate); podrazumevano = paket.
+const posaljiIZabelezi = async (paket, korisnik = null, sve = null) => {
     const lista = paket?.rezervacije || [];
     const cfg = await pod.podesavanjaSlanja();
     if (!lista.length || !cfg.url) return BEZ_SLANJA;
     const identitet = await odrediRezervisao(korisnik, cfg.username);
 
-    // Stare rezervacije ovih termina (npr. pre izmene vremena ili sale) se prvo brišu, pa se prave nove
-    const { upozorenja } = await otkaziZaIspite(lista.flatMap((r) => r.ispitIds || []));
+    // Prvo se brišu zapamćene rezervacije ovih termina koje se šalju ponovo ili više ne važe (izmenjen termin,
+    // uklonjena sala); rezervisane sale koje se ne šalju ostaju netaknute
+    const kljuceviSlanja = new Set(lista.map((r) => r.id));
+    const vazece = sve || lista;
+    const { upozorenja } = await otkaziZaIspite(
+        lista.flatMap((r) => r.ispitIds || []),
+        (red) => !kljuceviSlanja.has(red.kljuc) && vazece.some((r) => istiTermin(red, r))
+    );
 
     const poIspitu = new Map();
     const greske = [];
@@ -108,6 +119,7 @@ const posaljiIZabelezi = async (paket, korisnik = null) => {
         });
     }
 
+    // Sale termina koje su ranije rezervisane, a sada se nisu slale, ne kvare status termina
     const sada = new Date();
     for (const [id, s] of poIspitu) {
         await prisma.ispit.update({
@@ -130,21 +142,29 @@ const posaljiIZabelezi = async (paket, korisnik = null) => {
     };
 };
 
-// Status slanja po rezervaciji (za pregled): 'ok' ako su svi termini rezervisani, 'greska' ako je bar jedan
-// odbijen, inače 'neposlato'
+// Status po sali (za pregled): 'ok' ako postoji zapamćena rezervacija fakulteta za tu salu i termin; 'greska' ako je
+// sala odbijena (poruka samo za tu salu); inače 'neposlato'
 const statusiRezervacija = async (paket) => {
-    const ids = [...new Set((paket.rezervacije || []).flatMap((r) => r.ispitIds || []))];
-    const ispiti = ids.length
-        ? await prisma.ispit.findMany({ where: { id: { in: ids } }, select: { id: true, rezervacija_status: true, rezervacija_poruka: true } })
-        : [];
+    const lista = paket.rezervacije || [];
+    const ids = [...new Set(lista.flatMap((r) => r.ispitIds || []))];
+    const [ispiti, redovi] = ids.length
+        ? await Promise.all([
+            prisma.ispit.findMany({ where: { id: { in: ids } }, select: { id: true, rezervacija_status: true, rezervacija_poruka: true } }),
+            prisma.rezervacijaFakulteta.findMany({ where: { kljuc: { in: lista.map((r) => r.id) } } })
+        ])
+        : [[], []];
     const poId = new Map(ispiti.map((i) => [i.id, i]));
     const statusi = {};
-    for (const r of paket.rezervacije || []) {
-        const stanja = (r.ispitIds || []).map((id) => poId.get(id)).filter(Boolean);
-        const losi = stanja.find((s) => s.rezervacija_status === 'greska');
-        if (losi) statusi[r.id] = { status: 'greska', poruka: losi.rezervacija_poruka };
-        else if (stanja.length && stanja.every((s) => s.rezervacija_status === 'ok')) statusi[r.id] = { status: 'ok' };
-        else statusi[r.id] = { status: 'neposlato' };
+    for (const r of lista) {
+        const red = redovi.find((x) => istiTermin(x, r));
+        if (red) { statusi[r.id] = { status: 'ok', idRezervacije: red.id_rezervacije }; continue; }
+        const poruke = (r.ispitIds || [])
+            .map((id) => poId.get(id))
+            .filter((s) => s && s.rezervacija_status === 'greska')
+            .flatMap((s) => String(s.rezervacija_poruka || '').split(' | '))
+            .filter((p) => p.startsWith(`${r.sala}: `))
+            .map((p) => p.slice(r.sala.length + 2));
+        statusi[r.id] = poruke.length ? { status: 'greska', poruka: [...new Set(poruke)].join(' | ') } : { status: 'neposlato' };
     }
     return statusi;
 };
@@ -156,7 +176,7 @@ const posaljiNeposlate = async (korisnik = null) => {
     const statusi = await statusiRezervacija(paket);
     const za = paket.rezervacije.filter((r) => statusi[r.id]?.status !== 'ok');
     if (!za.length) return { ...BEZ_SLANJA, ukljuceno: Boolean((await pod.podesavanjaSlanja()).url) };
-    return posaljiIZabelezi({ ...paket, rezervacije: za }, korisnik);
+    return posaljiIZabelezi({ ...paket, rezervacije: za }, korisnik, paket.rezervacije);
 };
 
 module.exports = {

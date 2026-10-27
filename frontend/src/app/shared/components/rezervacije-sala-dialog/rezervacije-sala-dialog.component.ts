@@ -10,7 +10,6 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
       <h2 class="rez-naslov">Pregled rezervacija sala</h2>
       <p class="rez-pod">
         {{ data.rez.rezervacije.length }} rezervacija za objavljene kolokvijume od danas nadalje.
-        Isti podaci su dostupni sistemu fakulteta preko adrese za integraciju.
       </p>
 
       <div class="rez-lista">
@@ -29,7 +28,7 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
                 <td>
                   @switch (data.rez.statusi?.[r.id]?.status) {
                     @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
-                    @case ('greska') { <span class="rez-st rez-st-greska" [title]="data.rez.statusi[r.id].poruka || ''">Odbijeno</span><div class="rez-poruka">{{ data.rez.statusi[r.id].poruka }}</div> }
+                    @case ('greska') { <span class="rez-st rez-st-greska" [title]="data.rez.statusi[r.id].poruka || ''">Odbijeno</span><div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div> }
                     @default { <span class="rez-st">Nije poslato</span> }
                   }
                 </td>
@@ -45,7 +44,7 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 
       <div class="rez-dugmad">
         <button type="button" class="rez-btn rez-btn-sek" (click)="ref.close(false)">Zatvori</button>
-        <button type="button" class="rez-btn" (click)="ref.close(true)">Preuzmi JSON fajl</button>
+        <button type="button" class="rez-btn" (click)="ref.close(true)">Preuzmi <span data-lat>JSON</span> fajl</button>
       </div>
     </div>
   `,
