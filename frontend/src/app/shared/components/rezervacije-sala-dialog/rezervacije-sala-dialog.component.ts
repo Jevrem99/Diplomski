@@ -9,27 +9,32 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
     <div class="rez">
       <h2 class="rez-naslov">Pregled rezervacija sala</h2>
       <p class="rez-pod">
-        {{ data.rez.rezervacije.length }} rezervacija za objavljene kolokvijume od danas nadalje.
+        Objavljeni kolokvijumi od danas nadalje: {{ grupe.length }} (sala: {{ data.rez.rezervacije.length }}).
+        Kolokvijum u više sala ima po jednu rezervaciju za svaku salu.
       </p>
 
       <div class="rez-lista">
         <table class="rez-tabela">
           <thead>
-            <tr><th>Datum</th><th>Vreme</th><th>Sala</th><th>Predmeti</th><th class="num">Studenata</th><th>Fakultet</th></tr>
+            <tr><th>Datum</th><th>Vreme</th><th>Predmeti</th><th class="num">Studenata</th><th>Sale i rezervacija na fakultetu</th></tr>
           </thead>
           <tbody>
-            @for (r of data.rez.rezervacije; track r.id) {
+            @for (g of grupe; track g.kljuc) {
               <tr>
-                <td>{{ datum(r.datum) }}</td>
-                <td>{{ r.od }}–{{ r.do }}@if (r.do_pretpostavljen) { <span class="rez-napomena" title="Kraj nije unet, uzeto je 2 sata">*</span> }</td>
-                <td>{{ r.sala }}@if (r.racunarska_sala) { <span class="rez-oznaka">račun.</span> }</td>
-                <td>{{ nazivi(r) }}</td>
-                <td class="num">{{ r.ukupno_studenata }}</td>
+                <td>{{ datum(g.prva.datum) }}</td>
+                <td>{{ g.prva.od }}–{{ g.prva.do }}@if (g.prva.do_pretpostavljen) { <span class="rez-napomena" title="Kraj nije unet, uzeto je 2 sata">*</span> }</td>
+                <td>{{ nazivi(g.prva) }}@if (g.prva.racunarska_sala) { <span class="rez-oznaka">račun.</span> }</td>
+                <td class="num">{{ g.prva.ukupno_studenata }}</td>
                 <td>
-                  @switch (data.rez.statusi?.[r.id]?.status) {
-                    @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
-                    @case ('greska') { <span class="rez-st rez-st-greska" [title]="data.rez.statusi[r.id].poruka || ''">Odbijeno</span><div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div> }
-                    @default { <span class="rez-st">Nije poslato</span> }
+                  @for (r of g.sale; track r.id) {
+                    <div class="rez-sala">
+                      <span class="rez-sala-ime">{{ r.sala }}</span>
+                      @switch (data.rez.statusi?.[r.id]?.status) {
+                        @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
+                        @case ('greska') { <span class="rez-st rez-st-greska">Odbijeno</span><div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div> }
+                        @default { <span class="rez-st">Nije poslato</span> }
+                      }
+                    </div>
                   }
                 </td>
               </tr>
@@ -63,6 +68,8 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
     .rez-st-ok { background: var(--tint-green-bg); color: var(--tint-green-fg); }
     .rez-st-greska { background: var(--danger-soft); color: var(--danger-text); }
     .rez-poruka { margin-top: 3px; font-size: 0.7rem; color: var(--muted); max-width: 220px; }
+    .rez-sala { margin: 2px 0 6px; }
+    .rez-sala-ime { display: inline-block; min-width: 64px; font-weight: 700; margin-right: 6px; }
     .rez-upozorenje { margin: 12px 0 0; font-size: 0.8rem; color: var(--danger-text); }
     .rez-dugmad { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
     .rez-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--primary); background: var(--primary); color: #fff; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
@@ -70,10 +77,21 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
   `]
 })
 export class RezervacijeSalaDialogComponent {
+  // Jedan red po kolokvijumu: rezervacije "kol-45" i "kol-45-s7" su isti termin u dve sale
+  grupe: { kljuc: string; prva: any; sale: any[] }[] = [];
+
   constructor(
     public ref: MatDialogRef<RezervacijeSalaDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: { rez: any }
-  ) {}
+  ) {
+    const poKljucu = new Map<string, { kljuc: string; prva: any; sale: any[] }>();
+    for (const r of data.rez?.rezervacije || []) {
+      const kljuc = String(r.id).replace(/-s\d+$/, '');
+      if (!poKljucu.has(kljuc)) poKljucu.set(kljuc, { kljuc, prva: r, sale: [] });
+      poKljucu.get(kljuc)!.sale.push(r);
+    }
+    this.grupe = [...poKljucu.values()];
+  }
 
   datum(d: string): string {
     const [g, m, dan] = String(d).split('-');
