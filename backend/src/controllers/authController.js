@@ -64,7 +64,8 @@ const pmfLogin = async (req, res) => {
             const poruke = {
                 student: 'Aplikacija je namenjena zaposlenima. Studentski nalozi nemaju pristup.',
                 nepoznat: `Nalog ${ko} nije u aplikaciji. Obratite se administratoru da vas doda.`,
-                bez_emaila: 'PMF sistem nije poslao e-mail adresu ovog naloga. Obratite se administratoru.'
+                bez_emaila: 'PMF sistem nije poslao e-mail adresu ovog naloga. Obratite se administratoru.',
+                vise_osoba: 'U aplikaciji postoji više osoba sa vašim imenom i prezimenom. Obratite se administratoru da poveže nalog.'
             };
             await logAction(ko, 'LOGIN_FAILED', 'Sesija', `PMF prijava odbijena: ${nalog.odbijen}`);
             return res.status(403).json({ error: poruke[nalog.odbijen], kod: 'NEMA_PRISTUPA' });

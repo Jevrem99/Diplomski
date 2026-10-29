@@ -3,6 +3,7 @@ const { syncZauzetostSala } = require('../services/imiSyncService');
 const { ensureAdmin } = require('../db/ensureAdmin');
 const { logAction } = require('../services/auditService');
 const { napraviBackup } = require('../services/backupService');
+const { grupeDuplikata, spojiOsobe } = require('../services/osobe');
 
 // Reset je destruktivan, pa se traži eksplicitna potvrda u telu zahteva: { "confirm": "RESET" }
 const RESET_CONFIRM = 'RESET';
@@ -53,7 +54,39 @@ const resetDatabase = async (req, res) => {
   }
 };
 
+// GET /admin/duplikati
+const getDuplikati = async (req, res) => {
+    try {
+        res.status(200).json(await grupeDuplikata());
+    } catch (err) {
+        console.error('Greška pri traženju duplikata:', err);
+        res.status(500).json({ error: 'Greška na serveru.' });
+    }
+};
+
+// POST /admin/duplikati/spoji { zadrzi, spoji }
+const spojiDuplikate = async (req, res) => {
+    const zadrzi = Number(req.body?.zadrzi);
+    const spoji = Number(req.body?.spoji);
+    if (!Number.isInteger(zadrzi) || !Number.isInteger(spoji) || zadrzi === spoji) {
+        return res.status(400).json({ error: 'Izaberite osobu koja ostaje i osobu koja se spaja.' });
+    }
+    try {
+        await napraviBackup('pre-spajanja').catch((e) => console.error('Rezervna kopija pre spajanja nije napravljena:', e.message));
+        const ishod = await spojiOsobe(zadrzi, spoji);
+        await logAction(req.user?.username || 'Administrator', 'UPDATE', 'Profesor',
+            `Spojen duplikat #${spoji} u ${ishod.zadrzana} (#${zadrzi}): dežurstava ${ishod.preneto.dezurstva}, predmeta ${ishod.preneto.predmeti}, angažovanja ${ishod.preneto.angazovanja}`);
+        res.status(200).json(ishod);
+    } catch (err) {
+        if (/ne postoji|različite/.test(err.message)) return res.status(400).json({ error: err.message });
+        console.error('Greška pri spajanju:', err);
+        res.status(500).json({ error: 'Greška na serveru.' });
+    }
+};
+
 module.exports = {
+    getDuplikati,
+    spojiDuplikate,
   resetDatabase,
   runImiSync
 };

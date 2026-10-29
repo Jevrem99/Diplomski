@@ -583,3 +583,12 @@ test('rezervacija na fakultetu: oznaka prostorije, telo zahteva i odgovor "uspeh
     assert.deepEqual(oceniOdgovor(200, '{"status":"greska","poruka":"Termin je zauzet.","idRezervacije":338239}'),
         { poslato: false, greska: 'Termin je zauzet.' });
 });
+
+test('osobe: isto ime i prezime bez obzira na pismo, dijakritike, velika slova i redosled', () => {
+    const { kljucOsobe } = require('../src/services/osobe');
+    assert.equal(kljucOsobe('Лука', 'Вуксановић'), kljucOsobe('Luka', 'Vuksanovic'));
+    assert.equal(kljucOsobe('Лука', 'Вуксановић'), kljucOsobe('LUKA', 'VUKSANOVIĆ'));
+    assert.equal(kljucOsobe('Вуксановић', 'Лука'), kljucOsobe('Luka', 'Vuksanović'), 'prezime ime');
+    assert.equal(kljucOsobe('Ђорђе', 'Ђорђевић'), kljucOsobe('Đorđe', 'Đorđević'));
+    assert.notEqual(kljucOsobe('Марко', 'Петровић'), kljucOsobe('Марија', 'Петровић'));
+});

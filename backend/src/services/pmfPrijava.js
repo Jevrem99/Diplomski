@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const config = require('../config/config');
 const prisma = require('../db/prisma');
 const userModel = require('../models/userModel');
+const { nadjiPoImenu } = require('./osobe');
 
 // Prijava preko PMF (IMI) naloga.
 // Tok: korisnik se prijavi na IMI -> IMI ga vrati na našu stranicu /auth/callback?token=...
@@ -183,7 +184,7 @@ const slobodnoKorisnickoIme = async (email) => {
 
 // Postojeći nalog (po e-mailu ili korisničkom imenu); inače novi nalog bez upotrebljive lozinke:
 // poznat profesor/saradnik dobija ulogu po tome, a potpuno nova osoba postaje asistent (i saradnik).
-// Vraća { korisnik, nov } ili { odbijen: 'student' | 'nepoznat' | 'bez_emaila' }.
+// Vraća { korisnik, nov } ili { odbijen: 'student' | 'nepoznat' | 'bez_emaila' | 'vise_osoba' }.
 const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime = null, vrsta = null) => {
     const izbor = { id: true, username: true, email: true, uloga: true };
     if (email) {
@@ -204,9 +205,20 @@ const nadjiIliNapraviKorisnika = async (email, korisnickoIme = null, imePrezime 
 
     let osoba = await prisma.profesor.findFirst({ where: { email: { equals: email, mode: 'insensitive' } } });
     if (!osoba && !jeZaposlen(vrsta)) return { odbijen: 'nepoznat' };
+    const izMejla = email.split('@')[0].split(/[._-]+/).filter(Boolean).map((d) => d[0].toUpperCase() + d.slice(1));
+    if (!osoba) {
+        // Osoba uvezena iz Excel tabele nema e-mail: traži se po imenu i prezimenu (ćirilica/latinica, sa ili bez
+        // dijakritika). Tačno jedno poklapanje bez drugog e-maila = ta osoba; više poklapanja = ne pogađamo.
+        const ime = imePrezime?.ime || izMejla[0] || '';
+        const prezime = imePrezime?.prezime || izMejla.slice(1).join(' ');
+        const kandidati = (await nadjiPoImenu(ime, prezime)).filter((o) => !o.email || o.email.toLowerCase() === email.toLowerCase());
+        if (kandidati.length > 1) return { odbijen: 'vise_osoba' };
+        if (kandidati.length === 1) {
+            osoba = await prisma.profesor.update({ where: { id: kandidati[0].id }, data: { email } });
+        }
+    }
     if (!osoba) {
         // Nova osoba: upis u spisak saradnika sa imenom iz IMI odgovora (ili iz e-maila)
-        const izMejla = email.split('@')[0].split(/[._-]+/).filter(Boolean).map((d) => d[0].toUpperCase() + d.slice(1));
         osoba = await prisma.profesor.create({
             data: {
                 ime: imePrezime?.ime || izMejla[0] || email,

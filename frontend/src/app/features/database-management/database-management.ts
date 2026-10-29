@@ -18,6 +18,7 @@ interface ColumnDef {
 
 import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
 import { PotvrdaService } from '../../core/services/potvrda.service';
+import { DuplikatiDialogComponent } from '../../shared/components/duplikati-dialog/duplikati-dialog.component';
 @Component({
   selector: 'app-database-management',
   standalone: true,
@@ -223,6 +224,11 @@ export class DatabaseManagement implements OnInit {
         this.fetchData(this.activeEntity);
       }
     });
+  }
+
+  otvoriDuplikate(): void {
+    this.dialog.open(DuplikatiDialogComponent, { width: '820px', maxWidth: '95vw', panelClass: 'potvrda-panel' })
+      .afterClosed().subscribe((spojeno) => { if (spojeno) this.fetchData(this.activeEntity); });
   }
 
   async deleteRow(id: number): Promise<void> {
