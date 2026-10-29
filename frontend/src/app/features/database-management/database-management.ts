@@ -2,6 +2,7 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { FormsModule } from '@angular/forms';
 import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
@@ -19,12 +20,14 @@ interface ColumnDef {
 import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
 import { PotvrdaService } from '../../core/services/potvrda.service';
 import { DuplikatiDialogComponent } from '../../shared/components/duplikati-dialog/duplikati-dialog.component';
+import { presloviULatinicu } from '../main/main.utils';
 @Component({
   selector: 'app-database-management',
   standalone: true,
   imports: [
     SidebarMenu,
-    MatDialogModule
+    MatDialogModule,
+    FormsModule
   ],
   templateUrl: './database-management.html',
   styleUrl: './database-management.css',
@@ -32,6 +35,16 @@ import { DuplikatiDialogComponent } from '../../shared/components/duplikati-dial
 export class DatabaseManagement implements OnInit {
   activeEntity: EntityType = 'profesori';
   tableData: any[] = [];
+  // Pretraga po svim kolonama aktivne tabele (latinica i ćirilica, bez obzira na dijakritike i velika slova)
+  pretraga = '';
+
+  get filtriraniRedovi(): any[] {
+    const q = presloviULatinicu(this.pretraga.trim());
+    if (!q) return this.tableData;
+    const kolone = this.currentColumnsDef.map((c: any) => c.key);
+    return this.tableData.filter((row) =>
+      kolone.some((k: string) => presloviULatinicu(String(this.formatCellValue(row, k) ?? '')).includes(q)));
+  }
   private readonly toast = inject(ToastService);
   private potvrda = inject(PotvrdaService);
   private readonly dialog = inject(MatDialog);
@@ -128,6 +141,7 @@ export class DatabaseManagement implements OnInit {
 
   selectEntity(entity: EntityType): void {
     this.activeEntity = entity;
+    this.pretraga = '';
     this.currentColumnsDef = this.columnConfigurations[entity];
     // Prikazujemo u tabeli samo ključeve kolona koje nisu skrivene
     this.displayedColumnsKeys = this.visibleColumns.map(col => col.key);

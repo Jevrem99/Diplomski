@@ -53,6 +53,15 @@
     </div>
   </div>
 
+  <!-- PRETRAGA -->
+  <div class="db-pretraga">
+    <input type="text" [(ngModel)]="pretraga" placeholder="Pretraži..." class="db-pretraga-polje" autocomplete="off">
+    @if (pretraga) {
+      <button type="button" class="db-pretraga-ocisti" (click)="pretraga = ''" title="Obriši pretragu">×</button>
+      <span class="db-pretraga-broj">Prikazano {{ filtriraniRedovi.length }} od {{ tableData.length }}</span>
+    }
+  </div>
+
   <!-- TABELA SA PODACIMA -->
   @if (loading) {
     <div class="loading-state">
@@ -74,7 +83,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (row of tableData; track $index) {
+            @for (row of filtriraniRedovi; track $index) {
               <tr>
                 @for (col of visibleColumns; track col.key) {
                   <td [attr.data-lat]="jeLatinicnaKolona(col.key) ? '' : null">{{ formatCellValue(row, col.key) }}</td>
@@ -112,6 +121,9 @@
             }
           </tbody>
         </table>
+        @if (pretraga && !filtriraniRedovi.length) {
+          <p class="db-prazno">Nema rezultata za „<span data-lat>{{ pretraga }}</span>“.</p>
+        }
       } @else {
         <div class="empty-state">
           <svg class="w-12 h-12 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
