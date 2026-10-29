@@ -4,7 +4,7 @@
       <h1>Termini kolokvijuma</h1>
       <p>
         @if (jeAdmin) {
-          Zbirni pregled željenih termina svih predmeta, koje su uneli profesori i saradnici.
+          Željeni termini svih predmeta. Termine bilo kog predmeta možete izmeniti dugmetom „Izmeni“.
         } @else {
           Unesite željene termine kolokvijuma za svoje predmete. Konačan raspored objavljuje administrator.
         }
@@ -82,6 +82,7 @@
               <th>3. kolokvijum</th>
               <th>Popravni</th>
               <th>Napomena</th>
+              <th></th>
             </tr>
           </thead>
 
@@ -170,10 +171,23 @@
 
                 <!-- NAPOMENA -->
                 <td class="napomena-cell">{{ r.napomena || '-' }}</td>
+
+                <td class="izmeni-cell">
+                  <button type="button" class="btn btn-izmeni" (click)="r.uredjuje = !r.uredjuje">
+                    {{ r.uredjuje ? 'Zatvori' : 'Izmeni' }}
+                  </button>
+                </td>
               </tr>
+              @if (r.uredjuje) {
+                <tr class="edit-row">
+                  <td colspan="10">
+                    <ng-container *ngTemplateOutlet="formaPredmeta; context: { $implicit: r }"></ng-container>
+                  </td>
+                </tr>
+              }
             } @empty {
               <tr>
-                <td colspan="9" class="empty-results">
+                <td colspan="10" class="empty-results">
                   Nema predmeta koji odgovaraju izabranim filterima.
                 </td>
               </tr>
@@ -184,6 +198,14 @@
     } @else {
       <!-- FORME ZA NASTAVNIKE I SARADNIKE -->
       @for (r of rows(); track r.id) {
+        <ng-container *ngTemplateOutlet="formaPredmeta; context: { $implicit: r }"></ng-container>
+      }
+    }
+  }
+</div>
+
+<!-- Forma jednog predmeta (nastavnik za svoje predmete; admin otvara ispod reda u tabeli) -->
+<ng-template #formaPredmeta let-r>
         <section class="predmet-card">
           <div class="predmet-head">
             <div>
@@ -199,6 +221,8 @@
 
             @if (r.izmenjen) {
               <span class="badge-unsaved">Nesačuvane izmene</span>
+            } @else if (poslednjaIzmena(r)) {
+              <span class="meta">Poslednja izmena: <span data-lat>{{ poslednjaIzmena(r) }}</span></span>
             }
           </div>
 
@@ -326,8 +350,6 @@
               {{ r.cuva ? 'Čuvanje…' : 'Sačuvaj' }}
             </button>
           </div>
-        </section>
-      }
-    }
-  }
-</div>
+</section>
+</ng-template>
+

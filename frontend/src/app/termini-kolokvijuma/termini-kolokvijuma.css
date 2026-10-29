@@ -562,3 +562,8 @@ input:disabled {
     min-height: 110px;
   }
 }
+
+.izmeni-cell { white-space: nowrap; text-align: right; }
+.btn-izmeni { padding: 4px 10px; font-size: 0.75rem; }
+.edit-row > td { padding: 0 8px 12px !important; background: var(--surface-2); }
+.edit-row .predmet-card { margin: 8px 0 0; }

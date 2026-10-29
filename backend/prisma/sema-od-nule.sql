@@ -343,3 +343,8 @@ CREATE TABLE IF NOT EXISTS "RezervacijaFakulteta" (
     CONSTRAINT "RezervacijaFakulteta_pkey" PRIMARY KEY ("id")
 );
 CREATE INDEX IF NOT EXISTS "RezervacijaFakulteta_id_rezervacije_idx" ON "RezervacijaFakulteta"("id_rezervacije");
+
+-- AlterTable
+ALTER TABLE "TerminKolokvijuma"
+    ADD COLUMN IF NOT EXISTS "popravni_datum" TEXT,
+    ADD COLUMN IF NOT EXISTS "izmenio" TEXT;

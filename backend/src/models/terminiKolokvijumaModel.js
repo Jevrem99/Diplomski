@@ -63,13 +63,14 @@ const poljaTermina = (data) => ({
   popravni_trajanje: brojIliNull(data.popravni_trajanje),
   popravni_racunarska_sala: Boolean(data.popravni_racunarska_sala),
   popravni_dezurni: brojIliNull(data.popravni_dezurni),
+  popravni_datum: data.popravni_u_terminu_ispita ? null : (data.popravni_datum || null),
 
   napomena: data.napomena
 });
 
 // Čuvanje ili ažuriranje termina kolokvijuma za konkretan predmet
-const upsertTerminiKolokvijuma = async (predmetId, data) => {
-  const polja = poljaTermina(data);
+const upsertTerminiKolokvijuma = async (predmetId, data, izmenio = null) => {
+  const polja = { ...poljaTermina(data), izmenio };
   return await prisma.terminKolokvijuma.upsert({
     where: { predmet_id: Number(predmetId) },
     update: polja,

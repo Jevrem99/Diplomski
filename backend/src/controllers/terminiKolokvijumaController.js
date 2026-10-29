@@ -39,10 +39,10 @@ const saveTermini = async (req, res) => {
       return res.status(403).json({ message: 'Ovaj predmet nije vaš.' });
     }
 
-    for (const k of ['k1', 'k2', 'k3']) {
+    for (const k of ['k1', 'k2', 'k3', 'popravni']) {
       const datum = data[`${k}_datum`];
       if (datum && !DATUM_REGEX.test(String(datum).trim())) {
-        return res.status(400).json({ message: `Datum ${k.toUpperCase()} mora biti u formatu DD.MM.GGGG.` });
+        return res.status(400).json({ message: `Datum ${k === 'popravni' ? 'popravnog' : k.toUpperCase()} mora biti u formatu DD.MM.GGGG.` });
       }
     }
     for (const polje of ['k1_trajanje', 'k2_trajanje', 'k3_trajanje', 'popravni_trajanje']) {
@@ -59,7 +59,7 @@ const saveTermini = async (req, res) => {
       }
     }
 
-    const updated = await terminiModel.upsertTerminiKolokvijuma(predmet_id, data);
+    const updated = await terminiModel.upsertTerminiKolokvijuma(predmet_id, data, req.user?.username || null);
     await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Termini kolokvijuma', `Predmet ID ${predmet_id}`);
     res.json({ message: 'Uspešno sačuvano', data: updated });
   } catch (error) {

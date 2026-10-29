@@ -176,6 +176,7 @@ model TerminKolokvijuma {
   popravni_dezurni        Int?
 
   napomena                String?
+  izmenio                 String?  // korisnik koji je poslednji sačuvao termine
 
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
