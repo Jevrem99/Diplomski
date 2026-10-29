@@ -1,0 +1,203 @@
+<div class="p-4 sm:p-8 bg-[#e9f0f8] min-h-[94vh] font-montserrat flex flex-col gap-6">
+  <div class="max-w-6xl mx-auto w-full flex flex-col gap-6">
+    
+    <!-- IMI HEDER STRANICE -->
+    <header class="bg-[#1F63A0] border border-[#164f82] rounded-2xl p-5 sm:p-6 shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">Termini i uslovi kolokvijuma</h1>
+        <p class="text-xs sm:text-sm text-blue-100/80 font-medium mt-1">Prijavite zahteve, trajanje i datume za održavanje kolokvijuma po predmetima.</p>
+      </div>
+
+      @if (uloga() === 'profesor' || uloga() === 'admin') {
+        <button type="button" 
+                (click)="exportExcel()" 
+                class="bg-[#F39C12] border border-[#d68910] text-white font-extrabold text-xs sm:text-sm px-4 py-2.5 rounded-xl hover:bg-[#e67e22] transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+          Preuzmi zbirni Excel
+        </button>
+      }
+    </header>
+
+    <!-- AKO KORISNIK NEMA DODELJENIH PREDMETA -->
+    @if (!loading() && mojiPredmeti().length === 0) {
+      <div class="bg-white p-8 sm:p-12 rounded-2xl shadow-sm border border-slate-200 text-center flex flex-col items-center gap-3">
+        <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-[#1F63A0] mb-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+          </svg>
+        </div>
+        <h3 class="text-lg font-extrabold text-slate-800">Nemate dodeljenih predmeta</h3>
+        <p class="text-xs sm:text-sm text-slate-500 font-medium">Trenutno niste raspoređeni ni na jedan predmet za koji unosite preferencije.</p>
+      </div>
+    }
+
+    <!-- GLAVNA KARTICA SA FORMOM -->
+    @if (mojiPredmeti().length > 0) {
+      <div class="bg-white p-5 sm:p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col gap-6">
+        
+        <!-- SELEKTOR PREDMETA -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+          <div class="flex items-center gap-2">
+            <div class="w-2.5 h-6 bg-[#1F63A0] rounded-full"></div>
+            <label for="predmetSelect" class="text-sm sm:text-base font-extrabold text-slate-800">Izaberite predmet:</label>
+          </div>
+          <select 
+            id="predmetSelect" 
+            [value]="selectedPredmetId()" 
+            (change)="onPredmetSelect(+$any($event.target).value)"
+            class="px-3.5 py-2.5 bg-white border border-slate-300 rounded-xl font-bold text-xs sm:text-sm text-slate-700 focus:border-[#1F63A0] outline-none shadow-sm cursor-pointer w-full sm:w-auto min-w-[280px]">
+            @for (predmet of mojiPredmeti(); track predmet.id) {
+              <option [value]="predmet.id">
+                {{ predmet.naziv }} {{ predmet.smer ? '(' + predmet.smer + ')' : '' }}
+              </option>
+            }
+          </select>
+        </div>
+
+        @if (loading()) {
+          <div class="py-12 flex flex-col items-center justify-center gap-3 text-slate-500">
+            <div class="w-8 h-8 border-4 border-[#1F63A0] border-t-transparent rounded-full animate-spin"></div>
+            <span class="text-xs font-bold">Učitavanje podataka...</span>
+          </div>
+        } @else {
+          <form [formGroup]="form" (ngSubmit)="onSubmit()" class="flex flex-col gap-6">
+
+            @if (successMessage()) {
+              <div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2">
+                <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                <span>{{ successMessage() }}</span>
+              </div>
+            }
+
+            <!-- GRID SA KARTICAMA (K1, K2, K3, POPRAVNI) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              <!-- 1. KOLOKVIJUM -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 hover:border-[#1F63A0]/40 transition-colors">
+                <div class="border-b border-slate-200 pb-2">
+                  <h3 class="font-extrabold text-[#1F63A0] text-sm sm:text-base">1. Kolokvijum</h3>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Najraniji datum</label>
+                  <input type="text" formControlName="k1_datum" placeholder="npr. 29.04.2026."
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Trajanje (minuti)</label>
+                  <input type="number" formControlName="k1_trajanje" placeholder="90"
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <label class="flex items-center gap-2.5 mt-1 cursor-pointer select-none">
+                  <input type="checkbox" formControlName="k1_racunarska_sala" class="w-4 h-4 rounded text-[#1F63A0] focus:ring-[#1F63A0]">
+                  <span class="text-xs font-bold text-slate-700">Računarska sala</span>
+                </label>
+              </div>
+
+              <!-- 2. KOLOKVIJUM -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 hover:border-[#1F63A0]/40 transition-colors">
+                <div class="border-b border-slate-200 pb-2">
+                  <h3 class="font-extrabold text-[#1F63A0] text-sm sm:text-base">2. Kolokvijum</h3>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Najraniji datum</label>
+                  <input type="text" formControlName="k2_datum" placeholder="npr. 25.05.2026."
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Trajanje (minuti)</label>
+                  <input type="number" formControlName="k2_trajanje" placeholder="90"
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <label class="flex items-center gap-2.5 mt-1 cursor-pointer select-none">
+                  <input type="checkbox" formControlName="k2_racunarska_sala" class="w-4 h-4 rounded text-[#1F63A0] focus:ring-[#1F63A0]">
+                  <span class="text-xs font-bold text-slate-700">Računarska sala</span>
+                </label>
+              </div>
+
+              <!-- 3. KOLOKVIJUM -->
+              <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 flex flex-col gap-3 hover:border-[#1F63A0]/40 transition-colors">
+                <div class="border-b border-slate-200 pb-2">
+                  <h3 class="font-extrabold text-[#1F63A0] text-sm sm:text-base">3. Kolokvijum <span class="text-xs text-slate-400 font-normal">(opciono)</span></h3>
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Najraniji datum</label>
+                  <input type="text" formControlName="k3_datum" placeholder="Nije obavezno"
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Trajanje (minuti)</label>
+                  <input type="number" formControlName="k3_trajanje" placeholder="90"
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <label class="flex items-center gap-2.5 mt-1 cursor-pointer select-none">
+                  <input type="checkbox" formControlName="k3_racunarska_sala" class="w-4 h-4 rounded text-[#1F63A0] focus:ring-[#1F63A0]">
+                  <span class="text-xs font-bold text-slate-700">Računarska sala</span>
+                </label>
+              </div>
+
+              <!-- POPRAVNI KOLOKVIJUM -->
+              <div class="bg-blue-50/50 border border-blue-200/80 rounded-xl p-4 flex flex-col gap-3 hover:border-[#1F63A0]/50 transition-colors">
+                <div class="border-b border-blue-200 pb-2">
+                  <h3 class="font-extrabold text-[#1F63A0] text-sm sm:text-base">Popravni kolokvijum</h3>
+                </div>
+
+                <label class="flex items-center gap-2.5 my-1 cursor-pointer select-none">
+                  <input type="checkbox" formControlName="popravni_u_terminu_ispita" class="w-4 h-4 rounded text-[#1F63A0] focus:ring-[#1F63A0]">
+                  <span class="text-xs font-bold text-slate-800">U terminu ispita</span>
+                </label>
+
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs font-bold text-slate-600">Trajanje (minuti)</label>
+                  <input type="number" formControlName="popravni_trajanje" placeholder="120"
+                         class="px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none">
+                </div>
+
+                <label class="flex items-center gap-2.5 mt-1 cursor-pointer select-none">
+                  <input type="checkbox" formControlName="popravni_racunarska_sala" class="w-4 h-4 rounded text-[#1F63A0] focus:ring-[#1F63A0]">
+                  <span class="text-xs font-bold text-slate-700">Računarska sala</span>
+                </label>
+              </div>
+
+            </div>
+
+            <!-- UNOS NAPOMENE -->
+            <div class="flex flex-col gap-1 bg-slate-50 p-4 rounded-xl border border-slate-200">
+              <label class="text-xs sm:text-sm font-extrabold text-slate-800">Dodatna napomena za izradu rasporeda</label>
+              <textarea formControlName="napomena" rows="3" placeholder="Npr. U terminu predavanja, sala A-II-1 ili Popravni par dana pre ispita..."
+                        class="px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-xs sm:text-sm font-semibold text-slate-700 focus:border-[#1F63A0] outline-none resize-none"></textarea>
+            </div>
+
+            <!-- DUGME ZA SLANJE -->
+            <div class="flex justify-end">
+              <button type="submit" 
+                      [disabled]="saving()"
+                      class="w-full sm:w-auto px-8 h-[44px] bg-[#F39C12] border border-[#d68910] text-white font-extrabold text-sm rounded-xl hover:bg-[#e67e22] transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50">
+                @if (saving()) {
+                  <span>Čuvanje...</span>
+                } @else {
+                  <span>Sačuvaj uslove za predmet</span>
+                }
+              </button>
+            </div>
+
+          </form>
+        }
+
+      </div>
+    }
+
+  </div>
+</div>

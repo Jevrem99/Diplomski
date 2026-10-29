@@ -164,6 +164,7 @@ model TerminKolokvijuma {
   k3_racunarska_sala      Boolean  @default(false)
 
   // Popravni kolokvijum (opciono)
+  popravni_datum          String?
   popravni_u_terminu_ispita Boolean @default(false)
   popravni_trajanje        Int?
   popravni_racunarska_sala Boolean @default(false)
