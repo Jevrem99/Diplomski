@@ -98,6 +98,7 @@ export class DatabaseManagement implements OnInit {
       { key: 'profesor_id', label: 'Glavni profesor (ID)' }, 
       { key: 'status', label: 'Status (O / I)' },
       { key: 'broj_studenata', label: 'Broj studenata' },
+      { key: 'nema_kolokvijume', label: 'Kolokvijumi' },
       { key: 'saradnici_ids', label: 'Saradnici na predmetu' }
     ],
     ispiti: [
@@ -359,6 +360,8 @@ export class DatabaseManagement implements OnInit {
       }
       return 'Nema saradnika';
     }
+
+    if (colKey === 'nema_kolokvijume') return row[colKey] ? 'Nema' : 'Ima';
 
     const val = row[colKey];
     if (val === null || val === undefined || val === '') return '-';

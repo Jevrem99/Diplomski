@@ -154,7 +154,12 @@
 }
 
 .col-napomena {
-  width: 20%;
+  width: 15%;
+}
+
+.col-izmeni {
+  width: 5%;
+  min-width: 72px;
 }
 
 .termini-table th,

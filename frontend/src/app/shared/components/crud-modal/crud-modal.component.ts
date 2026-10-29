@@ -115,7 +115,7 @@ export class CrudModal {
 
   tipPolja(key: string): TipPolja {
     if (key === 'password') return 'password';
-    if (key === 'uloga' || key === 'semestar' || key === 'status') return 'pills';
+    if (key === 'uloga' || key === 'semestar' || key === 'status' || key === 'nema_kolokvijume') return 'pills';
     if (key === 'profesor_id' || key === 'predmet_id') return 'select';
     if (key === 'predmeti_ids') return 'multi';
     if (key === 'godina' || key === 'broj_studenata') return 'number';
@@ -139,6 +139,7 @@ export class CrudModal {
     if (key === 'uloga') return (this.data.rolesList || []).map((r: any) => ({ value: r.id, label: r.naziv }));
     if (key === 'semestar') return [{ value: 'Zimski', label: 'Zimski' }, { value: 'Letnji', label: 'Letnji' }];
     if (key === 'status') return [{ value: 'О', label: 'Obavezan' }, { value: 'И', label: 'Izborni' }]; // ćirilica, kao u bazi
+    if (key === 'nema_kolokvijume') return [{ value: false, label: 'Ima kolokvijume' }, { value: true, label: 'Nema kolokvijume' }];
     return [];
   }
 
@@ -153,7 +154,7 @@ export class CrudModal {
     if (['id', 'saradnici_ids'].includes(key)) return false;
     if (key === 'password' && this.jeIzmena) return false;
     if (this.vrsta === 'osoba' && key === 'email') return false;
-    if (this.vrsta === 'predmet' && ['broj_studenata', 'status', 'profesor_id'].includes(key)) return false;
+    if (this.vrsta === 'predmet' && ['broj_studenata', 'status', 'profesor_id', 'nema_kolokvijume'].includes(key)) return false;
     if (this.vrsta === 'ispit' && ['vreme_kraja', 'sala_id'].includes(key)) return false;
     return true;
   }
