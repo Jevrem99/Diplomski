@@ -94,7 +94,7 @@
                   <span class="semester-text">{{ nazivSemestra(r.semestar) }}</span>
                 </td>
 
-                <td class="predmet-name">{{ r.naziv }}</td>
+                <td class="predmet-name">{{ r.naziv }}@if (r.nemaKolokvijume) { <span class="badge-bez-kol">bez kolokvijuma</span> }</td>
 
                 <td class="student-cell">{{ r.broj_studenata || '-' }}</td>
 
@@ -226,7 +226,12 @@
             }
           </div>
 
-          <div class="grid-kol">
+          <label class="check nema-kol">
+            <input type="checkbox" [(ngModel)]="r.nemaKolokvijume" (ngModelChange)="oznaciIzmenu(r)" />
+            Predmet nema kolokvijume
+          </label>
+
+          <div class="grid-kol" [class.ugaseno]="r.nemaKolokvijume" [attr.inert]="r.nemaKolokvijume ? '' : null">
             <div class="grid-row grid-row-head">
               <span>Kolokvijum</span>
               <span>Datum</span>

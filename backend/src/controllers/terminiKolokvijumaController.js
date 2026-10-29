@@ -1,4 +1,5 @@
 const { logAction } = require('../services/auditService');
+const prisma = require('../db/prisma');
 const terminiModel = require('../models/terminiKolokvijumaModel');
 const ExcelJS = require('exceljs');
 
@@ -60,6 +61,9 @@ const saveTermini = async (req, res) => {
     }
 
     const updated = await terminiModel.upsertTerminiKolokvijuma(predmet_id, data, req.user?.username || null);
+    if (typeof data.nema_kolokvijume === 'boolean') {
+      await prisma.predmet.update({ where: { id: Number(predmet_id) }, data: { nema_kolokvijume: data.nema_kolokvijume } });
+    }
     await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Termini kolokvijuma', `Predmet ID ${predmet_id}`);
     res.json({ message: 'Uspešno sačuvano', data: updated });
   } catch (error) {

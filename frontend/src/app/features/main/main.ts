@@ -98,6 +98,7 @@ export class Main implements OnInit, AfterViewInit {
   bankaTab: 'predmeti' | 'grupe' = 'predmeti'; // šta banka prikazuje
   grupe: any[] = [];                           // grupe predmeta (isti dan i vreme)
   filterLevoSemestar: 'svi' | 'zimski' | 'letnji' = 'svi';
+  sakrijBezKolokvijuma = true; // predmeti označeni "nema kolokvijume" su podrazumevano sakriveni u banci
   readonly semestarOpcije: { id: 'svi' | 'zimski' | 'letnji'; label: string }[] = [
     { id: 'svi', label: 'Svi' }, { id: 'zimski', label: 'Zimski' }, { id: 'letnji', label: 'Letnji' }
   ];
@@ -1350,6 +1351,9 @@ export class Main implements OnInit, AfterViewInit {
 
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
+    if (this.sakrijBezKolokvijuma) {
+      filtrirano = filtrirano.filter(p => !(p as any).nema_kolokvijume);
+    }
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }

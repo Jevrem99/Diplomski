@@ -32,6 +32,7 @@ interface RedPredmeta {
   cuva: boolean;
   izmenjen: boolean;
   uredjuje?: boolean; // admin: forma otvorena ispod reda u tabeli
+  nemaKolokvijume: boolean;
 }
 
 // Server koristi DD.MM.GGGG, a input type="date" koristi GGGG-MM-DD.
@@ -107,6 +108,7 @@ export class TerminiKolokvijuma implements OnInit {
       broj_studenata: p.broj_studenata ?? null,
       saradniciTekst: this.izvuciSaradnike(p),
       terminiKolokvijuma: t,
+      nemaKolokvijume: !!p.nema_kolokvijume,
 
       k: [1, 2, 3].map((n) => ({
         datum: izServera(t[`k${n}_datum`]),
@@ -219,6 +221,7 @@ export class TerminiKolokvijuma implements OnInit {
       popravni_racunarska_sala: r.popravniRacunarskaSala,
       popravni_dezurni: r.popravniDezurni,
       napomena: r.napomena || null,
+      nema_kolokvijume: r.nemaKolokvijume,
     };
 
     r.k.forEach((k, i) => {

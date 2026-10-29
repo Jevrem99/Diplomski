@@ -40,7 +40,9 @@ model Predmet {
   godina      Int
   semestar    String
   status         String     // O ili I
-  broj_studenata Int        @default(0) // <--- DODATO
+  broj_studenata Int        @default(0)
+  // Predmet nema kolokvijume (označava nastavnik ili admin na stranici Termini kolokvijuma)
+  nema_kolokvijume Boolean  @default(false) // <--- DODATO
   
   // Glavni profesor
   profesor_id Int?

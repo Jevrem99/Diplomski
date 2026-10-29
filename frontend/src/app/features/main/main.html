@@ -111,6 +111,11 @@
               }
             </div>
           </div>
+
+          <label class="flex items-center gap-2 px-0.5 text-xs font-bold text-white/90 cursor-pointer select-none">
+            <input type="checkbox" [(ngModel)]="sakrijBezKolokvijuma">
+            Sakrij predmete bez kolokvijuma
+          </label>
         </div>
       </div>
     </div>
@@ -166,6 +171,7 @@
               {{ predmet.godina == 5 ? 'MAS' : predmet.godina + '. Godina' }}
             </span>
             <span class="bank-card-semestar">{{ jeZimski(predmet) ? 'Zimski' : 'Letnji' }}</span>
+            @if (predmet.nema_kolokvijume) { <span class="bank-card-bez-kol">bez kolokvijuma</span> }
           </div>
         </div>
       </div>

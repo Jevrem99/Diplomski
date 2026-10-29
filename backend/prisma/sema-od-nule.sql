@@ -348,3 +348,6 @@ CREATE INDEX IF NOT EXISTS "RezervacijaFakulteta_id_rezervacije_idx" ON "Rezerva
 ALTER TABLE "TerminKolokvijuma"
     ADD COLUMN IF NOT EXISTS "popravni_datum" TEXT,
     ADD COLUMN IF NOT EXISTS "izmenio" TEXT;
+
+-- AlterTable
+ALTER TABLE "Predmet" ADD COLUMN IF NOT EXISTS "nema_kolokvijume" BOOLEAN NOT NULL DEFAULT false;

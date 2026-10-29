@@ -567,3 +567,7 @@ input:disabled {
 .btn-izmeni { padding: 4px 10px; font-size: 0.75rem; }
 .edit-row > td { padding: 0 8px 12px !important; background: var(--surface-2); }
 .edit-row .predmet-card { margin: 8px 0 0; }
+
+.nema-kol { display: inline-flex; align-items: center; gap: 6px; margin: 4px 0 10px; font-weight: 700; font-size: 0.85rem; }
+.grid-kol.ugaseno { opacity: 0.4; pointer-events: none; }
+.badge-bez-kol { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-size: 0.66rem; font-weight: 700; background: var(--surface-3); color: var(--muted); white-space: nowrap; }
