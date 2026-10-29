@@ -109,12 +109,24 @@ const gradiResetLozinke = (korisnik, resetUrl) => okvir({
     napomena: `Ако дугме не ради, копирајте овај линк у прегледач:<br><a href="${esc(resetUrl)}" style="color:${BOJE.primarna}; word-break:break-all;">${esc(resetUrl)}</a><br><br>Ако нисте ви послали захтев, слободно игноришите ову поруку: лозинка остаје непромењена.`
 });
 
+// Slanje je moguće samo kad su u .env podešeni EMAIL_USER i EMAIL_PASS
+const mejlPodesen = () => Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+
+// Poslednja greška slanja (za prikaz administratoru posle objavljivanja)
+let poslednjaGreska = null;
+const poslednjaGreskaSlanja = () => poslednjaGreska;
+
 const posalji = async (opcije, opis) => {
+    if (!mejlPodesen()) {
+        poslednjaGreska = 'Slanje mejlova nije podešeno (EMAIL_USER i EMAIL_PASS u .env).';
+        return false;
+    }
     try {
         await transporter.sendMail({ from: POSILJALAC(), ...opcije });
         return true;
     } catch (error) {
         console.error(`Greška pri slanju mejla (${opis}):`, error.message);
+        poslednjaGreska = error.message;
         return false;
     }
 };
@@ -144,6 +156,8 @@ const sendResetLozinkeEmail = (email, korisnik, resetUrl) =>
     }, email);
 
 module.exports = {
+    mejlPodesen,
+    poslednjaGreskaSlanja,
     sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail, sendResetLozinkeEmail,
     _sabloni: { gradiPregledDezurstava, gradiIzmenuDezurstva, gradiResetLozinke, esc }
 };

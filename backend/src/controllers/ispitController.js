@@ -7,7 +7,7 @@ const prisma = require('../db/prisma');
 const { normalizujNazivSale, nadjiIliNapraviSalu, naziviSala } = require('../utils/sale');
 const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
-const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
+const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail, mejlPodesen, poslednjaGreskaSlanja } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
 const slanjeRezervacija = require('../services/slanjeRezervacija');
 
@@ -816,6 +816,7 @@ const publishAll = async (req, res) => {
         const rezervacije = napraviRezervacije(draftIspiti, { objavio: req.user?.username || null });
 
         const saradniciMap = new Map();
+        const bezEmaila = new Map(); // dežurni kojima mejl ne može da stigne (npr. uvezeni iz Excel-a bez e-maila)
 
         draftIspiti.forEach(ispit => {
             const datumStr = ispit.datum;
@@ -826,6 +827,7 @@ const publishAll = async (req, res) => {
             const predmetNaziv = ispit.predmet?.naziv || 'Ispit';
 
             ispit.dezurstva.forEach(d => {
+                if (d.saradnik && !d.saradnik.email) bezEmaila.set(d.saradnik.id, `${d.saradnik.ime} ${d.saradnik.prezime}`);
                 if (d.saradnik && d.saradnik.email) {
                     const sId = d.saradnik.id;
                     if (!saradniciMap.has(sId)) {
@@ -859,13 +861,24 @@ const publishAll = async (req, res) => {
         const slanja = await Promise.allSettled(
             [...saradniciMap.values()].map((data) => sendGrupniDezurstvoEmail(data.email, data.imePrezime, data.dezurstva))
         );
-        const neuspela = slanja.filter((r) => r.status === 'rejected').length;
+        // posalji() vraća false kad mejl nije otišao (ne baca grešku), pa se broje i takvi
+        const poslato = slanja.filter((r) => r.status === 'fulfilled' && r.value === true).length;
+        const neuspela = slanja.length - poslato;
         if (neuspela > 0) console.error(`Nije poslato ${neuspela} od ${slanja.length} obaveštenja.`);
+        const mejlovi = {
+            podesen: mejlPodesen(),
+            ukupno: slanja.length,
+            poslato,
+            neuspelo: neuspela,
+            greska: neuspela > 0 ? poslednjaGreskaSlanja() : null,
+            bezEmaila: [...bezEmaila.values()]
+        };
         await logAction(
             req.user?.username || 'Korisnik',
             'PUBLISH',
             'Raspored',
-            `Objavljen raspored sa ${result.count} ispita i poslata obaveštenja saradnicima`
+            `Objavljen raspored sa ${result.count} ispita; obaveštenja: poslato ${poslato} od ${slanja.length}` +
+            (bezEmaila.size ? `, bez e-maila ${bezEmaila.size}` : '') + (mejlovi.greska ? ` (${mejlovi.greska})` : '')
         );
         // Opciono: rezervacije upravo objavljenih kolokvijuma šaljemo i na adresu koju je administrator podesio
         // (samo nove: sistem fakulteta odbija rezervaciju koja već postoji). Greška ne ruši objavljivanje.
@@ -884,7 +897,8 @@ const publishAll = async (req, res) => {
             message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!`,
             objavljeno: result.count,
             rezervacije,
-            slanje
+            slanje,
+            mejlovi
         });
     } catch (err) {
         console.error('Greška pri objavljivanju:', err);

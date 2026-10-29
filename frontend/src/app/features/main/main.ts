@@ -691,13 +691,27 @@ export class Main implements OnInit, AfterViewInit {
             redovi.push('Među objavljenim terminima nema kolokvijuma sa salom, pa nema rezervacija.');
           }
           if (rez?.bez_sale?.length) redovi.push(`Kolokvijumi bez izabrane sale: ${rez.bez_sale.length} (nisu rezervisani).`);
+          const m = odgovor?.mejlovi;
+          if (m) {
+            if (!m.podesen && (m.ukupno || m.bezEmaila?.length)) {
+              redovi.push('Mejlovi dežurnima nisu poslati: slanje mejlova nije podešeno na serveru (EMAIL_USER i EMAIL_PASS u .env).');
+            } else if (m.ukupno) {
+              redovi.push(`Obaveštenja dežurnima: poslato ${m.poslato} od ${m.ukupno}.` + (m.neuspelo ? ` Greška: ${m.greska || 'nepoznata'}` : ''));
+            }
+            if (m.bezEmaila?.length) {
+              redovi.push(`Bez e-maila (nisu obavešteni): ${m.bezEmaila.length} – ${m.bezEmaila.slice(0, 5).join(', ')}${m.bezEmaila.length > 5 ? '…' : ''}. E-mail se upisuje u Upravljaj bazom.`);
+            }
+          }
           if (slanje?.ukljuceno) {
             redovi.push(slanje.poslato
               ? `Fakultet: rezervisano ${slanje.uspesno} od ${slanje.ukupno}.`
               : `Fakultet: rezervisano ${slanje.uspesno ?? 0} od ${slanje.ukupno ?? broj}. ${slanje.greska || ''}`.trim());
             if (!slanje.poslato) redovi.push('Nerezervisane možete poslati ponovo: Podešavanja → Integracija → „Pošalji neposlate“.');
           }
-          this.potvrda.obavesti(redovi.join('\n'), slanje?.ukljuceno && !slanje.poslato ? 'Raspored je objavljen, rezervacija nije potpuna' : 'Raspored je objavljen');
+          const mejlProblem = !!m && ((!m.podesen && m.ukupno > 0) || m.neuspelo > 0 || m.bezEmaila?.length > 0);
+          this.potvrda.obavesti(redovi.join('\n'),
+            slanje?.ukljuceno && !slanje.poslato ? 'Raspored je objavljen, rezervacija nije potpuna'
+              : mejlProblem ? 'Raspored je objavljen, obaveštenja nisu svima poslata' : 'Raspored je objavljen');
         },
         error: (err) => {
           console.error('Greška:', err);

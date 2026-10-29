@@ -592,3 +592,17 @@ test('osobe: isto ime i prezime bez obzira na pismo, dijakritike, velika slova i
     assert.equal(kljucOsobe('Ђорђе', 'Ђорђевић'), kljucOsobe('Đorđe', 'Đorđević'));
     assert.notEqual(kljucOsobe('Марко', 'Петровић'), kljucOsobe('Марија', 'Петровић'));
 });
+
+test('mejl: bez EMAIL_USER/EMAIL_PASS slanje odmah vraća neuspeh sa razlogom (ne prijavljuje se kao poslato)', async () => {
+    const mejl = require('../src/services/emailService');
+    const staro = { u: process.env.EMAIL_USER, p: process.env.EMAIL_PASS };
+    delete process.env.EMAIL_USER; delete process.env.EMAIL_PASS;
+    try {
+        assert.equal(mejl.mejlPodesen(), false);
+        assert.equal(await mejl.sendGrupniDezurstvoEmail('a@b.rs', 'Ana Anić', []), false);
+        assert.match(mejl.poslednjaGreskaSlanja(), /nije podešeno/);
+    } finally {
+        if (staro.u !== undefined) process.env.EMAIL_USER = staro.u;
+        if (staro.p !== undefined) process.env.EMAIL_PASS = staro.p;
+    }
+});
