@@ -69,6 +69,24 @@
       @if (vremeGreska) {
         <div class="text-sm font-bold" style="color: var(--danger-text);" role="alert">⚠ {{ vremeGreska }}</div>
       }
+      @if (krajPoTrajanju && formData.endTime !== krajPoTrajanju) {
+        <button type="button" class="kraj-po-trajanju" (click)="postaviKrajPoTrajanju()">
+          Postavi kraj po unetom trajanju ({{ trajanjeIzabranog }} min) → {{ krajPoTrajanju }}
+        </button>
+      }
+
+      <!-- Termini koje je nastavnik uneo na stranici Termini kolokvijuma -->
+      @if (uneti.length || napomenaTermina) {
+        <div class="uneti-termini">
+          <span class="uneti-naslov">Uneti termini (Termini kolokvijuma)</span>
+          @for (k of uneti; track k.kljuc) {
+            <div class="uneti-red">{{ opis(k) }}</div>
+          }
+          @if (napomenaTermina) {
+            <div class="uneti-napomena">Napomena: {{ napomenaTermina }}</div>
+          }
+        </div>
+      }
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full">
         <mat-label>Sale*</mat-label>

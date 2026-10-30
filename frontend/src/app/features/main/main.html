@@ -116,6 +116,11 @@
             <input type="checkbox" [(ngModel)]="sakrijBezKolokvijuma">
             Sakrij predmete bez kolokvijuma
           </label>
+          <label class="flex items-center gap-2 px-0.5 text-xs font-bold text-white/90 cursor-pointer select-none"
+                 title="Predmeti kojima su svi uneti kolokvijumi (i popravni) već u rasporedu">
+            <input type="checkbox" [(ngModel)]="sakrijRasporedjene">
+            Sakrij raspoređene
+          </label>
         </div>
       </div>
     </div>
@@ -153,7 +158,8 @@
       }
       } @else {
       @for (predmet of filtriraniPredmeti; track predmet.id) {
-      <div class="fc-event bank-card-item group" [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id">
+      <div class="fc-event bank-card-item group" [attr.data-godina]="predmet.godina" [attr.data-id]="predmet.id"
+           [title]="opisPredmetaUBanci(predmet)">
         <!-- Obojena vertikalna traka -->
         <div class="bank-card-color-bar" [style.background-color]="getGodinaColor(predmet.godina)"></div>
 
@@ -161,9 +167,11 @@
           <h3 class="bank-card-title">
             {{ predmet.naziv }}
           </h3>
-          <p class="bank-card-prof">
-            {{ predmet.profesorImePrezime }}
-          </p>
+          @if (kratkiDatumi(predmet); as datumi) {
+            <p class="bank-card-prof bank-card-datumi">{{ datumi }}</p>
+          } @else {
+            <p class="bank-card-prof">{{ predmet.profesorImePrezime }}</p>
+          }
           <div class="mt-1.5">
             <span class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-extrabold"
               [style.color]="'color-mix(in srgb, ' + getGodinaColor(predmet.godina) + ' 45%, var(--text))'"
@@ -172,6 +180,14 @@
             </span>
             <span class="bank-card-semestar">{{ jeZimski(predmet) ? 'Zimski' : 'Letnji' }}</span>
             @if (predmet.nema_kolokvijume) { <span class="bank-card-bez-kol">bez kolokvijuma</span> }
+            @if (stanjeRasporeda(predmet); as st) {
+              @if (st.uneto > 0) {
+                <span class="bank-card-rasp" [class.bank-card-rasp-sve]="st.sve"
+                      [title]="'U rasporedu ' + st.rasporedjeno + ' od ' + st.uneto + ' unetih kolokvijuma'">
+                  {{ st.sve ? '✓ raspoređeno' : st.rasporedjeno + '/' + st.uneto }}
+                </span>
+              }
+            }
           </div>
         </div>
       </div>

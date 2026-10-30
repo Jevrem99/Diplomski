@@ -214,6 +214,9 @@
               <span class="meta">
                 {{ r.godina }}. godina · {{ nazivSemestra(r.semestar) }} ·
                 {{ r.status === 'И' || r.status === 'I' ? 'Izborni' : 'Obavezni' }}
+                @if (r.broj_studenata) {
+                  · <strong>{{ r.broj_studenata }} studenata</strong>
+                }
                 @if (r.profesor) {
                   · {{ r.profesor.ime }} {{ r.profesor.prezime }}
                 }

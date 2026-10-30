@@ -251,3 +251,9 @@ body > .fc-event-dragging .bank-card-color-bar {
 
 /* Prozor za potvrdu (PotvrdaService) */
 .potvrda-panel .mat-mdc-dialog-surface { background: var(--surface) !important; border-radius: 14px !important; }
+
+/* Kalendar: termin bez dovoljno dežurnih */
+.cal-card-dez {
+  display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 4px;
+  border-radius: 50%; background: #f59e0b; color: #fff; font-size: 11px; font-weight: 900; line-height: 1; flex-shrink: 0;
+}

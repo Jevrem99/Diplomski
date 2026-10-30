@@ -910,3 +910,7 @@ div[class*="fc-event-dragging"] {
 .grupa-broj { margin-left: 0; }
 
 .bank-card-bez-kol { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; background: var(--surface-3); color: var(--muted); }
+
+.bank-card-datumi { font-weight: 700; }
+.bank-card-rasp { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; background: var(--surface-3); color: var(--muted); }
+.bank-card-rasp-sve { background: var(--tint-green-bg); color: var(--tint-green-fg); }

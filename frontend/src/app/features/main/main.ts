@@ -28,6 +28,7 @@ import { PotvrdaService } from '../../core/services/potvrda.service';
 import { RezervacijeSalaDialogComponent } from '../../shared/components/rezervacije-sala-dialog/rezervacije-sala-dialog.component';
 import { UvozPregledDialogComponent, UvozPregled, UvozStavka } from '../../shared/components/uvoz-pregled-dialog/uvoz-pregled-dialog.component';
 import { VerzijeDialogComponent } from '../../shared/components/verzije-dialog/verzije-dialog.component';
+import { kratkiDatumi, unetiKolokvijumi, opisKolokvijuma, kljucZaTip, potrebnoDezurnihZa } from '../../core/utils/termini-kolokvijuma';
 // Boja kartica redovne nastave (namerno drugačija od boja godina)
 const NASTAVA_BOJA = '#7a6fa8';
 
@@ -99,6 +100,9 @@ export class Main implements OnInit, AfterViewInit {
   grupe: any[] = [];                           // grupe predmeta (isti dan i vreme)
   filterLevoSemestar: 'svi' | 'zimski' | 'letnji' = 'svi';
   sakrijBezKolokvijuma = true; // predmeti označeni "nema kolokvijume" su podrazumevano sakriveni u banci
+  sakrijRasporedjene = false;   // predmeti kojima su svi uneti kolokvijumi već u rasporedu
+  // predmetId -> vrste kolokvijuma koje su već u rasporedu (k1, k2, k3, popravni); osvežava se u applyFilters
+  private rasporedjeniPoPredmetu = new Map<number, Set<string>>();
   readonly semestarOpcije: { id: 'svi' | 'zimski' | 'letnji'; label: string }[] = [
     { id: 'svi', label: 'Svi' }, { id: 'zimski', label: 'Zimski' }, { id: 'letnji', label: 'Letnji' }
   ];
@@ -315,11 +319,23 @@ export class Main implements OnInit, AfterViewInit {
         ? '<span class="cal-card-grupa" title="Deo grupe predmeta: isti dan, vreme i sala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.07 0l2.83-2.83a5 5 0 00-7.07-7.07L11.5 4.4"/><path d="M14 11a5 5 0 00-7.07 0L4.1 13.83a5 5 0 007.07 7.07l1.33-1.3"/></svg></span>'
         : '';
 
+      // Upozorenje kad termin nema dovoljno dežurnih (potreban broj sa stranice Termini kolokvijuma; bez njega: nijedan)
+      let dezTag = '';
+      if (!jeNastava) {
+        const predmet: any = this.predmeti.find(p => p.id == arg.event.extendedProps['predmetId']);
+        const potrebno = potrebnoDezurnihZa(predmet?.terminiKolokvijuma, arg.event.extendedProps['tip_kolokvijuma'], isIspit);
+        const ima = (arg.event.extendedProps['dezurni'] || []).length;
+        if (potrebno !== null ? ima < potrebno : ima === 0) {
+          const opis = potrebno !== null ? `Dežurnih ${ima} od ${potrebno}` : 'Nema dodeljenih dežurnih';
+          dezTag = `<span class="cal-card-dez" title="${opis}">!</span>`;
+        }
+      }
+
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
           <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja}; --ev-ink: ${ink}; --ev-chip: ${chip};">
-            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${grupaTag}${salaTag}</div>
+            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${dezTag}${grupaTag}${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>
@@ -1368,6 +1384,9 @@ export class Main implements OnInit, AfterViewInit {
     if (this.sakrijBezKolokvijuma) {
       filtrirano = filtrirano.filter(p => !(p as any).nema_kolokvijume);
     }
+    if (this.sakrijRasporedjene) {
+      filtrirano = filtrirano.filter(p => !this.stanjeRasporeda(p).sve);
+    }
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }
@@ -1407,7 +1426,43 @@ export class Main implements OnInit, AfterViewInit {
     this.prikazaniBrojPredmeta += 10;
   }
 
+  // Koliko je unetih kolokvijuma predmeta već u rasporedu (po vrsti: I, II, III, popravni)
+  stanjeRasporeda(p: any): { uneto: number; rasporedjeno: number; sve: boolean } {
+    const uneti = unetiKolokvijumi(p?.terminiKolokvijuma).map(k => k.kljuc);
+    const u = this.rasporedjeniPoPredmetu.get(Number(p?.id)) || new Set<string>();
+    const rasporedjeno = uneti.filter(k => u.has(k)).length;
+    return { uneto: uneti.length, rasporedjeno, sve: uneti.length > 0 && rasporedjeno === uneti.length };
+  }
+
+  kratkiDatumi(p: any): string {
+    return kratkiDatumi(p?.terminiKolokvijuma);
+  }
+
+  // Oblačić kartice u banci: nastavnik, uneti termini i napomena
+  opisPredmetaUBanci(p: any): string {
+    const t = p?.terminiKolokvijuma;
+    const redovi = [p?.profesor ? `Prof. ${p.profesor.ime} ${p.profesor.prezime}` : '', ...unetiKolokvijumi(t).map(opisKolokvijuma)];
+    if (t?.napomena) redovi.push(`Napomena: ${t.napomena}`);
+    if (!unetiKolokvijumi(t).length) redovi.push('Termini kolokvijuma nisu uneti.');
+    return redovi.filter(Boolean).join('\n');
+  }
+
+  private osveziRasporedjene(): void {
+    const mapa = new Map<number, Set<string>>();
+    for (const e of this.allLoadedEvents) {
+      const p = e.extendedProps;
+      if (!p || p.isNastava || !p.predmetId) continue;
+      const k = kljucZaTip(p.tip_kolokvijuma, p.is_ispit ?? true);
+      if (!k) continue;
+      const id = Number(p.predmetId);
+      if (!mapa.has(id)) mapa.set(id, new Set());
+      mapa.get(id)!.add(k);
+    }
+    this.rasporedjeniPoPredmetu = mapa;
+  }
+
   applyFilters(): void {
+    this.osveziRasporedjene();
     let filtered = [...this.allLoadedEvents];
 
     filtered = filtered.filter(e => {

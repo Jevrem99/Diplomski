@@ -15,6 +15,7 @@ import { environment } from '../../../../environments/environment';
 import { DataCacheService } from '../../../core/services/data-cache.service';
 import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
 import { PotvrdaService } from '../../../core/services/potvrda.service';
+import { unetiKolokvijumi, opisKolokvijuma, kljucZaTip, UnetiKolokvijum } from '../../../core/utils/termini-kolokvijuma';
 
 @Component({
   selector: 'app-event-modal',
@@ -88,6 +89,33 @@ export class EventModal implements OnInit {
       const razlika = this.satiSaradnika(a) - this.satiSaradnika(b);
       return (this.sortiranje === 'manje' ? razlika : -razlika) || prezime(a, b);
     });
+  }
+
+  // Termini koje je nastavnik uneo na stranici "Termini kolokvijuma" (data.potrebnoDezurnih nosi ceo zapis)
+  get uneti(): UnetiKolokvijum[] {
+    return unetiKolokvijumi(this.data.potrebnoDezurnih);
+  }
+  get napomenaTermina(): string {
+    return (this.data.potrebnoDezurnih as any)?.napomena || '';
+  }
+  opis(k: UnetiKolokvijum): string {
+    return opisKolokvijuma(k);
+  }
+  // Uneto trajanje za izabranu vrstu kolokvijuma (za dugme "kraj po trajanju")
+  get trajanjeIzabranog(): number | null {
+    const k = kljucZaTip(this.formData.tip_kolokvijuma, this.formData.is_ispit);
+    return this.uneti.find((x) => x.kljuc === k)?.trajanje ?? null;
+  }
+  get krajPoTrajanju(): string | null {
+    const t = this.trajanjeIzabranog;
+    if (!t || !this.formData.startTime) return null;
+    const kraj = this.timeToMins(this.formData.startTime) + t;
+    const zaokruzeno = Math.ceil(kraj / 15) * 15; // izbor vremena ide na 15 minuta
+    if (zaokruzeno > 22 * 60) return null;
+    return `${String(Math.floor(zaokruzeno / 60)).padStart(2, '0')}:${String(zaokruzeno % 60).padStart(2, '0')}`;
+  }
+  postaviKrajPoTrajanju(): void {
+    if (this.krajPoTrajanju) this.formData.endTime = this.krajPoTrajanju;
   }
 
   // Potreban broj dežurnih koji je saradnik uneo na stranici "Termini kolokvijuma" (samo za kolokvijume)
