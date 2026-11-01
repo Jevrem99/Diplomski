@@ -22,11 +22,6 @@ const idProstorije = (naziv) => {
     return null;
 };
 
-// Poruka kojom se u ispit.rezervacija_poruka beleži sala čiju je rezervaciju administrator ručno otkazao
-const OTKAZANO = 'OTKAZANO';
-// ... i salu čije je odbijanje administrator uklonio iz pregleda (ne šalje se ponovo sama)
-const UKLONJENO = 'UKLONJENO';
-
 const minuta = (hhmm) => { const [h, m] = String(hhmm || '').split(':').map(Number); return h * 60 + (m || 0); };
 
 // Telo zahteva za jednu rezervaciju (r: element iz napraviRezervacije)
@@ -125,19 +120,13 @@ const posaljiIZabelezi = async (paket, korisnik = null, sve = null) => {
     }
 
     // Sale termina koje su ranije rezervisane, a sada se nisu slale, ne kvare status termina
-    // (poruke sala koje se sada nisu slale, npr. ručno otkazane, ostaju zapisane)
     const sada = new Date();
-    const poslateSale = new Set(lista.map((r) => r.sala));
-    const pre = await prisma.ispit.findMany({ where: { id: { in: [...poIspitu.keys()] } }, select: { id: true, rezervacija_poruka: true } });
     for (const [id, s] of poIspitu) {
-        const ranije = String(pre.find((i) => i.id === id)?.rezervacija_poruka || '').split(' | ')
-            .filter((p) => p && ![...poslateSale].some((sala) => p.startsWith(`${sala}: `)));
-        const poruke = [...ranije, ...s.poruke];
         await prisma.ispit.update({
             where: { id },
             data: {
-                rezervacija_status: poruke.length ? 'greska' : 'ok',
-                rezervacija_poruka: poruke.length ? poruke.join(' | ').slice(0, 1000) : null,
+                rezervacija_status: s.ok ? 'ok' : 'greska',
+                rezervacija_poruka: s.ok ? null : s.poruke.join(' | ').slice(0, 1000),
                 rezervacija_vreme: sada
             }
         });
@@ -175,9 +164,11 @@ const statusiRezervacija = async (paket) => {
             .flatMap((s) => String(s.rezervacija_poruka || '').split(' | '))
             .filter((p) => p.startsWith(`${r.sala}: `))
             .map((p) => p.slice(r.sala.length + 2));
-        if (poruke.includes(OTKAZANO)) { statusi[r.id] = { status: 'otkazano' }; continue; }
-        if (poruke.includes(UKLONJENO)) { statusi[r.id] = { status: 'uklonjeno' }; continue; }
         statusi[r.id] = poruke.length ? { status: 'greska', poruka: [...new Set(poruke)].join(' | ') } : { status: 'neposlato' };
+    }
+    // Termini koje je administrator uklonio iz pregleda (rezervacija_status = 'skriveno')
+    for (const r of lista) {
+        if ((r.ispitIds || []).some((id) => poId.get(id)?.rezervacija_status === 'skriveno')) statusi[r.id].skriveno = true;
     }
     return statusi;
 };
@@ -187,67 +178,27 @@ const posaljiNeposlate = async (korisnik = null) => {
     const danas = new Date().toISOString().substring(0, 10);
     const paket = await ucitajObjavljeneRezervacije({ od: danas, objavio: korisnik?.username || null });
     const statusi = await statusiRezervacija(paket);
-    // ručno otkazane sale se ne šalju ponovo (rezervišu se samo dugmetom "Rezerviši" kod te sale)
-    const za = paket.rezervacije.filter((r) => !['ok', 'otkazano', 'uklonjeno'].includes(statusi[r.id]?.status));
+    // uklonjeni iz pregleda se ne šalju ponovo
+    const za = paket.rezervacije.filter((r) => statusi[r.id]?.status !== 'ok' && !statusi[r.id]?.skriveno);
     if (!za.length) return { ...BEZ_SLANJA, ukljuceno: Boolean((await pod.podesavanjaSlanja()).url) };
     return posaljiIZabelezi({ ...paket, rezervacije: za }, korisnik, paket.rezervacije);
 };
 
-// Upisuje (ili briše) poruku za jednu salu u ispit.rezervacija_poruka, ne dirajući poruke ostalih sala
-const postaviPorukuSale = async (ispitIds, sala, poruka) => {
-    const ispiti = await prisma.ispit.findMany({ where: { id: { in: ispitIds } }, select: { id: true, rezervacija_poruka: true } });
-    for (const i of ispiti) {
-        const ostale = String(i.rezervacija_poruka || '').split(' | ').filter((p) => p && !p.startsWith(`${sala}: `));
-        const sve = poruka ? [...ostale, `${sala}: ${poruka}`] : ostale;
-        await prisma.ispit.update({
-            where: { id: i.id },
-            data: { rezervacija_status: sve.length ? 'greska' : 'ok', rezervacija_poruka: sve.length ? sve.join(' | ').slice(0, 1000) : null }
-        });
-    }
-};
-
-// Pronalazi jednu salu (rezervaciju) objavljenog kolokvijuma po ključu iz pregleda ("kol-45" ili "kol-45-s7")
-const nadjiSalu = async (kljuc, korisnik) => {
-    const paket = await ucitajObjavljeneRezervacije({ od: '2000-01-01', objavio: korisnik?.username || null });
-    const r = paket.rezervacije.find((x) => x.id === kljuc);
-    return { paket, r };
-};
-
-// Otkazuje rezervaciju jedne sale u sistemu fakulteta; sala ostaje u rasporedu, ali se više ne šalje sama
-const otkaziSalu = async (kljuc, korisnik = null) => {
-    const { r } = await nadjiSalu(kljuc, korisnik);
-    if (!r) return { greska: 'Rezervacija nije pronađena.' };
-    const redovi = await prisma.rezervacijaFakulteta.findMany({ where: { kljuc, sala: r.sala } });
-    const { lozinka } = await pod.podesavanjaSlanja();
-    for (const red of redovi) {
-        const odgovor = await pod.posaljiJson({ password: lozinka, akcija: 'obrisi', idRezervacije: red.id_rezervacije });
-        const ocena = odgovor.greska ? { poslato: false, greska: odgovor.greska } : pod.oceniOdgovor(odgovor.httpStatus, odgovor.telo);
-        if (!ocena.poslato) return { greska: `Sistem fakulteta nije otkazao rezervaciju: ${ocena.greska}` };
-        await prisma.rezervacijaFakulteta.delete({ where: { id: red.id } });
-    }
-    await postaviPorukuSale(r.ispitIds || [], r.sala, OTKAZANO);
-    return { otkazano: true, sala: r.sala, datum: r.datum, od: r.od };
-};
-
-// Uklanja poruku "Odbijeno" za jednu salu (u sistemu fakulteta nema šta da se briše)
-const ukloniOdbijenu = async (kljuc, korisnik = null) => {
-    const { r } = await nadjiSalu(kljuc, korisnik);
-    if (!r) return { greska: 'Rezervacija nije pronađena.' };
-    await postaviPorukuSale(r.ispitIds || [], r.sala, UKLONJENO);
-    return { uklonjeno: true, sala: r.sala, datum: r.datum, od: r.od };
-};
-
-// Rezerviše jednu salu (npr. ranije otkazanu ili odbijenu)
-const rezervisiSalu = async (kljuc, korisnik = null) => {
-    const { paket, r } = await nadjiSalu(kljuc, korisnik);
-    if (!r) return { greska: 'Rezervacija nije pronađena.' };
-    if (!(await pod.adresaSlanja())) return { greska: 'Adresa za slanje nije podešena.' };
-    await postaviPorukuSale(r.ispitIds || [], r.sala, null);
-    const ishod = await posaljiIZabelezi({ ...paket, rezervacije: [r] }, korisnik, paket.rezervacije);
-    return ishod.poslato ? { rezervisano: true, sala: r.sala } : { greska: ishod.greska };
+// Uklanja termine iz pregleda rezervacija (ili ih vraća) po ključevima iz pregleda ("kol-45", "kol-45-s7");
+// rezervacije u sistemu fakulteta se ne diraju
+const sakrijIzPregleda = async (kljucevi, sakrij = true) => {
+    const trazeni = new Set((kljucevi || []).map(String));
+    const paket = await ucitajObjavljeneRezervacije({ od: '2000-01-01' });
+    const ids = [...new Set(paket.rezervacije.filter((x) => trazeni.has(x.id)).flatMap((x) => x.ispitIds || []))];
+    if (!ids.length) return 0;
+    const r = await prisma.ispit.updateMany({
+        where: { id: { in: ids }, is_ispit: false },
+        data: sakrij ? { rezervacija_status: 'skriveno', rezervacija_poruka: null } : { rezervacija_status: null }
+    });
+    return r.count;
 };
 
 module.exports = {
-    posaljiIZabelezi, statusiRezervacija, posaljiNeposlate, otkaziZaIspite, otkaziSalu, rezervisiSalu, ukloniOdbijenu,
+    posaljiIZabelezi, statusiRezervacija, posaljiNeposlate, otkaziZaIspite, sakrijIzPregleda,
     _internal: { idProstorije, zahtevZaRezervaciju }
 };

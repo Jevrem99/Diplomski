@@ -2,7 +2,6 @@ import { ChangeDetectorRef, Component, Inject, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { environment } from '../../../../environments/environment';
-import { PotvrdaService } from '../../../core/services/potvrda.service';
 
 // Pregled rezervacija sala za objavljene kolokvijume (isti podaci koje preuzima sistem fakulteta)
 @Component({
@@ -12,18 +11,18 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
     <div class="rez">
       <h2 class="rez-naslov">Pregled rezervacija sala</h2>
       <p class="rez-pod">
-        Objavljeni kolokvijumi od danas nadalje: {{ grupe.length }} (sala: {{ data.rez.rezervacije.length }}).
+        Objavljeni kolokvijumi od danas nadalje: {{ vidljive.length }}.
         Kolokvijum u više sala ima po jednu rezervaciju za svaku salu.
       </p>
 
       <div class="rez-lista">
         <table class="rez-tabela">
           <thead>
-            <tr><th>Datum</th><th>Vreme</th><th>Predmeti</th><th class="num">Studenata</th><th>Sale i rezervacija na fakultetu</th></tr>
+            <tr><th>Datum</th><th>Vreme</th><th>Predmeti</th><th class="num">Studenata</th><th>Sale i rezervacija na fakultetu</th><th></th></tr>
           </thead>
           <tbody>
-            @for (g of grupe; track g.kljuc) {
-              <tr>
+            @for (g of (prikaziSkrivene ? grupe : vidljive); track g.kljuc) {
+              <tr [class.rez-skriven]="g.skriven">
                 <td>{{ datum(g.prva.datum) }}</td>
                 <td>{{ g.prva.od }}–{{ g.prva.do }}@if (g.prva.do_pretpostavljen) { <span class="rez-napomena" title="Kraj nije unet, uzeto je 2 sata">*</span> }</td>
                 <td>{{ nazivi(g.prva) }}@if (g.prva.racunarska_sala) { <span class="rez-oznaka">račun.</span> }</td>
@@ -34,24 +33,22 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
                       <span class="rez-sala-ime">{{ r.sala }}</span>
                       @switch (data.rez.statusi?.[r.id]?.status) {
                         @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
-                        @case ('greska') { <span class="rez-st rez-st-greska">Odbijeno</span> }
-                        @case ('otkazano') { <span class="rez-st">Otkazano</span> }
-                        @case ('uklonjeno') { <span class="rez-st">Nije rezervisano</span> }
+                        @case ('greska') { <span class="rez-st rez-st-greska">Odbijeno</span><div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div> }
                         @default { <span class="rez-st">Nije poslato</span> }
-                      }
-                      @if (data.rez.statusi?.[r.id]?.status === 'ok') {
-                        <button type="button" class="rez-akcija rez-akcija-otkazi" [disabled]="radi === r.id" (click)="otkazi(r)">Otkaži</button>
-                      } @else {
-                        <button type="button" class="rez-akcija" [disabled]="radi === r.id" (click)="rezervisi(r)">Rezerviši</button>
-                      }
-                      @if (data.rez.statusi?.[r.id]?.status === 'greska') {
-                        <button type="button" class="rez-akcija" [disabled]="radi === r.id" (click)="ukloni(r)" title="Ukloni oznaku Odbijeno">Ukloni</button>
-                        <div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div>
                       }
                     </div>
                   }
                 </td>
+                <td class="rez-x-col">
+                  @if (g.skriven) {
+                    <button type="button" class="rez-vrati" [disabled]="radi === g.kljuc" (click)="sakrij(g, false)">Vrati</button>
+                  } @else {
+                    <button type="button" class="rez-x" [disabled]="radi === g.kljuc" (click)="sakrij(g, true)" title="Ukloni iz pregleda">✕</button>
+                  }
+                </td>
               </tr>
+            } @empty {
+              <tr><td colspan="6" class="rez-prazno">Nema kolokvijuma u pregledu.</td></tr>
             }
           </tbody>
         </table>
@@ -59,6 +56,12 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
 
       @if (data.rez.bez_sale?.length) {
         <p class="rez-upozorenje">Bez izabrane sale ({{ data.rez.bez_sale.length }}): nisu u rezervacijama dok se sala ne izabere.</p>
+      }
+
+      @if (brojSkrivenih) {
+        <button type="button" class="rez-link" (click)="prikaziSkrivene = !prikaziSkrivene">
+          {{ prikaziSkrivene ? 'Sakrij uklonjene' : 'Prikaži uklonjene (' + brojSkrivenih + ')' }}
+        </button>
       }
 
       <div class="rez-dugmad">
@@ -83,10 +86,15 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
     .rez-st-greska { background: var(--danger-soft); color: var(--danger-text); }
     .rez-poruka { margin-top: 3px; font-size: 0.7rem; color: var(--muted); max-width: 220px; }
     .rez-sala { margin: 2px 0 6px; }
-    .rez-akcija { margin-left: 6px; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
-    .rez-akcija-otkazi { color: var(--danger-text); }
-    .rez-akcija:disabled { opacity: .5; cursor: wait; }
     .rez-sala-ime { display: inline-block; min-width: 64px; font-weight: 700; margin-right: 6px; }
+    .rez-x-col { width: 1%; text-align: right; }
+    .rez-x { width: 26px; height: 26px; border-radius: 6px; border: 1px solid transparent; background: transparent; color: var(--muted); font-size: 0.85rem; cursor: pointer; }
+    .rez-x:hover { border-color: var(--border-strong); color: var(--danger-text); background: var(--surface-2); }
+    .rez-vrati { padding: 2px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+    .rez-skriven td { opacity: .5; }
+    .rez-skriven td.rez-x-col { opacity: 1; }
+    .rez-prazno { text-align: center; color: var(--muted); padding: 18px; }
+    .rez-link { margin-top: 10px; padding: 0; border: none; background: none; color: var(--primary-text); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
     .rez-upozorenje { margin: 12px 0 0; font-size: 0.8rem; color: var(--danger-text); }
     .rez-dugmad { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
     .rez-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--primary); background: var(--primary); color: #fff; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
@@ -95,63 +103,49 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
 })
 export class RezervacijeSalaDialogComponent {
   // Jedan red po kolokvijumu: rezervacije "kol-45" i "kol-45-s7" su isti termin u dve sale
-  grupe: { kljuc: string; prva: any; sale: any[] }[] = [];
-  radi: string | null = null;  // sala čija se rezervacija upravo menja
+  grupe: { kljuc: string; prva: any; sale: any[]; skriven: boolean }[] = [];
+  prikaziSkrivene = false;
+  radi: string | null = null;
 
   private http = inject(HttpClient);
-  private potvrda = inject(PotvrdaService);
   private cdr = inject(ChangeDetectorRef);
+
+  get vidljive() {
+    return this.grupe.filter((g) => !g.skriven);
+  }
+  get brojSkrivenih(): number {
+    return this.grupe.length - this.vidljive.length;
+  }
 
   constructor(
     public ref: MatDialogRef<RezervacijeSalaDialogComponent, boolean>,
     @Inject(MAT_DIALOG_DATA) public data: { rez: any }
   ) {
-    const poKljucu = new Map<string, { kljuc: string; prva: any; sale: any[] }>();
+    const poKljucu = new Map<string, { kljuc: string; prva: any; sale: any[]; skriven: boolean }>();
     for (const r of data.rez?.rezervacije || []) {
       const kljuc = String(r.id).replace(/-s\d+$/, '');
-      if (!poKljucu.has(kljuc)) poKljucu.set(kljuc, { kljuc, prva: r, sale: [] });
-      poKljucu.get(kljuc)!.sale.push(r);
+      if (!poKljucu.has(kljuc)) poKljucu.set(kljuc, { kljuc, prva: r, sale: [], skriven: false });
+      const g = poKljucu.get(kljuc)!;
+      g.sale.push(r);
+      if (data.rez.statusi?.[r.id]?.skriveno) g.skriven = true;
     }
     this.grupe = [...poKljucu.values()];
+  }
+
+  // Uklanja red iz pregleda (ili ga vraća); rezervacija na fakultetu ostaje kakva jeste
+  sakrij(g: { kljuc: string; sale: any[]; skriven: boolean }, sakrij: boolean): void {
+    const kljucevi = g.sale.map((r: any) => r.id);
+    this.radi = g.kljuc;
+    this.cdr.detectChanges();
+    this.http.post(`${environment.apiUrl}/ispit/rezervacije-sala/sakrij`, { kljucevi, sakrij }).subscribe({
+      next: () => { g.skriven = sakrij; this.radi = null; this.cdr.detectChanges(); },
+      error: () => { this.radi = null; this.cdr.detectChanges(); }
+    });
   }
 
   datum(d: string): string {
     const [g, m, dan] = String(d).split('-');
     return `${dan}. ${m}. ${g}.`;
-  }
-
-  async otkazi(r: any): Promise<void> {
-    const ok = await this.potvrda.pitaj({
-      naslov: 'Otkazivanje rezervacije',
-      poruka: `Otkazati rezervaciju sale ${r.sala} (${this.datum(r.datum)} ${r.od}) u sistemu fakulteta? Kolokvijum ostaje u rasporedu.`,
-      potvrdi: 'Otkaži rezervaciju', odustani: 'Ne', opasno: true
-    });
-    if (ok) this.promeni(r, 'otkazi', 'otkazano');
-  }
-
-  ukloni(r: any): void {
-    this.promeni(r, 'ukloni', 'uklonjeno');
-  }
-
-  rezervisi(r: any): void {
-    this.promeni(r, 'rezervisi', 'ok');
-  }
-
-  private promeni(r: any, akcija: 'otkazi' | 'rezervisi' | 'ukloni', noviStatus: string): void {
-    this.radi = r.id;
-    this.cdr.detectChanges();
-    this.http.post(`${environment.apiUrl}/ispit/rezervacije-sala/${encodeURIComponent(r.id)}/${akcija}`, {}).subscribe({
-      next: () => {
-        this.data.rez.statusi = { ...(this.data.rez.statusi || {}), [r.id]: { status: noviStatus } };
-        this.radi = null;
-        this.cdr.detectChanges();
-      },
-      error: (e) => {
-        this.radi = null;
-        this.cdr.detectChanges();
-        this.potvrda.obavesti(e?.error?.error || 'Greška na serveru.', akcija === 'otkazi' ? 'Rezervacija nije otkazana' : akcija === 'ukloni' ? 'Nije uklonjeno' : 'Sala nije rezervisana');
-      }
-    });
   }
 
   nazivi(r: any): string {

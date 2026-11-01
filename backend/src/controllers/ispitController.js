@@ -922,27 +922,18 @@ const getRezervacijeSala = async (req, res) => {
     }
 };
 
-// POST /ispit/rezervacije-sala/:kljuc/otkazi i /rezervisi: jedna sala objavljenog kolokvijuma
-const promeniRezervacijuSale = (akcija) => async (req, res) => {
+// POST /ispit/rezervacije-sala/sakrij { kljucevi, sakrij }: uklanja termine iz pregleda rezervacija (ili ih vraća)
+const sakrijRezervacije = async (req, res) => {
     try {
-        const kljuc = String(req.params.kljuc || '');
-        const ishod = akcija === 'otkazi' ? await slanjeRezervacija.otkaziSalu(kljuc, req.user)
-            : akcija === 'ukloni' ? await slanjeRezervacija.ukloniOdbijenu(kljuc, req.user)
-            : await slanjeRezervacija.rezervisiSalu(kljuc, req.user);
-        if (ishod.greska) return res.status(400).json({ error: ishod.greska });
-        await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
-            akcija === 'otkazi' ? `Otkazana rezervacija sale ${ishod.sala} (${ishod.datum} ${ishod.od})`
-                : akcija === 'ukloni' ? `Uklonjeno odbijanje sale ${ishod.sala} (${ishod.datum} ${ishod.od})`
-                : `Rezervisana sala ${ishod.sala}`);
-        res.status(200).json(ishod);
+        const kljucevi = Array.isArray(req.body?.kljucevi) ? req.body.kljucevi.slice(0, 50) : [];
+        const sakrij = req.body?.sakrij !== false;
+        const broj = await slanjeRezervacija.sakrijIzPregleda(kljucevi, sakrij);
+        res.status(200).json({ broj });
     } catch (err) {
-        console.error('Greška pri promeni rezervacije sale:', err);
+        console.error('Greška pri uklanjanju iz pregleda rezervacija:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
-const otkaziRezervacijuSale = promeniRezervacijuSale('otkazi');
-const rezervisiSalu = promeniRezervacijuSale('rezervisi');
-const ukloniOdbijenuSalu = promeniRezervacijuSale('ukloni');
 
 const getZauzetiTermini = async (req, res) => {
     try {
@@ -993,9 +984,7 @@ const getDashboardStats = async (req, res) => {
 };
 
 module.exports = {
-    otkaziRezervacijuSale,
-    rezervisiSalu,
-    ukloniOdbijenuSalu,
+    sakrijRezervacije,
     _proveriKonflikte: proveriKonflikte,
     proveriRaspored,
     getAllIspiti,

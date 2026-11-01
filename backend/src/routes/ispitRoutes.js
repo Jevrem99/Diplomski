@@ -15,9 +15,7 @@ router.post('/proveri-konflikte', ...urednik, ispitController.proveriRaspored);
 router.post('/bulk', ...urednik, ispitController.saveBulkIspiti);
 router.put('/publish-all', ...urednik, ispitController.publishAll);
 router.get('/rezervacije-sala', ...urednik, ispitController.getRezervacijeSala);
-router.post('/rezervacije-sala/:kljuc/otkazi', ...urednik, ispitController.otkaziRezervacijuSale);
-router.post('/rezervacije-sala/:kljuc/rezervisi', ...urednik, ispitController.rezervisiSalu);
-router.post('/rezervacije-sala/:kljuc/ukloni', ...urednik, ispitController.ukloniOdbijenuSalu);
+router.post('/rezervacije-sala/sakrij', ...urednik, ispitController.sakrijRezervacije);
 router.get('/izvoz', ...urednik, uvozController.izvozJson);
 router.post('/uvoz/pregled', ...urednik, uploadUvoz.single('file'), uvozController.pregledUvoza);
 
