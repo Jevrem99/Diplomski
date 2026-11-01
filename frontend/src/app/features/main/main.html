@@ -179,6 +179,9 @@
               {{ predmet.godina == 5 ? 'MAS' : predmet.godina + '. Godina' }}
             </span>
             <span class="bank-card-semestar">{{ jeZimski(predmet) ? 'Zimski' : 'Letnji' }}</span>
+            @if (predmet.broj_studenata) {
+              <span class="bank-card-semestar" title="Broj studenata na predmetu">· {{ predmet.broj_studenata }} stud.</span>
+            }
             @if (predmet.nema_kolokvijume) { <span class="bank-card-bez-kol">bez kolokvijuma</span> }
             @if (stanjeRasporeda(predmet); as st) {
               @if (st.uneto > 0) {

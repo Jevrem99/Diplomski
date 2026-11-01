@@ -134,7 +134,7 @@ export class EventModal implements OnInit {
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
     @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; sale?: string[]; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
-      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[],
+      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[], brojStudenata?: number,
       potrebnoDezurnih?: { k1_dezurni?: number | null; k2_dezurni?: number | null; k3_dezurni?: number | null; popravni_dezurni?: number | null } | null } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;

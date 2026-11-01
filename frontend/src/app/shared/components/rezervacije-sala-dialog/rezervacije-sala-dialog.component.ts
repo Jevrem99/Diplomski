@@ -1,5 +1,8 @@
-import { Component, Inject } from '@angular/core';
+import { ChangeDetectorRef, Component, Inject, inject } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { environment } from '../../../../environments/environment';
+import { PotvrdaService } from '../../../core/services/potvrda.service';
 
 // Pregled rezervacija sala za objavljene kolokvijume (isti podaci koje preuzima sistem fakulteta)
 @Component({
@@ -31,8 +34,17 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
                       <span class="rez-sala-ime">{{ r.sala }}</span>
                       @switch (data.rez.statusi?.[r.id]?.status) {
                         @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
-                        @case ('greska') { <span class="rez-st rez-st-greska">Odbijeno</span><div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div> }
+                        @case ('greska') { <span class="rez-st rez-st-greska">Odbijeno</span> }
+                        @case ('otkazano') { <span class="rez-st">Otkazano</span> }
                         @default { <span class="rez-st">Nije poslato</span> }
+                      }
+                      @if (data.rez.statusi?.[r.id]?.status === 'ok') {
+                        <button type="button" class="rez-akcija rez-akcija-otkazi" [disabled]="radi === r.id" (click)="otkazi(r)">Otkaži</button>
+                      } @else {
+                        <button type="button" class="rez-akcija" [disabled]="radi === r.id" (click)="rezervisi(r)">Rezerviši</button>
+                      }
+                      @if (data.rez.statusi?.[r.id]?.status === 'greska') {
+                        <div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div>
                       }
                     </div>
                   }
@@ -69,6 +81,9 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
     .rez-st-greska { background: var(--danger-soft); color: var(--danger-text); }
     .rez-poruka { margin-top: 3px; font-size: 0.7rem; color: var(--muted); max-width: 220px; }
     .rez-sala { margin: 2px 0 6px; }
+    .rez-akcija { margin-left: 6px; padding: 1px 8px; border-radius: 4px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); font: inherit; font-size: 0.7rem; font-weight: 700; cursor: pointer; }
+    .rez-akcija-otkazi { color: var(--danger-text); }
+    .rez-akcija:disabled { opacity: .5; cursor: wait; }
     .rez-sala-ime { display: inline-block; min-width: 64px; font-weight: 700; margin-right: 6px; }
     .rez-upozorenje { margin: 12px 0 0; font-size: 0.8rem; color: var(--danger-text); }
     .rez-dugmad { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
@@ -79,6 +94,11 @@ import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 export class RezervacijeSalaDialogComponent {
   // Jedan red po kolokvijumu: rezervacije "kol-45" i "kol-45-s7" su isti termin u dve sale
   grupe: { kljuc: string; prva: any; sale: any[] }[] = [];
+  radi: string | null = null;  // sala čija se rezervacija upravo menja
+
+  private http = inject(HttpClient);
+  private potvrda = inject(PotvrdaService);
+  private cdr = inject(ChangeDetectorRef);
 
   constructor(
     public ref: MatDialogRef<RezervacijeSalaDialogComponent, boolean>,
@@ -96,6 +116,36 @@ export class RezervacijeSalaDialogComponent {
   datum(d: string): string {
     const [g, m, dan] = String(d).split('-');
     return `${dan}. ${m}. ${g}.`;
+  }
+
+  async otkazi(r: any): Promise<void> {
+    const ok = await this.potvrda.pitaj({
+      naslov: 'Otkazivanje rezervacije',
+      poruka: `Otkazati rezervaciju sale ${r.sala} (${this.datum(r.datum)} ${r.od}) u sistemu fakulteta? Kolokvijum ostaje u rasporedu.`,
+      potvrdi: 'Otkaži rezervaciju', odustani: 'Ne', opasno: true
+    });
+    if (ok) this.promeni(r, 'otkazi', 'otkazano');
+  }
+
+  rezervisi(r: any): void {
+    this.promeni(r, 'rezervisi', 'ok');
+  }
+
+  private promeni(r: any, akcija: 'otkazi' | 'rezervisi', noviStatus: string): void {
+    this.radi = r.id;
+    this.cdr.detectChanges();
+    this.http.post(`${environment.apiUrl}/ispit/rezervacije-sala/${encodeURIComponent(r.id)}/${akcija}`, {}).subscribe({
+      next: () => {
+        this.data.rez.statusi = { ...(this.data.rez.statusi || {}), [r.id]: { status: noviStatus } };
+        this.radi = null;
+        this.cdr.detectChanges();
+      },
+      error: (e) => {
+        this.radi = null;
+        this.cdr.detectChanges();
+        this.potvrda.obavesti(e?.error?.error || 'Greška na serveru.', akcija === 'otkazi' ? 'Rezervacija nije otkazana' : 'Sala nije rezervisana');
+      }
+    });
   }
 
   nazivi(r: any): string {

@@ -859,7 +859,8 @@ export class Main implements OnInit, AfterViewInit {
         zauzeteSaleNaDan: this.zauzecaNaDan(eventDate, clanovi),
         satiPoSaradniku: this.satiPoSaradniku(eventDate, clanovi),
         ...(uGrupi
-          ? { saradniciPredmeta: this.unijaSaradnika(predmetiGrupe).map((s: any) => Number(s.id)), potrebnoDezurnih: null }
+          ? { saradniciPredmeta: this.unijaSaradnika(predmetiGrupe).map((s: any) => Number(s.id)), potrebnoDezurnih: null,
+              brojStudenata: this.zbirStudenata(predmetiGrupe) }
           : this.podaciPredmetaZaModal(p.predmetId)),
         grupaPredmeti: uGrupi ? naslovi : undefined
       },
@@ -984,6 +985,7 @@ export class Main implements OnInit, AfterViewInit {
         satiPoSaradniku: this.satiPoSaradniku(eventDate),
         saradniciPredmeta: dezurni.map((s: any) => Number(s.id)),
         potrebnoDezurnih: jeGrupa ? null : ((prvi as any).terminiKolokvijuma || null),
+        brojStudenata: this.zbirStudenata(predmetiZaTermin),
         grupaPredmeti: jeGrupa ? predmetiZaTermin.map(p => p.naziv) : undefined
       },
       disableClose: true
@@ -1192,12 +1194,18 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   // Šta prozor termina dobija o predmetu: saradnici na predmetu i potreban broj dežurnih
-  private podaciPredmetaZaModal(predmetId: any): { saradniciPredmeta: number[]; potrebnoDezurnih: any } {
+  private podaciPredmetaZaModal(predmetId: any): { saradniciPredmeta: number[]; potrebnoDezurnih: any; brojStudenata: number } {
     const predmet: any = this.predmeti.find(p => p.id == predmetId);
     return {
       saradniciPredmeta: (predmet?.saradnici || []).map((x: any) => Number(x.id)),
-      potrebnoDezurnih: predmet?.terminiKolokvijuma || null
+      potrebnoDezurnih: predmet?.terminiKolokvijuma || null,
+      brojStudenata: predmet?.broj_studenata || 0
     };
+  }
+
+  // Ukupan broj studenata za termin (za grupu predmeta zbir svih predmeta u grupi)
+  private zbirStudenata(predmeti: any[]): number {
+    return (predmeti || []).reduce((s, p: any) => s + (Number(p?.broj_studenata) || 0), 0);
   }
 
   // Kopija grupe na nekom danu dobija svoj (novi) zajednički ključ; termini bez grupe ostaju bez ključa

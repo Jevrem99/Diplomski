@@ -922,6 +922,25 @@ const getRezervacijeSala = async (req, res) => {
     }
 };
 
+// POST /ispit/rezervacije-sala/:kljuc/otkazi i /rezervisi: jedna sala objavljenog kolokvijuma
+const promeniRezervacijuSale = (akcija) => async (req, res) => {
+    try {
+        const kljuc = String(req.params.kljuc || '');
+        const ishod = akcija === 'otkazi'
+            ? await slanjeRezervacija.otkaziSalu(kljuc, req.user)
+            : await slanjeRezervacija.rezervisiSalu(kljuc, req.user);
+        if (ishod.greska) return res.status(400).json({ error: ishod.greska });
+        await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
+            akcija === 'otkazi' ? `Otkazana rezervacija sale ${ishod.sala} (${ishod.datum} ${ishod.od})` : `Rezervisana sala ${ishod.sala}`);
+        res.status(200).json(ishod);
+    } catch (err) {
+        console.error('Greška pri promeni rezervacije sale:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+const otkaziRezervacijuSale = promeniRezervacijuSale('otkazi');
+const rezervisiSalu = promeniRezervacijuSale('rezervisi');
+
 const getZauzetiTermini = async (req, res) => {
     try {
         const { sala_id } = req.query;
@@ -971,6 +990,8 @@ const getDashboardStats = async (req, res) => {
 };
 
 module.exports = {
+    otkaziRezervacijuSale,
+    rezervisiSalu,
     _proveriKonflikte: proveriKonflikte,
     proveriRaspored,
     getAllIspiti,

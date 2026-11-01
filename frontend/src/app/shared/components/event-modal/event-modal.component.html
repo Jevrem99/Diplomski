@@ -7,6 +7,10 @@
         <span class="meta-item">Predmet: <strong>{{ data.title }}</strong></span>
         <span class="meta-separator">•</span>
         <span class="meta-item">Datum: <strong>{{ data.date }}</strong></span>
+        @if (data.brojStudenata) {
+          <span class="meta-separator">•</span>
+          <span class="meta-item">Studenata: <strong>{{ data.brojStudenata }}</strong></span>
+        }
       </div>
       @if (data.grupaPredmeti?.length) {
         <div class="modal-grupa-note">
