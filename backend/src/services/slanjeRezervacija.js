@@ -24,6 +24,8 @@ const idProstorije = (naziv) => {
 
 // Poruka kojom se u ispit.rezervacija_poruka beleži sala čiju je rezervaciju administrator ručno otkazao
 const OTKAZANO = 'OTKAZANO';
+// ... i salu čije je odbijanje administrator uklonio iz pregleda (ne šalje se ponovo sama)
+const UKLONJENO = 'UKLONJENO';
 
 const minuta = (hhmm) => { const [h, m] = String(hhmm || '').split(':').map(Number); return h * 60 + (m || 0); };
 
@@ -174,6 +176,7 @@ const statusiRezervacija = async (paket) => {
             .filter((p) => p.startsWith(`${r.sala}: `))
             .map((p) => p.slice(r.sala.length + 2));
         if (poruke.includes(OTKAZANO)) { statusi[r.id] = { status: 'otkazano' }; continue; }
+        if (poruke.includes(UKLONJENO)) { statusi[r.id] = { status: 'uklonjeno' }; continue; }
         statusi[r.id] = poruke.length ? { status: 'greska', poruka: [...new Set(poruke)].join(' | ') } : { status: 'neposlato' };
     }
     return statusi;
@@ -185,7 +188,7 @@ const posaljiNeposlate = async (korisnik = null) => {
     const paket = await ucitajObjavljeneRezervacije({ od: danas, objavio: korisnik?.username || null });
     const statusi = await statusiRezervacija(paket);
     // ručno otkazane sale se ne šalju ponovo (rezervišu se samo dugmetom "Rezerviši" kod te sale)
-    const za = paket.rezervacije.filter((r) => !['ok', 'otkazano'].includes(statusi[r.id]?.status));
+    const za = paket.rezervacije.filter((r) => !['ok', 'otkazano', 'uklonjeno'].includes(statusi[r.id]?.status));
     if (!za.length) return { ...BEZ_SLANJA, ukljuceno: Boolean((await pod.podesavanjaSlanja()).url) };
     return posaljiIZabelezi({ ...paket, rezervacije: za }, korisnik, paket.rezervacije);
 };
@@ -226,6 +229,14 @@ const otkaziSalu = async (kljuc, korisnik = null) => {
     return { otkazano: true, sala: r.sala, datum: r.datum, od: r.od };
 };
 
+// Uklanja poruku "Odbijeno" za jednu salu (u sistemu fakulteta nema šta da se briše)
+const ukloniOdbijenu = async (kljuc, korisnik = null) => {
+    const { r } = await nadjiSalu(kljuc, korisnik);
+    if (!r) return { greska: 'Rezervacija nije pronađena.' };
+    await postaviPorukuSale(r.ispitIds || [], r.sala, UKLONJENO);
+    return { uklonjeno: true, sala: r.sala, datum: r.datum, od: r.od };
+};
+
 // Rezerviše jednu salu (npr. ranije otkazanu ili odbijenu)
 const rezervisiSalu = async (kljuc, korisnik = null) => {
     const { paket, r } = await nadjiSalu(kljuc, korisnik);
@@ -237,6 +248,6 @@ const rezervisiSalu = async (kljuc, korisnik = null) => {
 };
 
 module.exports = {
-    posaljiIZabelezi, statusiRezervacija, posaljiNeposlate, otkaziZaIspite, otkaziSalu, rezervisiSalu,
+    posaljiIZabelezi, statusiRezervacija, posaljiNeposlate, otkaziZaIspite, otkaziSalu, rezervisiSalu, ukloniOdbijenu,
     _internal: { idProstorije, zahtevZaRezervaciju }
 };

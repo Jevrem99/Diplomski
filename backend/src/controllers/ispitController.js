@@ -926,12 +926,14 @@ const getRezervacijeSala = async (req, res) => {
 const promeniRezervacijuSale = (akcija) => async (req, res) => {
     try {
         const kljuc = String(req.params.kljuc || '');
-        const ishod = akcija === 'otkazi'
-            ? await slanjeRezervacija.otkaziSalu(kljuc, req.user)
+        const ishod = akcija === 'otkazi' ? await slanjeRezervacija.otkaziSalu(kljuc, req.user)
+            : akcija === 'ukloni' ? await slanjeRezervacija.ukloniOdbijenu(kljuc, req.user)
             : await slanjeRezervacija.rezervisiSalu(kljuc, req.user);
         if (ishod.greska) return res.status(400).json({ error: ishod.greska });
         await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
-            akcija === 'otkazi' ? `Otkazana rezervacija sale ${ishod.sala} (${ishod.datum} ${ishod.od})` : `Rezervisana sala ${ishod.sala}`);
+            akcija === 'otkazi' ? `Otkazana rezervacija sale ${ishod.sala} (${ishod.datum} ${ishod.od})`
+                : akcija === 'ukloni' ? `Uklonjeno odbijanje sale ${ishod.sala} (${ishod.datum} ${ishod.od})`
+                : `Rezervisana sala ${ishod.sala}`);
         res.status(200).json(ishod);
     } catch (err) {
         console.error('Greška pri promeni rezervacije sale:', err);
@@ -940,6 +942,7 @@ const promeniRezervacijuSale = (akcija) => async (req, res) => {
 };
 const otkaziRezervacijuSale = promeniRezervacijuSale('otkazi');
 const rezervisiSalu = promeniRezervacijuSale('rezervisi');
+const ukloniOdbijenuSalu = promeniRezervacijuSale('ukloni');
 
 const getZauzetiTermini = async (req, res) => {
     try {
@@ -992,6 +995,7 @@ const getDashboardStats = async (req, res) => {
 module.exports = {
     otkaziRezervacijuSale,
     rezervisiSalu,
+    ukloniOdbijenuSalu,
     _proveriKonflikte: proveriKonflikte,
     proveriRaspored,
     getAllIspiti,

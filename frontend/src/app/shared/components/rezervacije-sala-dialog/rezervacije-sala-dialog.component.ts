@@ -36,6 +36,7 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
                         @case ('ok') { <span class="rez-st rez-st-ok">Rezervisano</span> }
                         @case ('greska') { <span class="rez-st rez-st-greska">Odbijeno</span> }
                         @case ('otkazano') { <span class="rez-st">Otkazano</span> }
+                        @case ('uklonjeno') { <span class="rez-st">Nije rezervisano</span> }
                         @default { <span class="rez-st">Nije poslato</span> }
                       }
                       @if (data.rez.statusi?.[r.id]?.status === 'ok') {
@@ -44,6 +45,7 @@ import { PotvrdaService } from '../../../core/services/potvrda.service';
                         <button type="button" class="rez-akcija" [disabled]="radi === r.id" (click)="rezervisi(r)">Rezerviši</button>
                       }
                       @if (data.rez.statusi?.[r.id]?.status === 'greska') {
+                        <button type="button" class="rez-akcija" [disabled]="radi === r.id" (click)="ukloni(r)" title="Ukloni oznaku Odbijeno">Ukloni</button>
                         <div class="rez-poruka" data-lat>{{ data.rez.statusi[r.id].poruka }}</div>
                       }
                     </div>
@@ -127,11 +129,15 @@ export class RezervacijeSalaDialogComponent {
     if (ok) this.promeni(r, 'otkazi', 'otkazano');
   }
 
+  ukloni(r: any): void {
+    this.promeni(r, 'ukloni', 'uklonjeno');
+  }
+
   rezervisi(r: any): void {
     this.promeni(r, 'rezervisi', 'ok');
   }
 
-  private promeni(r: any, akcija: 'otkazi' | 'rezervisi', noviStatus: string): void {
+  private promeni(r: any, akcija: 'otkazi' | 'rezervisi' | 'ukloni', noviStatus: string): void {
     this.radi = r.id;
     this.cdr.detectChanges();
     this.http.post(`${environment.apiUrl}/ispit/rezervacije-sala/${encodeURIComponent(r.id)}/${akcija}`, {}).subscribe({
@@ -143,7 +149,7 @@ export class RezervacijeSalaDialogComponent {
       error: (e) => {
         this.radi = null;
         this.cdr.detectChanges();
-        this.potvrda.obavesti(e?.error?.error || 'Greška na serveru.', akcija === 'otkazi' ? 'Rezervacija nije otkazana' : 'Sala nije rezervisana');
+        this.potvrda.obavesti(e?.error?.error || 'Greška na serveru.', akcija === 'otkazi' ? 'Rezervacija nije otkazana' : akcija === 'ukloni' ? 'Nije uklonjeno' : 'Sala nije rezervisana');
       }
     });
   }
