@@ -914,3 +914,12 @@ div[class*="fc-event-dragging"] {
 .bank-card-datumi { font-weight: 700; }
 .bank-card-rasp { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 800; background: var(--surface-3); color: var(--muted); }
 .bank-card-rasp-sve { background: var(--tint-green-bg); color: var(--tint-green-fg); }
+
+/* Meni "Alati": statistika i ređe korišćene radnje (Uvezi, Verzije, rezervacije sala, IMI) */
+.alati-lista { display: flex; flex-direction: column; gap: 2px; padding-top: 10px; border-top: 1px solid var(--border); }
+.alati-stavka { display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px; border: none; border-radius: 8px; background: transparent; color: var(--text); font-family: 'Montserrat', sans-serif; font-size: 0.8rem; font-weight: 700; text-align: left; cursor: pointer; }
+.alati-stavka:hover { background: var(--surface-3); }
+.alati-stavka svg { color: var(--muted); }
+
+/* Razmak ispred Sačuvaj / Objavi: glavne radnje su odvojene, skroz desno */
+.header-razmak { width: 1px; height: 26px; margin: 0 4px; background: var(--border); }
