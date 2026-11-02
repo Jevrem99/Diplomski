@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
+import { MatIconModule } from '@angular/material/icon';
 import { PotvrdaService } from '../../../core/services/potvrda.service';
 
 export interface RokIzvoz {
@@ -78,8 +78,19 @@ export class ExportModalComponent {
     if (this.izvozPodaci.tip === 'ispiti') {
       this.izvozPodaci.naslovRasporeda = 'Распоред испита у апсолвентским роковима\nза предмете са ОАС и МАС Информатике';
     } else {
-      this.izvozPodaci.naslovRasporeda = 'Распоред колоквијума на ОАС Информатика\nлетњи семестар 2025/26';
+      this.izvozPodaci.naslovRasporeda = 'Распоред колоквијума на ОАС Информатика\n' + this.semestar(this.izvozPodaci.datumOd);
     }
+  }
+
+  // Zimski semestar: oktobar–januar (2026/27), letnji: februar–septembar (2025/26 za 2026)
+  private semestar(datum?: string): string {
+    const d = datum ? new Date(datum) : new Date();
+    const dan = isNaN(d.getTime()) ? new Date() : d;
+    const m = dan.getMonth() + 1;
+    const g = dan.getFullYear();
+    const pocetna = m >= 10 ? g : g - 1;
+    const sk = `${pocetna}/${String(pocetna + 1).slice(-2)}`;
+    return (m >= 10 || m === 1 ? 'зимски' : 'летњи') + ' семестар ' + sk;
   }
 
   dodajRok(): void {
