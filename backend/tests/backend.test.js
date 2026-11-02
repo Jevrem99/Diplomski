@@ -620,3 +620,39 @@ test('mejl: bez EMAIL_USER/EMAIL_PASS slanje odmah vraća neuspeh sa razlogom (n
         if (staro.p !== undefined) process.env.EMAIL_PASS = staro.p;
     }
 });
+
+test('nastava: naziv časa sa IMI-ja (P/V, ćirilica, grupa) daje ključ predmeta i vrstu časa', () => {
+    const { procitajCas } = require('../src/services/nastavaKonflikti');
+    assert.deepEqual(procitajCas('Analiza 2 (P)'), { kljuc: 'analiza 2', vrsta: 'P' });
+    assert.deepEqual(procitajCas('Комбинаторне структуре (П)'), { kljuc: 'kombinatorne strukture', vrsta: 'P' });
+    assert.deepEqual(procitajCas('Mašinsko učenje (V)'), { kljuc: 'masinsko ucenje', vrsta: 'V' });
+    assert.deepEqual(procitajCas('Uvod u finansijsku matematiku (I grupa)'), { kljuc: 'uvod u finansijsku matematiku', vrsta: null });
+    assert.deepEqual(procitajCas('Teorijske osnove informatike (V, II grupa)'), { kljuc: 'teorijske osnove informatike', vrsta: 'V' });
+    assert.deepEqual(procitajCas('Elektronsko poslovanje - ispit'), { kljuc: 'elektronsko poslovanje', vrsta: null });
+});
+
+test('nastava: studenti iste godine i dežurni koji drži čas daju upozorenje, ostalo ne', () => {
+    const { konfliktiSaNastavom } = require('../src/services/nastavaKonflikti');
+    const mapa = new Map([
+        ['analiza 2', [{ id: 1, naziv: 'Analiza 2', godina: 2, profesor_id: 10, saradnici: [20] }]],
+        ['programiranje 1', [{ id: 2, naziv: 'Programiranje 1', godina: 1, profesor_id: 11, saradnici: [21] }]]
+    ]);
+    const nastava = [
+        { predmet: 'Analiza 2 (P)', vreme_pocetka: '10:00', vreme_kraja: '12:00' },
+        { predmet: 'Sastanak IMI', vreme_pocetka: '10:00', vreme_kraja: '11:00' }
+    ];
+    const vreme = (n) => `${n.vreme_pocetka}–${n.vreme_kraja}`;
+    const imena = new Map([[10, 'Pera Perić'], [20, 'Ana Anić']]);
+    const predmet = (godina, id = 5, sifra = '19.IN1000') => ({ id, sifra, godina });
+    const k = konfliktiSaNastavom({ nastava, mapa, predmet: predmet(2), dezurni: [10, 20], imena, vreme });
+    assert.deepEqual(k.map((x) => x.tip), ['studenti', 'nastava'], '(P) drži profesor, ne saradnik');
+    assert.match(k[0].tekst, /Studenti 2\. godine imaju nastavu: „Analiza 2 \(P\)“ \(10:00–12:00\)/);
+    assert.match(k[1].tekst, /Dežurni Pera Perić ima nastavu/);
+    assert.deepEqual(konfliktiSaNastavom({ nastava, mapa, predmet: predmet(1), dezurni: [], vreme }), [], 'druga godina: bez konflikta');
+    assert.deepEqual(konfliktiSaNastavom({ nastava, mapa, predmet: predmet(2, 1), dezurni: [], vreme }), [], 'čas istog predmeta nije konflikt');
+    assert.deepEqual(konfliktiSaNastavom({ nastava, mapa, predmet: predmet(2, 5, 'MAS-G2-Z-x'), dezurni: [], vreme }), [], '2. godina master nije 2. godina osnovnih');
+    const dvaPuta = [{ predmet: 'Analiza 2 (P)', vreme_pocetka: '10:00', vreme_kraja: '11:00' }, { predmet: 'Analiza 2 (P)', vreme_pocetka: '11:00', vreme_kraja: '12:00' }];
+    const spojeno = konfliktiSaNastavom({ nastava: dvaPuta, mapa, predmet: predmet(2), dezurni: [], vreme });
+    assert.equal(spojeno.length, 1);
+    assert.match(spojeno[0].tekst, /\(10:00–11:00, 11:00–12:00\)\.$/);
+});

@@ -561,8 +561,8 @@
         @for (k of ispit.konflikti; track $index) {
         <div class="flex gap-3 items-start">
           <span class="shrink-0 mt-0.5 text-[10px] font-extrabold uppercase tracking-wide rounded-full px-2.5 py-1"
-            [ngClass]="k.tip === 'sala' ? 'bg-sky-100 text-sky-800' : k.tip === 'odsustvo' ? 'bg-rose-100 text-rose-800' : 'bg-amber-100 text-amber-800'">
-            {{ k.tip === 'sala' ? 'Sala' : k.tip === 'odsustvo' ? 'Odsustvo' : 'Dežurstvo' }}
+            [ngClass]="k.tip === 'sala' ? 'bg-sky-100 text-sky-800' : k.tip === 'odsustvo' ? 'bg-rose-100 text-rose-800' : k.tip === 'studenti' ? 'bg-violet-100 text-violet-800' : 'bg-amber-100 text-amber-800'">
+            {{ k.tip === 'sala' ? 'Sala' : k.tip === 'odsustvo' ? 'Odsustvo' : k.tip === 'studenti' ? 'Studenti' : k.tip === 'nastava' ? 'Nastava' : 'Dežurstvo' }}
           </span>
           <p class="m-0 text-[13px] leading-relaxed font-medium text-slate-700 dark:text-slate-200">{{ k.tekst }}</p>
         </div>

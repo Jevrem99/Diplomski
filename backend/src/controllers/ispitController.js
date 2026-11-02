@@ -9,6 +9,7 @@ const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail, mejlPodesen, poslednjaGreskaSlanja } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
+const { predmetiPoNazivu, konfliktiSaNastavom, grupaStudenata } = require('../services/nastavaKonflikti');
 const slanjeRezervacija = require('../services/slanjeRezervacija');
 
 exports.exportKalendar = async (req, res) => {
@@ -202,12 +203,15 @@ const prikazDatuma = (dan) => dan.split('-').reverse().slice(0, 2).join('.') + '
 // Vraća listu konflikata { tip: 'dezurstvo' | 'odsustvo' | 'sala', tekst } za dati termin:
 //  - asistent ima obavezu/odsustvo (jedan dan, više dana ili celodnevno),
 //  - asistent već dežura u istom terminu,
-//  - ista sala je zauzeta drugim ispitom u istom terminu.
+//  - ista sala je zauzeta drugim ispitom u istom terminu,
+//  - studenti iste godine imaju nastavu ili drugi kolokvijum/ispit u isto vreme (tip 'studenti'),
+//  - dežurni u to vreme drži nastavu (tip 'nastava').
+// predmet_id: predmet termina (iz njega se zna godina studija); bez njega se ne proverava godina
 // excludeIspitId(s): ispiti koji se menjaju/brišu (ne računaju se kao konflikt sa samim sobom)
 // grupa_kljuc: termini nastali jednim postavljanjem grupe predmeta dele salu, vreme i dežurne,
 //              pa se međusobno ne prijavljuju kao konflikt
 // planirani: termini koji se tek čuvaju u istoj seriji ({ datum, vreme, vreme_kraja, sala_id, dezurni_ids, naziv, saradnici })
-const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, sale_ids = [], excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, db = prisma }) => {
+const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, sale_ids = [], excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, predmet_id = null, db = prisma }) => {
     const dan = String(datum).split('T')[0];
     const ispitDatum = new Date(`${dan}T00:00:00.000Z`);
     const pocetak = formatTimeToDateTime(dan, vreme);
@@ -308,7 +312,50 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         });
     }
 
-    // 4. Isti konflikti sa terminima koji se čuvaju u istoj seriji (još nisu u bazi)
+    // 4. Studenti iste godine i dežurni koji drže nastavu
+    const predmetId = Number(predmet_id) || null;
+    const predmet = predmetId ? await db.predmet.findUnique({ where: { id: predmetId }, select: { id: true, sifra: true, godina: true } }) : null;
+    const grupa = grupaStudenata(predmet);
+    if (grupa || ids.length > 0) {
+        const nastavaDana = (await db.redovnaNastava.findMany({
+            where: { datum: { gte: new Date(ispitDatum.getTime() - 12 * 3600 * 1000), lt: new Date(ispitDatum.getTime() + 12 * 3600 * 1000) } },
+            select: { predmet: true, vreme_pocetka: true, vreme_kraja: true }
+        })).filter((n) => {
+            const poc = formatTimeToDateTime(dan, n.vreme_pocetka);
+            const zav = formatTimeToDateTime(dan, n.vreme_kraja);
+            return poc && zav && preklapa(poc, zav);
+        });
+        if (nastavaDana.length) {
+            const osobe = ids.length ? await db.profesor.findMany({ where: { id: { in: ids } }, select: { id: true, ime: true, prezime: true } }) : [];
+            konflikti.push(...konfliktiSaNastavom({
+                nastava: nastavaDana,
+                mapa: await predmetiPoNazivu(),
+                predmet,
+                dezurni: ids,
+                imena: new Map(osobe.map((o) => [o.id, `${o.ime} ${o.prezime}`])),
+                vreme: (n) => `${n.vreme_pocetka}–${n.vreme_kraja}`
+            }));
+        }
+    }
+    if (grupa) {
+        // drugi kolokvijum ili ispit istih studenata u isto vreme (drugi predmet; termini iste grupe se ne računaju)
+        const istaGodina = (await db.ispit.findMany({
+            where: { datum: ispitDatum, ...notIn, predmet: { godina: { in: [predmet.godina, 1, 5].filter((g, i, a) => a.indexOf(g) === i) } }, NOT: { predmet_id: predmetId } },
+            include: { predmet: true }
+        })).filter((i) => grupaStudenata(i.predmet)?.kljuc === grupa.kljuc);
+        istaGodina.forEach((i) => {
+            const poc = vremeUDate(i.vreme);
+            if (!poc) return;
+            const zav = vremeUDate(i.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
+            if (!preklapa(poc, zav)) return;
+            konflikti.push({
+                tip: 'studenti',
+                tekst: `Studenti ${grupa.opis} u isto vreme imaju i „${i.predmet?.naziv || '?'}“ (${hhmm(poc)}–${hhmm(zav)}).`
+            });
+        });
+    }
+
+    // 5. Isti konflikti sa terminima koji se čuvaju u istoj seriji (još nisu u bazi)
     for (const o of planirani) {
         if (String(o.datum).split('T')[0] !== dan) continue;
         if (grupa_kljuc && o.grupa_kljuc === grupa_kljuc) continue;
@@ -321,6 +368,9 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         saleIds.filter((id) => saleDrugog.includes(id)).forEach((id) => {
             konflikti.push({ tip: 'sala', tekst: `Sala ${naziviDrugog.get(id) || o.salaNaziv || ''} je zauzeta: „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
         });
+        if (grupa && o.predmet_id !== predmetId && grupaStudenata(o.predmet)?.kljuc === grupa.kljuc) {
+            konflikti.push({ tip: 'studenti', tekst: `Studenti ${grupa.opis} u isto vreme imaju i „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
+        }
         const zajednicki = ids.filter((id) => (o.dezurni_ids || []).map(Number).includes(id));
         zajednicki.forEach((id) => {
             konflikti.push({
@@ -389,7 +439,7 @@ const createIspit = async (req, res) => {
         // PROVERA KONFLIKATA
         const konflikti = await proveriKonflikte({
             datum: finalDatum, vreme: finalVreme, vreme_kraja: finalVremeKraja, dezurni_ids: finalDezurni, sala_id: salaId,
-            sale_ids: dodatne, grupa_kljuc: grupaKljuc
+            sale_ids: dodatne, grupa_kljuc: grupaKljuc, predmet_id
         });
         if (konflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({
@@ -543,7 +593,8 @@ const updateIspit = async (req, res) => {
       sala_id: salaZaProveru,
       sale_ids: dodatne,
       excludeIspitId: numericId,
-      grupa_kljuc: grupaKljuc
+      grupa_kljuc: grupaKljuc,
+      predmet_id: pId || postojeciIspit.predmet_id
     });
     if (konflikti.length > 0 && req.query.force !== '1') {
       return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: tekstovi(konflikti), konflikti });
@@ -653,7 +704,10 @@ const saveBulkIspiti = async (req, res) => {
             const dodatne = (await odrediDodatneSale(ispit.sale, salaId, salaCache)) || [];
             const dezurni = ispit.dezurni_ids || [];
             const grupaKljuc = ocistiGrupaKljuc(ispit.grupa_kljuc);
-            const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, sale_ids: dodatne, grupa_kljuc: grupaKljuc });
+            const konflikti = await proveriKonflikte({
+                datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, sale_ids: dodatne, grupa_kljuc: grupaKljuc,
+                predmet_id: ispit.predmet_id || ispit.predmetId || ispit.predmet?.id || null
+            });
             sviKonflikti.push(...konflikti);
             pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dodatne, dezurni, grupaKljuc });
         }
@@ -719,6 +773,7 @@ const proveriRaspored = async (req, res) => {
 
         // Normalizacija jednog termina iz tela zahteva (isti oblici kao u bulk/update)
         const predmetNazivi = new Map();
+        const predmetGodine = new Map();
         const normalizuj = async (t, id = null) => {
             const datum = t.datum || t.date;
             const vreme = t.vreme || t.startTime;
@@ -741,6 +796,7 @@ const proveriRaspored = async (req, res) => {
             if (predmetId && !predmetNazivi.has(predmetId)) {
                 const p = await prisma.predmet.findUnique({ where: { id: predmetId } });
                 predmetNazivi.set(predmetId, p ? p.naziv : '?');
+                predmetGodine.set(predmetId, p ? { sifra: p.sifra, godina: p.godina } : null);
             }
             const dezurni = (t.dezurni_ids || t.dezurni || []).map((d) => (typeof d === 'object' ? d.id : Number(d))).filter(Boolean);
             return {
@@ -756,7 +812,9 @@ const proveriRaspored = async (req, res) => {
                 naziviSala: naziviSalaT,
                 dezurni_ids: dezurni,
                 grupa_kljuc: ocistiGrupaKljuc(t.grupa_kljuc),
-                naziv: predmetNazivi.get(predmetId) || t.title || 'Ispit'
+                naziv: predmetNazivi.get(predmetId) || t.title || 'Ispit',
+                predmet_id: predmetId,
+                predmet: predmetGodine.get(predmetId) || null
             };
         };
 
@@ -782,6 +840,7 @@ const proveriRaspored = async (req, res) => {
                 sale_ids: p.sale_ids,
                 excludeIspitIds: izuzeti,
                 grupa_kljuc: p.grupa_kljuc,
+                predmet_id: p.predmet_id,
                 planirani: planirani.filter((o) => o !== p)
             });
             if (konflikti.length > 0) {
