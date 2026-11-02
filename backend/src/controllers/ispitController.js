@@ -9,7 +9,7 @@ const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
 const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
 const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail, mejlPodesen, poslednjaGreskaSlanja } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
-const { predmetiPoNazivu, konfliktiSaNastavom, grupaStudenata } = require('../services/nastavaKonflikti');
+const { vaziZaDatum, konfliktiSaRasporedom, smeroviPredmeta, grupaStudenata } = require('../services/rasporedCasova');
 const slanjeRezervacija = require('../services/slanjeRezervacija');
 
 exports.exportKalendar = async (req, res) => {
@@ -312,29 +312,20 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         });
     }
 
-    // 4. Studenti iste godine i dežurni koji drže nastavu
+    // 4. Nedeljni raspored časova (IMI): studenti te godine imaju nastavu, dežurni drži nastavu
     const predmetId = Number(predmet_id) || null;
-    const predmet = predmetId ? await db.predmet.findUnique({ where: { id: predmetId }, select: { id: true, sifra: true, godina: true } }) : null;
+    const predmet = predmetId ? await db.predmet.findUnique({ where: { id: predmetId }, select: { id: true, naziv: true, sifra: true, godina: true } }) : null;
     const grupa = grupaStudenata(predmet);
-    if (grupa || ids.length > 0) {
-        const nastavaDana = (await db.redovnaNastava.findMany({
-            where: { datum: { gte: new Date(ispitDatum.getTime() - 12 * 3600 * 1000), lt: new Date(ispitDatum.getTime() + 12 * 3600 * 1000) } },
-            select: { predmet: true, vreme_pocetka: true, vreme_kraja: true }
-        })).filter((n) => {
-            const poc = formatTimeToDateTime(dan, n.vreme_pocetka);
-            const zav = formatTimeToDateTime(dan, n.vreme_kraja);
+    if ((grupa || ids.length > 0) && await vaziZaDatum(ispitDatum, db)) {
+        const sviCasovi = await db.casRasporeda.findMany();
+        const casovi = sviCasovi.filter((c) => c.dan === ispitDatum.getUTCDay()).filter((c) => {
+            const poc = formatTimeToDateTime(dan, c.od);
+            const zav = formatTimeToDateTime(dan, c.do);
             return poc && zav && preklapa(poc, zav);
         });
-        if (nastavaDana.length) {
-            const osobe = ids.length ? await db.profesor.findMany({ where: { id: { in: ids } }, select: { id: true, ime: true, prezime: true } }) : [];
-            konflikti.push(...konfliktiSaNastavom({
-                nastava: nastavaDana,
-                mapa: await predmetiPoNazivu(),
-                predmet,
-                dezurni: ids,
-                imena: new Map(osobe.map((o) => [o.id, `${o.ime} ${o.prezime}`])),
-                vreme: (n) => `${n.vreme_pocetka}–${n.vreme_kraja}`
-            }));
+        if (casovi.length) {
+            const dezurni = ids.length ? await db.profesor.findMany({ where: { id: { in: ids } }, select: { id: true, ime: true, prezime: true } }) : [];
+            konflikti.push(...konfliktiSaRasporedom({ casovi, predmet, dezurni, smerovi: smeroviPredmeta(sviCasovi, predmet) }));
         }
     }
     if (grupa) {
@@ -342,7 +333,7 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         const istaGodina = (await db.ispit.findMany({
             where: { datum: ispitDatum, ...notIn, predmet: { godina: { in: [predmet.godina, 1, 5].filter((g, i, a) => a.indexOf(g) === i) } }, NOT: { predmet_id: predmetId } },
             include: { predmet: true }
-        })).filter((i) => grupaStudenata(i.predmet)?.kljuc === grupa.kljuc);
+        })).filter((i) => { const g = grupaStudenata(i.predmet); return g && g.nivo === grupa.nivo && g.godina === grupa.godina; });
         istaGodina.forEach((i) => {
             const poc = vremeUDate(i.vreme);
             if (!poc) return;
@@ -368,7 +359,8 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         saleIds.filter((id) => saleDrugog.includes(id)).forEach((id) => {
             konflikti.push({ tip: 'sala', tekst: `Sala ${naziviDrugog.get(id) || o.salaNaziv || ''} je zauzeta: „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
         });
-        if (grupa && o.predmet_id !== predmetId && grupaStudenata(o.predmet)?.kljuc === grupa.kljuc) {
+        const go = grupa && o.predmet_id !== predmetId ? grupaStudenata(o.predmet) : null;
+        if (go && go.nivo === grupa.nivo && go.godina === grupa.godina) {
             konflikti.push({ tip: 'studenti', tekst: `Studenti ${grupa.opis} u isto vreme imaju i „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
         }
         const zajednicki = ids.filter((id) => (o.dezurni_ids || []).map(Number).includes(id));

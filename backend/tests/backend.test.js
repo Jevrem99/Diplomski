@@ -621,38 +621,62 @@ test('mejl: bez EMAIL_USER/EMAIL_PASS slanje odmah vraća neuspeh sa razlogom (n
     }
 });
 
-test('nastava: naziv časa sa IMI-ja (P/V, ćirilica, grupa) daje ključ predmeta i vrstu časa', () => {
-    const { procitajCas } = require('../src/services/nastavaKonflikti');
-    assert.deepEqual(procitajCas('Analiza 2 (P)'), { kljuc: 'analiza 2', vrsta: 'P' });
-    assert.deepEqual(procitajCas('Комбинаторне структуре (П)'), { kljuc: 'kombinatorne strukture', vrsta: 'P' });
-    assert.deepEqual(procitajCas('Mašinsko učenje (V)'), { kljuc: 'masinsko ucenje', vrsta: 'V' });
-    assert.deepEqual(procitajCas('Uvod u finansijsku matematiku (I grupa)'), { kljuc: 'uvod u finansijsku matematiku', vrsta: null });
-    assert.deepEqual(procitajCas('Teorijske osnove informatike (V, II grupa)'), { kljuc: 'teorijske osnove informatike', vrsta: 'V' });
-    assert.deepEqual(procitajCas('Elektronsko poslovanje - ispit'), { kljuc: 'elektronsko poslovanje', vrsta: null });
+test('raspored časova: stranica IMI-ja daje fajlove i nazive smerova, fajl daje časove', () => {
+    const { procitajStranicu, grupaFajla, parsirajFajl } = require('../src/services/rasporedCasova')._internal;
+    const html = `<a id="II_godina_inf_rn" class="item"> <i class="fa"></i> <label>II godina-računarske nauke</label> </a>
+        <a id="Master_inf" class="item"><i class="fa"></i><label>Master-informatika Veštačka inteligencija</label></a>
+        <script src="json_datasets/IIgodInfLet15_rn.js?2026"></script><script src="json_datasets/MasInfLet15.js?2026"></script>
+        $("#II_godina_inf_rn").click(function() { eventData = IIgodInfLet15_rn; });
+        $("#Master_inf").click(function() { eventData = MasInfLet15; });`;
+    assert.deepEqual(procitajStranicu(html), [
+        { fajl: 'IIgodInfLet15_rn', oznaka: 'II godina-računarske nauke' },
+        { fajl: 'MasInfLet15', oznaka: 'Master-informatika Veštačka inteligencija' }
+    ]);
+    assert.deepEqual(grupaFajla('IIgodInfLet15_rn', 'II godina-računarske nauke'), { nivo: 'OAS', godina: 2, odsek: 'Informatika', smer: 'računarske nauke' });
+    assert.deepEqual(grupaFajla('MasInfLet15', 'Master-informatika Veštačka inteligencija'), { nivo: 'MAS', godina: null, odsek: 'Informatika', smer: 'informatika Veštačka inteligencija' });
+    assert.deepEqual(grupaFajla('IVgodMatLet15_tt', null), { nivo: 'OAS', godina: 4, odsek: 'Matematika', smer: '' });
+    const fajl = `var X = [
+{ id: 0, title: 'Analiza 2' ,start: '2015-04-21T11:15:00', end: '2015-04-21T13:00:00', backgroundColor: '#007eff;',
+  description: "sala A-II-25<br><br>Analiza 2<br><br>Suzana Aleksić" },
+{ id: 0, title: 'Psihologija' ,start: '2015-04-23T16:15:00', end: '2015-04-23T18:00:00',
+  description: "sala A-I-1<br><br>Psihologija<br><br>dr Darko Hinić" }];`;
+    assert.deepEqual(parsirajFajl(fajl), [
+        { dan: 2, od: '11:15', do: '13:00', predmet: 'Analiza 2', nastavnik: 'Suzana Aleksić', sala: 'A-II-25' },
+        { dan: 4, od: '16:15', do: '18:00', predmet: 'Psihologija', nastavnik: 'dr Darko Hinić', sala: 'A-I-1' }
+    ]);
 });
 
-test('nastava: studenti iste godine i dežurni koji drži čas daju upozorenje, ostalo ne', () => {
-    const { konfliktiSaNastavom } = require('../src/services/nastavaKonflikti');
-    const mapa = new Map([
-        ['analiza 2', [{ id: 1, naziv: 'Analiza 2', godina: 2, profesor_id: 10, saradnici: [20] }]],
-        ['programiranje 1', [{ id: 2, naziv: 'Programiranje 1', godina: 1, profesor_id: 11, saradnici: [21] }]]
-    ]);
-    const nastava = [
-        { predmet: 'Analiza 2 (P)', vreme_pocetka: '10:00', vreme_kraja: '12:00' },
-        { predmet: 'Sastanak IMI', vreme_pocetka: '10:00', vreme_kraja: '11:00' }
+test('raspored časova: studenti iste godine i dežurni koji drži čas (ime ćirilicom/latinicom, sa titulom)', () => {
+    const { konfliktiSaRasporedom, grupaStudenata } = require('../src/services/rasporedCasova');
+    const cas = (o) => ({ dan: 2, od: '11:15', do: '13:00', predmet: 'Analiza 2', nastavnik: 'dr Suzana Aleksić', sala: 'A-II-25', nivo: 'OAS', godina: 2, odsek: 'Matematika', smer: 'profesor matematike', ...o });
+    const casovi = [cas({}), cas({ smer: 'teorijska matematika i primene' }), cas({ predmet: 'Baze podataka', nastavnik: 'Pera Perić', godina: 3 })];
+    const dezurni = [{ id: 7, ime: 'Сузана', prezime: 'Алексић' }, { id: 8, ime: 'Ana', prezime: 'Anić' }];
+    const k = konfliktiSaRasporedom({ casovi, predmet: { naziv: 'Linearna algebra', sifra: '19.MA1', godina: 2 }, dezurni });
+    assert.deepEqual(k.map((x) => x.tip), ['studenti', 'nastava']);
+    assert.equal(k[0].tekst, 'Studenti 2. godine imaju nastavu: „Analiza 2“, dr Suzana Aleksić, 11:15–13:00 (Matematika – profesor matematike; Matematika – teorijska matematika i primene).');
+    assert.equal(k[1].tekst, 'Dežurni Сузана Алексић drži nastavu: „Analiza 2“, 11:15–13:00, sala A-II-25.');
+    assert.deepEqual(konfliktiSaRasporedom({ casovi, predmet: { naziv: 'Analiza 2', godina: 2 }, dezurni: [] }), [], 'čas istog predmeta nije konflikt');
+    assert.deepEqual(konfliktiSaRasporedom({ casovi, predmet: { naziv: 'X', sifra: 'MAS-G2-Z-x', godina: 2 }, dezurni: [] }), [], 'master nije 2. godina osnovnih');
+    assert.deepEqual(grupaStudenata({ sifra: 'MAS-G1-L-zavrsni_rad', godina: 1 }), { nivo: 'MAS', godina: 1, opis: 'master studija' });
+    // predmet se predaje samo na Informatici: časovi Matematike iste godine nisu konflikt
+    const { smeroviPredmeta } = require('../src/services/rasporedCasova');
+    const svi = [
+        { ...cas({ izvor: 'IIgodMatLet15_pm' }) },
+        { ...cas({ predmet: 'Operativni sistemi 1 (I grupa)', izvor: 'IIgodInfLet15_rn', dan: 3 }) },
+        { ...cas({ predmet: 'Objektno-orijentisano programiranje', odsek: 'Informatika', smer: 'računarske nauke', izvor: 'IIgodInfLet15_rn' }) }
     ];
-    const vreme = (n) => `${n.vreme_pocetka}–${n.vreme_kraja}`;
-    const imena = new Map([[10, 'Pera Perić'], [20, 'Ana Anić']]);
-    const predmet = (godina, id = 5, sifra = '19.IN1000') => ({ id, sifra, godina });
-    const k = konfliktiSaNastavom({ nastava, mapa, predmet: predmet(2), dezurni: [10, 20], imena, vreme });
-    assert.deepEqual(k.map((x) => x.tip), ['studenti', 'nastava'], '(P) drži profesor, ne saradnik');
-    assert.match(k[0].tekst, /Studenti 2\. godine imaju nastavu: „Analiza 2 \(P\)“ \(10:00–12:00\)/);
-    assert.match(k[1].tekst, /Dežurni Pera Perić ima nastavu/);
-    assert.deepEqual(konfliktiSaNastavom({ nastava, mapa, predmet: predmet(1), dezurni: [], vreme }), [], 'druga godina: bez konflikta');
-    assert.deepEqual(konfliktiSaNastavom({ nastava, mapa, predmet: predmet(2, 1), dezurni: [], vreme }), [], 'čas istog predmeta nije konflikt');
-    assert.deepEqual(konfliktiSaNastavom({ nastava, mapa, predmet: predmet(2, 5, 'MAS-G2-Z-x'), dezurni: [], vreme }), [], '2. godina master nije 2. godina osnovnih');
-    const dvaPuta = [{ predmet: 'Analiza 2 (P)', vreme_pocetka: '10:00', vreme_kraja: '11:00' }, { predmet: 'Analiza 2 (P)', vreme_pocetka: '11:00', vreme_kraja: '12:00' }];
-    const spojeno = konfliktiSaNastavom({ nastava: dvaPuta, mapa, predmet: predmet(2), dezurni: [], vreme });
-    assert.equal(spojeno.length, 1);
-    assert.match(spojeno[0].tekst, /\(10:00–11:00, 11:00–12:00\)\.$/);
+    const os = { naziv: 'Оперативни системи 1', sifra: '19.IN2', godina: 2 };
+    const smerovi = smeroviPredmeta(svi, os);
+    assert.deepEqual([...smerovi], ['IIgodInfLet15_rn']);
+    const samoInf = konfliktiSaRasporedom({ casovi: svi.filter((c) => c.dan === 2), predmet: os, smerovi });
+    assert.deepEqual(samoInf.map((x) => x.tekst), ['Studenti 2. godine imaju nastavu: „Objektno-orijentisano programiranje“, dr Suzana Aleksić, 11:15–13:00 (Informatika – računarske nauke).']);
+});
+
+test('raspored časova važi samo u semestru u kome je preuzet', () => {
+    const { semestar } = require('../src/services/rasporedCasova')._internal;
+    assert.equal(semestar(new Date('2026-11-12T00:00:00Z')), 'Z2026');
+    assert.equal(semestar(new Date('2027-01-10T00:00:00Z')), 'Z2026');
+    assert.equal(semestar(new Date('2027-01-25T00:00:00Z')), null, 'ispitni rok');
+    assert.equal(semestar(new Date('2027-04-01T00:00:00Z')), 'L2027');
+    assert.equal(semestar(new Date('2027-07-01T00:00:00Z')), null);
 });

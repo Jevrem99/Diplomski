@@ -91,3 +91,21 @@ ALTER TABLE "Predmet" ADD COLUMN IF NOT EXISTS "nema_kolokvijume" BOOLEAN NOT NU
 
 -- Sale koje se ne rezervišu u sistemu fakulteta (npr. lab koji nije u rasporedu zauzeća)
 ALTER TABLE "Sala" ADD COLUMN IF NOT EXISTS "bez_rezervacije" BOOLEAN NOT NULL DEFAULT false;
+
+-- Nedeljni raspored časova sa IMI sajta
+CREATE TABLE IF NOT EXISTS "CasRasporeda" (
+    "id" SERIAL NOT NULL,
+    "dan" INTEGER NOT NULL,
+    "od" TEXT NOT NULL,
+    "do" TEXT NOT NULL,
+    "predmet" TEXT NOT NULL,
+    "nastavnik" TEXT,
+    "sala" TEXT,
+    "nivo" TEXT NOT NULL,
+    "godina" INTEGER,
+    "odsek" TEXT NOT NULL,
+    "smer" TEXT NOT NULL,
+    "izvor" TEXT NOT NULL,
+    CONSTRAINT "CasRasporeda_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "CasRasporeda_dan_idx" ON "CasRasporeda"("dan");

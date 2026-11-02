@@ -3,6 +3,7 @@ const cheerio = require('cheerio');
 const prisma = require('../db/prisma');
 const { mapLimit } = require('../utils/mapLimit');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
+const { sinhronizujRasporedCasova } = require('./rasporedCasova');
 
 const IMI_DAY_URL = 'https://imi.pmf.kg.ac.rs/cp/rs/day.php';
 const PARALELNIH_ZAHTEVA = 5;
@@ -141,7 +142,16 @@ const syncZauzetostSala = async (opcije = {}) => {
     if (uToku) throw new Error('Sinhronizacija je već u toku, pokušajte kasnije.');
     uToku = true;
     try {
-        return await izvrsiSync(opcije);
+        const rezultat = await izvrsiSync(opcije);
+        // Uz zauzeće sala i nedeljni raspored časova (godine i nastavnici); njegova greška ne ruši sinhronizaciju
+        try {
+            const r = await sinhronizujRasporedCasova();
+            if (r.casova) rezultat.poruka += ` Raspored časova: ${r.casova} časova.`;
+        } catch (e) {
+            console.error('Raspored časova nije preuzet:', e.message);
+            rezultat.poruka += ' Raspored časova nije preuzet.';
+        }
+        return rezultat;
     } finally {
         uToku = false;
     }

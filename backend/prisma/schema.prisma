@@ -248,3 +248,21 @@ model RezervacijaFakulteta {
 
   @@index([id_rezervacije])
 }
+
+// Nedeljni raspored časova sa IMI sajta (stranica "Raspored časova"): ko ima nastavu i ko je drži
+model CasRasporeda {
+  id        Int     @id @default(autoincrement())
+  dan       Int     // 1 = ponedeljak ... 6 = subota
+  od        String  // "10:15"
+  do        String
+  predmet   String
+  nastavnik String?
+  sala      String?
+  nivo      String  // OAS ili MAS
+  godina    Int?    // null za master
+  odsek     String  // Matematika / Informatika
+  smer      String
+  izvor     String  // fajl sa IMI sajta
+
+  @@index([dan])
+}

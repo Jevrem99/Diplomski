@@ -4,6 +4,7 @@ const prisma = require('../db/prisma');
 const { mapLimit } = require('../utils/mapLimit');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
 const { logAction } = require('../services/auditService');
+const { sinhronizujRasporedCasova } = require('../services/rasporedCasova');
 
 let cachedUcionice = [];
 let isFetching = false;
@@ -148,8 +149,10 @@ async function syncUcioniceCache() {
 // Poziva se iz server.js tek NAKON što server počne da sluša - ne usporava pokretanje.
 function startUcioniceSync() {
   ucitajIzBaze().catch((e) => console.error('Greška pri čitanju učionica iz baze:', e.message));
+  const rasporedCasova = () => sinhronizujRasporedCasova().catch((e) => console.error('Raspored časova:', e.message));
   setTimeout(syncUcioniceCache, 3000);
-  intervalId = setInterval(syncUcioniceCache, 6 * 60 * 60 * 1000);
+  setTimeout(rasporedCasova, 5000);
+  intervalId = setInterval(() => { syncUcioniceCache(); rasporedCasova(); }, 6 * 60 * 60 * 1000);
   intervalId.unref();
 }
 
