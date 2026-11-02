@@ -60,7 +60,8 @@ model Predmet {
 model Sala {
   id        Int      @id @default(autoincrement())
   naziv     String   @unique
-  kapacitet Int?     
+  kapacitet Int?
+  bez_rezervacije Boolean @default(false) // ne šalje se na rezervaciju u sistem fakulteta
   ispiti    Ispit[]
   ispitiDodatne Ispit[] @relation("DodatneSale")
   redovnaNastava RedovnaNastava[]

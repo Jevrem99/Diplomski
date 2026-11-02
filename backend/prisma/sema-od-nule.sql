@@ -351,3 +351,6 @@ ALTER TABLE "TerminKolokvijuma"
 
 -- AlterTable
 ALTER TABLE "Predmet" ADD COLUMN IF NOT EXISTS "nema_kolokvijume" BOOLEAN NOT NULL DEFAULT false;
+
+-- Sale koje se ne rezervišu u sistemu fakulteta (npr. lab koji nije u rasporedu zauzeća)
+ALTER TABLE "Sala" ADD COLUMN IF NOT EXISTS "bez_rezervacije" BOOLEAN NOT NULL DEFAULT false;

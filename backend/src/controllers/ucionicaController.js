@@ -3,6 +3,7 @@ const https = require('https');
 const prisma = require('../db/prisma');
 const { mapLimit } = require('../utils/mapLimit');
 const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
+const { logAction } = require('../services/auditService');
 
 let cachedUcionice = [];
 let isFetching = false;
@@ -114,7 +115,7 @@ async function fetchUcioniceIzDnevnihRezervacija() {
 // Učitava učionice iz baze (tabela Sala) - brz izvor dok sajt IMI ne odgovori ili je nedostupan
 async function ucitajIzBaze() {
   const sale = await prisma.sala.findMany({ orderBy: { naziv: 'asc' } });
-  cachedUcionice = sale.map((s) => ({ id: s.id, naziv: s.naziv }));
+  cachedUcionice = sale.map((s) => ({ id: s.id, naziv: s.naziv, bez_rezervacije: s.bez_rezervacije }));
 }
 
 // Glavna funkcija za sinhronizaciju keša: povlači sa IMI sajta i čuva u tabelu Sala
@@ -212,7 +213,104 @@ const getDostupneUcionice = async (req, res) => {
   }
 };
 
+// --- Upravljanje salama (administrator) ---
+
+// GET /ucionice/sale: sve sale sa brojem termina i časova nastave u njima
+const getSale = async (req, res) => {
+  try {
+    const sale = await prisma.sala.findMany({
+      orderBy: { naziv: 'asc' },
+      include: { _count: { select: { ispiti: true, ispitiDodatne: true, redovnaNastava: true } } }
+    });
+    res.json(sale.map(({ _count, ...s }) => ({
+      ...s,
+      broj_termina: _count.ispiti + _count.ispitiDodatne,
+      broj_casova: _count.redovnaNastava
+    })));
+  } catch (error) {
+    console.error('Greška pri dohvatanju sala:', error);
+    res.status(500).json({ error: 'Greška na serveru.' });
+  }
+};
+
+const podaciSale = (body) => {
+  const naziv = normalizujNazivSale(body?.naziv);
+  const greske = {};
+  if (!naziv) greske.naziv = 'Unesite naziv sale.';
+  else if (naziv.length > 60) greske.naziv = 'Naziv je predugačak.';
+  let kapacitet = null;
+  if (body?.kapacitet !== undefined && body?.kapacitet !== null && String(body.kapacitet).trim() !== '') {
+    kapacitet = Number(body.kapacitet);
+    if (!Number.isInteger(kapacitet) || kapacitet < 0 || kapacitet > 10000) greske.kapacitet = 'Kapacitet mora biti ceo broj.';
+  }
+  return { naziv, kapacitet, bez_rezervacije: body?.bez_rezervacije === true || body?.bez_rezervacije === 'true', greske };
+};
+
+const sacuvajSalu = async (req, res, id = null) => {
+  const { naziv, kapacitet, bez_rezervacije, greske } = podaciSale(req.body);
+  if (Object.keys(greske).length) return res.status(400).json({ error: Object.values(greske)[0], polja: greske });
+  const ista = await prisma.sala.findFirst({ where: { naziv: { equals: naziv, mode: 'insensitive' }, ...(id ? { id: { not: id } } : {}) } });
+  if (ista) return res.status(409).json({ error: `Sala ${ista.naziv} već postoji.`, polja: { naziv: 'Sala sa tim nazivom već postoji.' } });
+  const sala = id
+    ? await prisma.sala.update({ where: { id }, data: { naziv, kapacitet, bez_rezervacije } })
+    : await prisma.sala.create({ data: { naziv, kapacitet, bez_rezervacije } });
+  await ucitajIzBaze();
+  await logAction(req.user?.username || 'Administrator', id ? 'UPDATE' : 'CREATE', 'Sala',
+    `${id ? 'Izmenjena' : 'Dodata'} sala ${naziv}${bez_rezervacije ? ' (ne rezerviše se na fakultetu)' : ''}`);
+  return res.status(id ? 200 : 201).json(sala);
+};
+
+// POST /ucionice/sale { naziv, kapacitet?, bez_rezervacije? }
+const createSala = async (req, res) => {
+  try {
+    await sacuvajSalu(req, res);
+  } catch (error) {
+    console.error('Greška pri dodavanju sale:', error);
+    res.status(500).json({ error: 'Greška na serveru.' });
+  }
+};
+
+// PUT /ucionice/sale/:id
+const updateSala = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!(await prisma.sala.findUnique({ where: { id } }))) return res.status(404).json({ error: 'Sala ne postoji.' });
+    await sacuvajSalu(req, res, id);
+  } catch (error) {
+    console.error('Greška pri izmeni sale:', error);
+    res.status(500).json({ error: 'Greška na serveru.' });
+  }
+};
+
+// DELETE /ucionice/sale/:id: samo sala koja se nigde ne koristi (sale iz IMI rasporeda se ionako vraćaju pri sinhronizaciji)
+const deleteSala = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const sala = await prisma.sala.findUnique({
+      where: { id },
+      include: { _count: { select: { ispiti: true, ispitiDodatne: true, redovnaNastava: true } } }
+    });
+    if (!sala) return res.status(404).json({ error: 'Sala ne postoji.' });
+    const termina = sala._count.ispiti + sala._count.ispitiDodatne;
+    if (termina > 0) return res.status(409).json({ error: `Sala ${sala.naziv} se koristi u ${termina} termina i ne može da se obriše.` });
+    if (sala._count.redovnaNastava > 0) {
+      return res.status(409).json({ error: `Sala ${sala.naziv} je u IMI rasporedu nastave i vratila bi se pri sinhronizaciji. Umesto brisanja označite da se ne rezerviše.` });
+    }
+    await prisma.sala.delete({ where: { id } });
+    await ucitajIzBaze();
+    await logAction(req.user?.username || 'Administrator', 'DELETE', 'Sala', `Obrisana sala ${sala.naziv}`);
+    res.json({ obrisano: true });
+  } catch (error) {
+    console.error('Greška pri brisanju sale:', error);
+    res.status(500).json({ error: 'Greška na serveru.' });
+  }
+};
+
 module.exports = {
+  getSale,
+  createSala,
+  updateSala,
+  deleteSala,
   getAllUcionice,
   getDostupneUcionice,
   startUcioniceSync

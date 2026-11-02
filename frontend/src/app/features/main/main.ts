@@ -753,7 +753,7 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   private preuzmiRezervacije(rez: any): void {
-    const { statusi, ...bezStatusa } = rez || {};
+    const { statusi, bez_rezervacije, ...bezStatusa } = rez || {};
     const blob = new Blob([JSON.stringify(bezStatusa, null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');

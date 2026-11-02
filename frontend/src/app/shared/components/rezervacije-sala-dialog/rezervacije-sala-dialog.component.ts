@@ -54,6 +54,15 @@ import { environment } from '../../../../environments/environment';
         </table>
       </div>
 
+      @if (data.rez.bez_rezervacije?.length) {
+        <p class="rez-pod rez-bez-rez">
+          U salama koje se ne rezervišu ({{ data.rez.bez_rezervacije.length }}):
+          @for (b of data.rez.bez_rezervacije; track b.id + b.sala; let poslednji = $last) {
+            {{ b.naziv }} – {{ b.sala }}, {{ datum(b.datum) }} {{ b.od }}@if (!poslednji) {; }
+          }
+        </p>
+      }
+
       @if (data.rez.bez_sale?.length) {
         <p class="rez-upozorenje">Bez izabrane sale ({{ data.rez.bez_sale.length }}): nisu u rezervacijama dok se sala ne izabere.</p>
       }
@@ -95,6 +104,7 @@ import { environment } from '../../../../environments/environment';
     .rez-skriven td.rez-x-col { opacity: 1; }
     .rez-prazno { text-align: center; color: var(--muted); padding: 18px; }
     .rez-link { margin-top: 10px; padding: 0; border: none; background: none; color: var(--primary-text); font: inherit; font-size: 0.78rem; font-weight: 700; cursor: pointer; }
+    .rez-bez-rez { margin: 12px 0 0; }
     .rez-upozorenje { margin: 12px 0 0; font-size: 0.8rem; color: var(--danger-text); }
     .rez-dugmad { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
     .rez-btn { height: 38px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--primary); background: var(--primary); color: #fff; font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }

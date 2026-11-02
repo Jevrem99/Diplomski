@@ -16,6 +16,8 @@
 //   }],
 //   "bez_sale": [{ "id": "kol-124", "datum": "...", "od": "...", "naziv": "..." }]   termini bez izabrane sale
 // }
+// Sale označene da se ne rezervišu na fakultetu se preskaču; spisak takvih termina je nevidljivo polje
+// bezRezervacije (nije deo objavljenog formata, prikazuje se samo u aplikaciji).
 // Termini iste grupe predmeta (isti dan, vreme i sala) čine JEDNU rezervaciju sa više predmeta.
 
 const DEFAULT_TRAJANJE_MIN = 120;
@@ -60,6 +62,7 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
     const kolokvijumi = ispiti.filter((i) => i && i.is_ispit === false);
     const poKljucu = new Map();
     const bezSale = [];
+    const bezRezervacije = [];
 
     kolokvijumi
         .slice()
@@ -76,6 +79,10 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
             // Termin u više sala: po jedna rezervacija za svaku salu (prva zadržava id "kol-<id>")
             const sale = [i.sala, ...(i.dodatneSale || []).filter((s) => s && s.naziv && s.id !== i.sala.id)];
             sale.forEach((sala, rb) => {
+            if (sala.bez_rezervacije) {
+                bezRezervacije.push({ id: `kol-${i.id}`, sala: sala.naziv, datum: dan(i.datum), od, naziv });
+                return;
+            }
             const kljuc = [sala.naziv, dan(i.datum), od, doVreme, i.tip_kolokvijuma || 'I', i.grupa_kljuc || `bez-grupe-${i.id}`].join('|');
             const predmet = {
                 sifra: i.predmet?.sifra || null,
@@ -116,14 +123,14 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
         ukupno_studenata: r.predmeti.reduce((zbir, p) => zbir + (p.broj_studenata || 0), 0)
     }, 'ispitIds', { value: _ispiti, enumerable: false }));
 
-    return {
+    return Object.defineProperty({
         format: 'raspored-rezervacije-sala',
         verzija: 1,
         generisano: sada.toISOString(),
         objavio,
         rezervacije,
         bez_sale: bezSale
-    };
+    }, 'bezRezervacije', { value: bezRezervacije, enumerable: false });
 };
 
 // Objavljeni kolokvijumi u periodu (od, do kao "GGGG-MM-DD"; do je opciono) -> rezervacije.

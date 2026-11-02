@@ -9,7 +9,7 @@ import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { procitajGresku } from '../../core/utils/validacija';
 
-export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'korisnici' | 'dnevnik';
+export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'sale' | 'korisnici' | 'dnevnik';
 
 interface ColumnDef {
   key: string;           // ključ u JSON objektu sa bekenda
@@ -101,6 +101,13 @@ export class DatabaseManagement implements OnInit {
       { key: 'nema_kolokvijume', label: 'Kolokvijumi' },
       { key: 'saradnici_ids', label: 'Saradnici na predmetu' }
     ],
+    sale: [
+      { key: 'id', label: 'ID' },
+      { key: 'naziv', label: 'Naziv sale' },
+      { key: 'kapacitet', label: 'Kapacitet' },
+      { key: 'bez_rezervacije', label: 'Rezervacija na fakultetu' },
+      { key: 'broj_termina', label: 'Termina' }
+    ],
     ispiti: [
       { key: 'id', label: 'ID' },
       { key: 'predmet_id', label: 'Predmet' },
@@ -123,6 +130,11 @@ export class DatabaseManagement implements OnInit {
     this.http.get<any[]>(`${this.API_URL}/profesors`).subscribe(data => this.allProfesori = data);
     this.http.get<any[]>(`${this.API_URL}/predmet`).subscribe(data => this.allPredmeti = data);
     this.http.get<any[]>(`${this.API_URL}/users/roles`).subscribe(data => this.allRoles = data);
+  }
+
+  // Kolone za formu: broj termina u sali se samo prikazuje u tabeli
+  get kolonePrikaza(): ColumnDef[] {
+    return this.currentColumnsDef.filter((c) => c.key !== 'broj_termina');
   }
 
   // Vraća samo definicije kolona koje treba prikazati u tabeli
@@ -156,6 +168,7 @@ export class DatabaseManagement implements OnInit {
       saradnici: '/profesors/saradnici',
       predmeti: '/predmet',
       ispiti: '/ispit',
+      sale: '/ucionice/sale',
       korisnici: '/users',
       dnevnik: '/admin/logs'
     };
@@ -184,8 +197,8 @@ export class DatabaseManagement implements OnInit {
     const dialogRef = this.dialog.open(CrudModal, {
       width: '850px',
       data: {
-        title: `Dodaj ${this.activeEntity === 'profesori' ? 'profesora' : this.activeEntity === 'saradnici' ? 'saradnika' : this.activeEntity === 'predmeti' ? 'predmet' : 'ispit'}`,
-        columns: this.currentColumnsDef, // Modalu šaljemo SVE kolone (uključujući i skrivene iz tabele)
+        title: `Dodaj ${this.getSingularName(this.activeEntity)}`,
+        columns: this.kolonePrikaza, // Modalu šaljemo SVE kolone (uključujući i skrivene iz tabele)
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori, 
         predmetiList: this.allPredmeti,
@@ -222,7 +235,7 @@ export class DatabaseManagement implements OnInit {
       width: '850px',
       data: {
         title: `Izmeni ${this.getSingularName(this.activeEntity)}`,
-        columns: this.currentColumnsDef, // Modalu šaljemo SVE kolone
+        columns: this.kolonePrikaza, // Modalu šaljemo SVE kolone
         rowData: formDataRow, 
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori,
@@ -362,6 +375,7 @@ export class DatabaseManagement implements OnInit {
     }
 
     if (colKey === 'nema_kolokvijume') return row[colKey] ? 'Nema' : 'Ima';
+    if (colKey === 'bez_rezervacije') return row[colKey] ? 'Ne rezerviše se' : 'Rezerviše se';
 
     const val = row[colKey];
     if (val === null || val === undefined || val === '') return '-';

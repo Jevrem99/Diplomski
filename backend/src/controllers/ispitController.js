@@ -915,7 +915,7 @@ const getRezervacijeSala = async (req, res) => {
         const doDatuma = jeDatum(req.query.do) ? req.query.do : null;
         const paket = await ucitajObjavljeneRezervacije({ od, doDatuma, objavio: req.user?.username || null });
         // statusi slanja su samo za pregled u aplikaciji (nisu deo fajla ni odgovora za fakultet)
-        res.status(200).json({ ...paket, statusi: await slanjeRezervacija.statusiRezervacija(paket) });
+        res.status(200).json({ ...paket, bez_rezervacije: paket.bezRezervacije, statusi: await slanjeRezervacija.statusiRezervacija(paket) });
     } catch (err) {
         console.error('Greška pri pravljenju rezervacija sala:', err);
         res.status(500).json({ error: 'Internal server error' });

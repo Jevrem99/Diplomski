@@ -475,6 +475,20 @@ test('rezervacije sala: termin u više sala daje po jednu rezervaciju za svaku s
     assert.equal(naziviSala(ispit), 'A-0-15, A-0-3');
 });
 
+test('rezervacije sala: sala označena "ne rezerviše se" se ne šalje i ne ulazi u JSON', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const ispit = {
+        id: 8, is_ispit: false, datum: new Date('2026-11-02T00:00:00.000Z'), vreme: utc('10:00'), vreme_kraja: utc('12:00'),
+        sala: { id: 5, naziv: 'Lab A-0-16', bez_rezervacije: true }, dodatneSale: [{ id: 2, naziv: 'A-0-3' }],
+        predmet: { sifra: 'S8', naziv: 'Baze podataka', godina: 2, broj_studenata: 40 }, tip_kolokvijuma: 'I'
+    };
+    const r = napraviRezervacije([ispit]);
+    assert.deepEqual(r.rezervacije.map((x) => [x.id, x.sala]), [['kol-8-s2', 'A-0-3']]);
+    assert.deepEqual(r.bezRezervacije, [{ id: 'kol-8', sala: 'Lab A-0-16', datum: '2026-11-02', od: '10:00', naziv: 'Baze podataka' }]);
+    assert.equal('bezRezervacije' in JSON.parse(JSON.stringify(r)), false, 'nije deo objavljenog formata');
+});
+
 test('PMF: odgovor samo sa korisničkim imenom i opis oblika bez vrednosti', async () => {
     const stani = await POKRENI_LAZNI_PMF((req, res) => res.end(JSON.stringify({ status: 'ok', data: { username: 'luka.vuksanovic', ime: 'Luka' } })));
     try {
