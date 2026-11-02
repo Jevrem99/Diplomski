@@ -1939,12 +1939,13 @@ export class Main implements OnInit, AfterViewInit {
       }
 
       if (rezultat.action === 'export' || !rezultat.action) {
-        if (rezultat.tip === 'kolokvijumi') {
-          this.excel.generisiKolokvijume(rezultat, this.allLoadedEvents, this.predmeti);
-        } else if (rezultat.tip === 'ispiti') {
-          this.excel.generisiIspite(rezultat, this.allLoadedEvents, this.predmeti);
-        }
-        this.preuzmiJsonIzvoz(rezultat);
+        // Prvo Excel; JSON samo na zahtev i tek posle Excel-a (pregledač inače blokira drugo preuzimanje)
+        const excel = rezultat.tip === 'kolokvijumi'
+          ? this.excel.generisiKolokvijume(rezultat, this.allLoadedEvents, this.predmeti)
+          : this.excel.generisiIspite(rezultat, this.allLoadedEvents, this.predmeti);
+        excel
+          .then(() => { if (rezultat.iJson) this.preuzmiJsonIzvoz(rezultat); })
+          .catch((e) => { console.error('Excel izvoz nije uspeo:', e); this.toastService.show('Excel izvoz nije uspeo.', 'error'); });
       }
     });
   }

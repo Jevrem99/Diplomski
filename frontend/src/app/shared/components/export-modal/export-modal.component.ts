@@ -16,6 +16,7 @@ export interface ExportDataResult {
   tip: 'ispiti' | 'kolokvijumi';
   naslovRasporeda: string;
   isApsolventski?: boolean;
+  iJson?: boolean; // uz Excel i JSON fajl (za uvoz nazad)
   datumOd?: string;
   datumDo?: string;
   rokovi?: RokIzvoz[];
@@ -38,6 +39,7 @@ export class ExportModalComponent {
   izvozPodaci: ExportDataResult = {
     tip: 'ispiti',
     isApsolventski: false,
+    iJson: false,
     naslovRasporeda: '',
     datumOd: '',
     datumDo: '',
