@@ -208,3 +208,475 @@ test('rezervacije sala: samo kolokvijumi, grupa je jedna rezervacija, termin bez
     assert.deepEqual([bezKraja.od, bezKraja.do, bezKraja.do_pretpostavljen, bezKraja.izmena], ['16:00', '18:00', true, true]);
     assert.deepEqual(r.bez_sale.map((x) => x.id), ['kol-5']);
 });
+
+
+test('integracija: API ključ (nije podešen -> 503, pogrešan -> 401, ispravan -> prolazi)', async () => {
+    const { napraviApiKljuc } = require('../src/middlewares/apiKljuc');
+    const { sazetakHex } = require('../src/services/integracijaPodesavanja');
+    const poziv = async (ocekivani, zaglavlje) => {
+        const rez = { kod: null, telo: null, status(k) { this.kod = k; return this; }, json(x) { this.telo = x; return this; } };
+        let proslo = false;
+        const mw = napraviApiKljuc(async () => ({ hash: ocekivani ? sazetakHex(ocekivani) : null }));
+        await mw({ get: (ime) => (ime.toLowerCase() === 'x-api-key' ? zaglavlje : undefined) }, rez, () => { proslo = true; });
+        return { kod: rez.kod, proslo };
+    };
+    assert.equal((await poziv(null, 'bilo-sta')).kod, 503, 'ključ nije podešen: isključeno');
+    const kljuc = 'a'.repeat(32);
+    assert.equal((await poziv(kljuc, undefined)).kod, 401);
+    assert.equal((await poziv(kljuc, 'b'.repeat(32))).kod, 401);
+    assert.equal((await poziv(kljuc, 'a'.repeat(31))).kod, 401);
+    const dobar = await poziv(kljuc, 'a'.repeat(32));
+    assert.equal(dobar.proslo, true);
+    assert.equal(dobar.kod, null);
+    // greška pri čitanju ključa (npr. baza ne radi) ne sme da propusti zahtev
+    const rez = { kod: null, status(k) { this.kod = k; return this; }, json() { return this; } };
+    let proslo = false;
+    await napraviApiKljuc(async () => { throw new Error('baza'); })({ get: () => kljuc }, rez, () => { proslo = true; });
+    assert.equal(rez.kod, 500);
+    assert.equal(proslo, false);
+});
+
+test('integracija: adresa za slanje mora biti http(s)', () => {
+    const { jeAdresa } = require('../src/services/integracijaPodesavanja');
+    assert.equal(jeAdresa('https://sistem.pmf.kg.ac.rs/rezervacije'), true);
+    assert.equal(jeAdresa('http://147.91.204.28:8080/x'), true);
+    for (const lose of ['', 'ftp://x.rs', 'javascript:alert(1)', 'sistem.rs/x', 42, null, 'http://' + 'a'.repeat(600)]) {
+        assert.equal(jeAdresa(lose), false, String(lose).slice(0, 30));
+    }
+});
+
+test('jeDatum prihvata samo stvarne datume GGGG-MM-DD', () => {
+    const { jeDatum } = require('../src/services/rezervacijeSala');
+    assert.equal(jeDatum('2026-10-28'), true);
+    assert.equal(jeDatum('2028-02-29'), true);
+    assert.equal(jeDatum('2026-02-29'), false);
+    assert.equal(jeDatum('2026-13-01'), false);
+    assert.equal(jeDatum('28.10.2026'), false);
+    assert.equal(jeDatum(undefined), false);
+    assert.equal(jeDatum("2026-10-28' OR 1=1"), false);
+});
+
+test('odgovor rezervacija sala odgovara objavljenoj JSON šemi (docs/rezervacije-sala.schema.json)', () => {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const { proveriSemu } = require('./helpers/mini-schema');
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const sema = JSON.parse(fs.readFileSync(path.join(__dirname, '../../docs/rezervacije-sala.schema.json'), 'utf-8'));
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const d = new Date('2026-10-28T00:00:00.000Z');
+    const sala = { naziv: 'A-0-15' };
+    const pr = (id, rs) => ({ sifra: `S${id}`, naziv: `Предмет ${id}`, godina: 3, broj_studenata: 10 * id, profesor: { ime: 'Ана', prezime: 'Анић' }, terminiKolokvijuma: { k1_racunarska_sala: rs } });
+    const ispiti = [
+        { id: 2, is_ispit: false, datum: d, vreme: utc('13:00'), vreme_kraja: utc('15:00'), sala, grupa_kljuc: 'g1', predmet: pr(2, true), tip_kolokvijuma: 'I' },
+        { id: 3, is_ispit: false, datum: d, vreme: '13:00:00', vreme_kraja: utc('15:00'), sala, grupa_kljuc: 'g1', predmet: pr(3, false), tip_kolokvijuma: 'I' },
+        { id: 4, is_ispit: false, datum: d, vreme: utc('16:00'), vreme_kraja: null, sala, predmet: { ...pr(4, false), profesor: null, sifra: null, godina: null }, tip_kolokvijuma: 'Поправни I' },
+        { id: 5, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('11:00'), sala: null, predmet: pr(5, false), tip_kolokvijuma: 'I' }
+    ];
+    const odgovor = napraviRezervacije(ispiti, { objavio: 'integracija' });
+    assert.deepEqual(proveriSemu(sema, odgovor), []);
+    // šema zaista hvata greške (provera da test ne prolazi "uvek")
+    const pokvaren = JSON.parse(JSON.stringify(odgovor));
+    pokvaren.rezervacije[0].od = '9:5';
+    delete pokvaren.rezervacije[0].sala;
+    pokvaren.rezervacije[0].suvisno = 1;
+    assert.equal(proveriSemu(sema, pokvaren).length, 3);
+});
+
+// ---------- Prijava preko PMF naloga ----------
+const http = require('node:http');
+const pmf = require('../src/services/pmfPrijava');
+
+const POKRENI_LAZNI_PMF = async (handler) => {
+    const srv = http.createServer(handler);
+    await new Promise((r) => srv.listen(0, '127.0.0.1', r));
+    const stara = config.pmfVerifyUrl;
+    config.pmfVerifyUrl = `http://127.0.0.1:${srv.address().port}/verify`;
+    return async () => { config.pmfVerifyUrl = stara; await new Promise((r) => srv.close(r)); };
+};
+const TOKEN = 'a1'.repeat(32);
+
+test('PMF: ispravan token vraća e-mail malim slovima, token ide kao parametar', async () => {
+    let videoUrl;
+    const stani = await POKRENI_LAZNI_PMF((req, res) => {
+        videoUrl = req.url;
+        res.end(JSON.stringify({ success: true, korisnik: { Email: 'Pera.Peric@pmf.kg.ac.rs', uloga: 'admin' } }));
+    });
+    try {
+        const r = await pmf.proveriToken(TOKEN);
+        assert.deepEqual(r, { email: 'pera.peric@pmf.kg.ac.rs', korisnickoIme: null, imePrezime: null, vrsta: ['admin'] }); // vrsta služi samo za proveru zaposlen/student, uloga u aplikaciji je iz naše baze
+        assert.ok(videoUrl.includes(`token=${TOKEN}`));
+    } finally { await stani(); }
+});
+
+test('PMF: pogrešan oblik tokena -> 400 bez poziva IMI-ja', async () => {
+    let pozvan = false;
+    const stani = await POKRENI_LAZNI_PMF((req, res) => { pozvan = true; res.end('{}'); });
+    try {
+        for (const losi of [undefined, '', 'abc', 'a'.repeat(300), 'ab"<script>'.repeat(3), `${TOKEN} OR 1=1`, { $ne: 1 }]) {
+            await assert.rejects(pmf.proveriToken(losi), (e) => e.status === 400 && e.kod === 'TOKEN_OBLIK');
+        }
+        assert.equal(pozvan, false);
+    } finally { await stani(); }
+});
+
+test('PMF: IMI javlja da token ne važi -> 401, bez e-maila u odgovoru -> 401, ne-JSON -> 401', async () => {
+    const odgovori = [
+        [401, '{"error":"invalid"}'],
+        [200, '{"success":false,"email":"a@b.rs"}'],
+        [200, '{"status":"error","email":"a@b.rs"}'],
+        [200, '{"ime":"Pera"}'],
+        [200, '<html>prijavite se</html>']
+    ];
+    let i = 0;
+    const stani = await POKRENI_LAZNI_PMF((req, res) => {
+        const [kod, telo] = odgovori[i++];
+        res.writeHead(kod);
+        res.end(telo);
+    });
+    try {
+        for (let k = 0; k < odgovori.length; k++) {
+            await assert.rejects(pmf.proveriToken(TOKEN), (e) => e.status === 401 && e.kod === 'TOKEN_NEVAZECI', `slučaj ${k}`);
+        }
+    } finally { await stani(); }
+});
+
+test('PMF: IMI 5xx ili nedostupan -> 502', async () => {
+    const stani = await POKRENI_LAZNI_PMF((req, res) => { res.writeHead(503); res.end('x'); });
+    try {
+        await assert.rejects(pmf.proveriToken(TOKEN), (e) => e.status === 502 && e.kod === 'PMF_NEDOSTUPAN');
+    } finally { await stani(); }
+    config.pmfVerifyUrl = 'http://127.0.0.1:1/verify'; // niko ne sluša
+    try {
+        await assert.rejects(pmf.proveriToken(TOKEN), (e) => e.status === 502);
+    } finally { config.pmfVerifyUrl = 'https://imi.pmf.kg.ac.rs/cp/verify_token.php'; }
+});
+
+test('PMF: nadjiEmail prepoznaje poznata polja i ugnježdene objekte, ignoriše tekst koji nije e-mail', () => {
+    const { nadjiEmail } = pmf._internal;
+    assert.equal(nadjiEmail({ email: 'a@b.rs' }), 'a@b.rs');
+    assert.equal(nadjiEmail({ data: { user: { e_mail: 'x@y.rs' } } }), 'x@y.rs');
+    assert.equal(nadjiEmail({ ime: 'Pera', prezime: 'Peric' }), null);
+    assert.equal(nadjiEmail('nije mejl'), null);
+});
+
+// ---------- Uvoz rasporeda ----------
+const uvozRasporeda = require('../src/services/uvozRasporeda');
+
+const napraviExcel = async (redovi, ime = 'Raspored') => {
+    const ExcelJS = require('exceljs');
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet(ime);
+    redovi.forEach((r) => ws.addRow(r));
+    return wb.xlsx.writeBuffer();
+};
+
+test('uvoz: vreme, datum i tip iz teksta', () => {
+    const { citajVreme, citajDatum, citajTip } = uvozRasporeda._internal;
+    assert.equal(citajVreme('8h'), '08:00');
+    assert.equal(citajVreme('8.15h'), '08:15');
+    assert.equal(citajVreme('14:30'), '14:30');
+    assert.equal(citajVreme('25h'), null);
+    assert.equal(citajVreme('posle podne'), null);
+    assert.equal(citajDatum('26.09.2026.'), '2026-09-26');
+    assert.equal(citajDatum('3.2.2027'), '2027-02-03');
+    assert.equal(citajDatum('31.02.2026.'), null);
+    assert.equal(citajDatum('26.09.', 2027), '2027-09-26');
+    assert.equal(citajDatum('26.09.'), null, 'bez godine nema datuma');
+    assert.deepEqual(citajTip('II колоквијум'), { isIspit: false, tip: 'II' });
+    assert.deepEqual(citajTip('поправни колоквијум'), { isIspit: false, tip: 'Поправни I' });
+    assert.deepEqual(citajTip('поправни тест'), { isIspit: false, tip: 'поправни тест' });
+    assert.deepEqual(citajTip('тест'), { isIspit: false, tip: 'тест' });
+    assert.deepEqual(citajTip('испит'), { isIspit: true, tip: null });
+});
+
+test('uvoz: Excel sa kolokvijumima (nedeljni raspored kao pri izvozu)', async () => {
+    const buf = await napraviExcel([
+        ['Распоред колоквијума'],
+        [],
+        ['понедељак', 'уторак', 'среда', 'четвртак', 'петак', 'субота', 'недеља'],
+        ['26.10.2026.', '27.10.2026.', '28.10.2026.', '29.10.2026.', '30.10.2026.', '31.10.2026.', '01.11.2026.'],
+        ['Основи програмирања\n - I колоквијум - 8.15h', '', 'Математика 1\n - поправни колоквијум - 14h', '', '', '', ''],
+        ['Физика\n - тест -', '', '', '', '', '', '']
+    ]);
+    const { stavke, izvor } = await uvozRasporeda.parsirajExcel(buf);
+    assert.equal(izvor, 'excel-kolokvijumi');
+    assert.equal(stavke.length, 3);
+    assert.deepEqual(
+        stavke.map((s) => [s.predmetNaziv, s.datum, s.vreme, s.isIspit, s.tip]),
+        [
+            ['Основи програмирања', '2026-10-26', '08:15', false, 'I'],
+            ['Математика 1', '2026-10-28', '14:00', false, 'Поправни I'],
+            ['Физика', '2026-10-26', null, false, 'тест']
+        ]
+    );
+    assert.equal(stavke[2].greska, 'Nedostaje vreme početka');
+    assert.equal(stavke[0].dezurniOsobe, null, 'dežurni se uzimaju sa predmeta');
+});
+
+test('uvoz: Excel sa ispitima (tabela po godinama, datum bez godine)', async () => {
+    const buf = await napraviExcel([
+        ['ОАС Информатике'],
+        [],
+        ['I година'],
+        ['', 'Предмет', 'Јануарски\nрок', '', 'Фебруарски\nрок', ''],
+        [1, 'Основи програмирања', '20.01.', '9h', '10.02.', '12.30h'],
+        ['', '', '27.01.', '9h', '', ''],
+        [2, 'Математика 1', '45.01.', '9h', '', '']
+    ]);
+    const { stavke, izvor } = await uvozRasporeda.parsirajExcel(buf, { godina: 2027 });
+    assert.equal(izvor, 'excel-ispiti');
+    assert.deepEqual(
+        stavke.map((s) => [s.predmetNaziv, s.datum, s.vreme, s.isIspit]),
+        [
+            ['Основи програмирања', '2027-01-20', '09:00', true],
+            ['Основи програмирања', '2027-02-10', '12:30', true],
+            ['Основи програмирања', '2027-01-27', '09:00', true],
+            ['Математика 1', null, '09:00', true]
+        ]
+    );
+    assert.equal(stavke[3].greska, 'Neispravan datum');
+});
+
+test('uvoz: JSON izvoz se čita tačno, pogrešan format se odbija', () => {
+    const stavke = uvozRasporeda.parsirajJson({
+        format: 'raspored-termini',
+        verzija: 1,
+        termini: [{
+            predmet: { sifra: '19.INF012', naziv: 'Логичко програмирање' }, datum: '2026-11-03', vreme: '10:00', vreme_kraja: '12:00',
+            sala: 'A-0-15', is_ispit: false, tip_kolokvijuma: 'II', grupa_kljuc: 'g1', dezurni: [{ email: 'a@pmf.kg.ac.rs' }]
+        }]
+    });
+    assert.deepEqual(
+        [stavke[0].predmetSifra, stavke[0].datum, stavke[0].vreme, stavke[0].vremeKraja, stavke[0].sala, stavke[0].tip, stavke[0].dezurniOsobe],
+        ['19.INF012', '2026-11-03', '10:00', '12:00', 'A-0-15', 'II', [{ email: 'a@pmf.kg.ac.rs', ime: '', prezime: '' }]]
+    );
+    assert.throws(() => uvozRasporeda.parsirajJson({ format: 'raspored-rezervacije-sala', termini: [] }), /format/);
+    assert.throws(() => uvozRasporeda.parsirajJson(null));
+});
+
+test('uvoz: nazivi se porede bez obzira na pismo', () => {
+    const { kljucNaziva } = require('../src/utils/tekst');
+    assert.equal(kljucNaziva('Основи програмирања 1'), kljucNaziva('Osnovi  programiranja 1'));
+    assert.equal(kljucNaziva('Рачунарски системи'), kljucNaziva('RAČUNARSKI SISTEMI'));
+    assert.notEqual(kljucNaziva('Математика 1'), kljucNaziva('Математика 2'));
+});
+
+test('rezervacije sala: termin u više sala daje po jednu rezervaciju za svaku salu', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const { naziviSala } = require('../src/utils/sale');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const ispit = {
+        id: 7, is_ispit: false, datum: new Date('2026-11-02T00:00:00.000Z'), vreme: utc('10:00'), vreme_kraja: utc('12:00'),
+        sala: { id: 1, naziv: 'A-0-15' }, dodatneSale: [{ id: 2, naziv: 'A-0-3' }, { id: 1, naziv: 'A-0-15' }],
+        predmet: { sifra: 'S7', naziv: 'Programiranje', godina: 1, broj_studenata: 120 }, tip_kolokvijuma: 'I'
+    };
+    const r = napraviRezervacije([ispit]);
+    assert.deepEqual(r.rezervacije.map((x) => [x.id, x.sala]), [['kol-7', 'A-0-15'], ['kol-7-s2', 'A-0-3']]);
+    assert.equal(naziviSala(ispit), 'A-0-15, A-0-3');
+});
+
+test('rezervacije sala: sala označena "ne rezerviše se" se ne šalje i ne ulazi u JSON', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const ispit = {
+        id: 8, is_ispit: false, datum: new Date('2026-11-02T00:00:00.000Z'), vreme: utc('10:00'), vreme_kraja: utc('12:00'),
+        sala: { id: 5, naziv: 'Lab A-0-16', bez_rezervacije: true }, dodatneSale: [{ id: 2, naziv: 'A-0-3' }],
+        predmet: { sifra: 'S8', naziv: 'Baze podataka', godina: 2, broj_studenata: 40 }, tip_kolokvijuma: 'I'
+    };
+    const r = napraviRezervacije([ispit]);
+    assert.deepEqual(r.rezervacije.map((x) => [x.id, x.sala]), [['kol-8-s2', 'A-0-3']]);
+    assert.deepEqual(r.bezRezervacije, [{ id: 'kol-8', sala: 'Lab A-0-16', datum: '2026-11-02', od: '10:00', naziv: 'Baze podataka' }]);
+    assert.equal('bezRezervacije' in JSON.parse(JSON.stringify(r)), false, 'nije deo objavljenog formata');
+});
+
+test('PMF: odgovor samo sa korisničkim imenom i opis oblika bez vrednosti', async () => {
+    const stani = await POKRENI_LAZNI_PMF((req, res) => res.end(JSON.stringify({ status: 'ok', data: { username: 'luka.vuksanovic', ime: 'Luka' } })));
+    try {
+        assert.deepEqual(await pmf.proveriToken(TOKEN), { email: null, korisnickoIme: 'luka.vuksanovic', imePrezime: { ime: 'Luka', prezime: '' }, vrsta: null });
+    } finally { await stani(); }
+    const { oblik } = pmf._internal;
+    assert.equal(oblik({ ok: true, user: { ime: 'Pera', tel: 123 } }), '{ok:boolean, user:{ime:string, tel:number}}');
+});
+
+test('PMF: ime i prezime iz odgovora (posebna polja ili puno ime)', () => {
+    const { nadjiImePrezime } = pmf._internal;
+    assert.deepEqual(nadjiImePrezime({ korisnik: { ime: 'Ana', prezime: 'Anić' } }), { ime: 'Ana', prezime: 'Anić' });
+    assert.deepEqual(nadjiImePrezime({ full_name: 'Petar Petrović Njegoš' }), { ime: 'Petar', prezime: 'Petrović Njegoš' });
+    assert.equal(nadjiImePrezime({ email: 'a@b.rs' }), null);
+});
+
+test('PMF: vrsta naloga - studenti se odbijaju, nalog se pravi samo zaposlenima', () => {
+    const { nadjiVrstu, jeStudent, jeZaposlen } = pmf._internal;
+    assert.deepEqual(nadjiVrstu({ email: 'a@b.rs', korisnik: { tip: 'Student' } }), ['student']);
+    assert.deepEqual(nadjiVrstu({ roles: ['Zaposleni', 'Nastavnik'] }), ['zaposleni', 'nastavnik']);
+    assert.equal(nadjiVrstu({ email: 'a@b.rs', ime: 'Ana' }), null);
+    assert.equal(jeStudent(['student']), true);
+    assert.equal(jeStudent(['студент']), true);
+    assert.equal(jeZaposlen(['rezervacija']), true);
+    assert.equal(jeZaposlen(['zaposleni']), false, 'samo grupa rezervacija znači predavača');
+    assert.equal(jeZaposlen(['student', 'rezervacija']), false, 'student nikad ne dobija nalog');
+    assert.equal(jeZaposlen(null), false, 'bez podatka nema automatskog naloga');
+});
+
+test('PMF: grupa "rezervacija" u ismemberof znači predavač (stvaran oblik odgovora IMI-ja)', () => {
+    const { nadjiVrstu, jeStudent, jeZaposlen } = pmf._internal;
+    const stvaran = { username: 'miomir.kovacevic', ime: 'Miomir', prezime: 'Kovačević', email: 'imi.servis@gmail.com',
+        ismemberof: { count: 5, 0: 'aktivan', 1: 'imi', 2: 'ms', 3: 'rezervacija', 4: 'eduroam' } };
+    const grupe = nadjiVrstu(stvaran);
+    assert.deepEqual(grupe, ['aktivan', 'imi', 'ms', 'rezervacija', 'eduroam']);
+    assert.equal(jeZaposlen(grupe), true);
+    const student = nadjiVrstu({ ...stvaran, ismemberof: { count: 4, 0: 'aktivan', 1: 'imi', 2: 'ms', 3: 'eduroam' } });
+    assert.equal(jeZaposlen(student), false, 'bez grupe "rezervacija" nije predavač');
+    assert.equal(jeStudent(student), false);
+    assert.equal(jeZaposlen(['rezervacija-nesto']), false, 'poredi se tačno ime grupe');
+    assert.equal(jeZaposlen(['student', 'rezervacija']), false, 'grupa student uvek isključuje');
+});
+
+test('slanje rezervacija: prošlo je samo {"status":"ok"}, ostalo je greška sa tekstom primaoca', () => {
+    const { oceniOdgovor } = require('../src/services/integracijaPodesavanja');
+    assert.deepEqual(oceniOdgovor(200, '{"status":"ok"}'), { poslato: true, greska: null, idRezervacije: null });
+    assert.equal(oceniOdgovor(200, '{"status":"OK"}').poslato, true);
+    const postoji = oceniOdgovor(200, '{"status":"greska","poruka":"Rezervacija A-0-15 već postoji"}');
+    assert.equal(postoji.poslato, false);
+    assert.match(postoji.greska, /već postoji/);
+    const eho = oceniOdgovor(200, '--- Kompletan sirovi POST sadržaj ---\n{"format":"x"}');
+    assert.equal(eho.poslato, false);
+    assert.equal(eho.greska, 'Server fakulteta nije potvrdio rezervaciju.', 'bez sirovog HTML-a u poruci');
+    assert.match(oceniOdgovor(500, 'Greška servera').greska, /500/);
+    assert.equal(oceniOdgovor(200, '{"status":"ok"}'.repeat(1)).poslato, true);
+});
+
+test('rezervacije sala: termini koji čine rezervaciju su zapamćeni, ali ne idu u JSON', () => {
+    const { napraviRezervacije } = require('../src/services/rezervacijeSala');
+    const utc = (v) => new Date(`1970-01-01T${v}:00.000Z`);
+    const d = new Date('2026-11-02T00:00:00.000Z');
+    const sala = { id: 1, naziv: 'A-0-15' };
+    const p = (n) => ({ sifra: n, naziv: n, godina: 1, broj_studenata: 10 });
+    const r = napraviRezervacije([
+        { id: 11, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('12:00'), sala, grupa_kljuc: 'g', predmet: p('A'), tip_kolokvijuma: 'I' },
+        { id: 12, is_ispit: false, datum: d, vreme: utc('10:00'), vreme_kraja: utc('12:00'), sala, grupa_kljuc: 'g', predmet: p('B'), tip_kolokvijuma: 'I' }
+    ]);
+    assert.equal(r.rezervacije.length, 1);
+    assert.deepEqual(r.rezervacije[0].ispitIds, [11, 12]);
+    assert.equal(JSON.stringify(r).includes('ispitIds'), false);
+    assert.equal(JSON.stringify(r).includes('_ispiti'), false);
+});
+
+test('PMF: fakultetska adresa (Microsoft prijava) se svodi na IMI korisničko ime, druge adrese ne', () => {
+    const { imeIzFakultetskeAdrese, nadjiKorisnickoIme } = pmf._internal;
+    assert.equal(imeIzFakultetskeAdrese('Luka.Vuksanovic@pmf.kg.ac.rs'), 'luka.vuksanovic');
+    assert.equal(imeIzFakultetskeAdrese('ana.anic@imi.pmf.kg.ac.rs'), 'ana.anic');
+    assert.equal(imeIzFakultetskeAdrese('luka.vuksanovic@gmail.com'), null, 'tuđ domen se ne svodi na ime');
+    assert.equal(imeIzFakultetskeAdrese('x@pmf.kg.ac.rs.zlo.com'), null);
+    assert.equal(nadjiKorisnickoIme({ username: 'luka.vuksanovic@pmf.kg.ac.rs' }), 'luka.vuksanovic');
+    assert.equal(nadjiKorisnickoIme({ username: 'neko@gmail.com' }), null);
+});
+
+test('rezervacija na fakultetu: oznaka prostorije, telo zahteva i odgovor "uspeh"', () => {
+    const { _internal: { idProstorije, zahtevZaRezervaciju } } = require('../src/services/slanjeRezervacija');
+    const { oceniOdgovor } = require('../src/services/integracijaPodesavanja');
+    assert.equal(idProstorije('A-II-1'), 1);
+    assert.equal(idProstorije('А-II-1'), 1, 'ćirilično А');
+    assert.equal(idProstorije('A-II-24R'), 3);
+    assert.equal(idProstorije('A-II-24r'), 3);
+    assert.equal(idProstorije('A-II-24'), 24);
+    assert.equal(idProstorije('A-0-15'), 103);
+    assert.equal(idProstorije('Свечана сала'), 104);
+    assert.equal(idProstorije('Физика Рачунарска'), 102);
+    assert.equal(idProstorije('A-I-1'), null, 'sala koju fakultet nema');
+    const r = { id: 'kol-45', sala: 'A-0-15', datum: '2027-10-25', od: '08:00', do: '09:30', tip_opis: 'I колоквијум', predmeti: [{ naziv: 'Математика 1' }, { naziv: 'Физика' }] };
+    assert.deepEqual(zahtevZaRezervaciju(r, { lozinka: 'tajna', username: 'pera.peric', rezervisao: 'Pera Perić' }), {
+        password: 'tajna',
+        termin: { datum: '2027-10-25', vreme_od: '08:00', trajanje_minuta: 90, idProstorije: 103 },
+        rezervisao: 'Pera Perić',
+        username: 'pera.peric',
+        naziv: 'I колоквијум – Математика 1, Физика'
+    });
+    assert.deepEqual(oceniOdgovor(200, '{"status":"uspeh","poruka":"Rezervacija je uspešno kreirana.","idRezervacije":338240}'),
+        { poslato: true, greska: null, idRezervacije: 338240 });
+    assert.deepEqual(oceniOdgovor(200, '{"status":"greska","poruka":"Termin je zauzet.","idRezervacije":338239}'),
+        { poslato: false, greska: 'Termin je zauzet.' });
+});
+
+test('osobe: isto ime i prezime bez obzira na pismo, dijakritike, velika slova i redosled', () => {
+    const { kljucOsobe } = require('../src/services/osobe');
+    assert.equal(kljucOsobe('Лука', 'Вуксановић'), kljucOsobe('Luka', 'Vuksanovic'));
+    assert.equal(kljucOsobe('Лука', 'Вуксановић'), kljucOsobe('LUKA', 'VUKSANOVIĆ'));
+    assert.equal(kljucOsobe('Вуксановић', 'Лука'), kljucOsobe('Luka', 'Vuksanović'), 'prezime ime');
+    assert.equal(kljucOsobe('Ђорђе', 'Ђорђевић'), kljucOsobe('Đorđe', 'Đorđević'));
+    assert.notEqual(kljucOsobe('Марко', 'Петровић'), kljucOsobe('Марија', 'Петровић'));
+});
+
+test('mejl: bez EMAIL_USER/EMAIL_PASS slanje odmah vraća neuspeh sa razlogom (ne prijavljuje se kao poslato)', async () => {
+    const mejl = require('../src/services/emailService');
+    const staro = { u: process.env.EMAIL_USER, p: process.env.EMAIL_PASS };
+    delete process.env.EMAIL_USER; delete process.env.EMAIL_PASS;
+    try {
+        assert.equal(mejl.mejlPodesen(), false);
+        assert.equal(await mejl.sendGrupniDezurstvoEmail('a@b.rs', 'Ana Anić', []), false);
+        assert.match(mejl.poslednjaGreskaSlanja(), /nije podešeno/);
+    } finally {
+        if (staro.u !== undefined) process.env.EMAIL_USER = staro.u;
+        if (staro.p !== undefined) process.env.EMAIL_PASS = staro.p;
+    }
+});
+
+test('raspored časova: stranica IMI-ja daje fajlove i nazive smerova, fajl daje časove', () => {
+    const { procitajStranicu, grupaFajla, parsirajFajl } = require('../src/services/rasporedCasova')._internal;
+    const html = `<a id="II_godina_inf_rn" class="item"> <i class="fa"></i> <label>II godina-računarske nauke</label> </a>
+        <a id="Master_inf" class="item"><i class="fa"></i><label>Master-informatika Veštačka inteligencija</label></a>
+        <script src="json_datasets/IIgodInfLet15_rn.js?2026"></script><script src="json_datasets/MasInfLet15.js?2026"></script>
+        $("#II_godina_inf_rn").click(function() { eventData = IIgodInfLet15_rn; });
+        $("#Master_inf").click(function() { eventData = MasInfLet15; });`;
+    assert.deepEqual(procitajStranicu(html), [
+        { fajl: 'IIgodInfLet15_rn', oznaka: 'II godina-računarske nauke' },
+        { fajl: 'MasInfLet15', oznaka: 'Master-informatika Veštačka inteligencija' }
+    ]);
+    assert.deepEqual(grupaFajla('IIgodInfLet15_rn', 'II godina-računarske nauke'), { nivo: 'OAS', godina: 2, odsek: 'Informatika', smer: 'računarske nauke' });
+    assert.deepEqual(grupaFajla('MasInfLet15', 'Master-informatika Veštačka inteligencija'), { nivo: 'MAS', godina: null, odsek: 'Informatika', smer: 'informatika Veštačka inteligencija' });
+    assert.deepEqual(grupaFajla('IVgodMatLet15_tt', null), { nivo: 'OAS', godina: 4, odsek: 'Matematika', smer: '' });
+    const fajl = `var X = [
+{ id: 0, title: 'Analiza 2' ,start: '2015-04-21T11:15:00', end: '2015-04-21T13:00:00', backgroundColor: '#007eff;',
+  description: "sala A-II-25<br><br>Analiza 2<br><br>Suzana Aleksić" },
+{ id: 0, title: 'Psihologija' ,start: '2015-04-23T16:15:00', end: '2015-04-23T18:00:00',
+  description: "sala A-I-1<br><br>Psihologija<br><br>dr Darko Hinić" }];`;
+    assert.deepEqual(parsirajFajl(fajl), [
+        { dan: 2, od: '11:15', do: '13:00', predmet: 'Analiza 2', nastavnik: 'Suzana Aleksić', sala: 'A-II-25' },
+        { dan: 4, od: '16:15', do: '18:00', predmet: 'Psihologija', nastavnik: 'dr Darko Hinić', sala: 'A-I-1' }
+    ]);
+});
+
+test('raspored časova: studenti iste godine i dežurni koji drži čas (ime ćirilicom/latinicom, sa titulom)', () => {
+    const { konfliktiSaRasporedom, grupaStudenata } = require('../src/services/rasporedCasova');
+    const cas = (o) => ({ dan: 2, od: '11:15', do: '13:00', predmet: 'Analiza 2', nastavnik: 'dr Suzana Aleksić', sala: 'A-II-25', nivo: 'OAS', godina: 2, odsek: 'Matematika', smer: 'profesor matematike', ...o });
+    const casovi = [cas({}), cas({ smer: 'teorijska matematika i primene' }), cas({ predmet: 'Baze podataka', nastavnik: 'Pera Perić', godina: 3 })];
+    const dezurni = [{ id: 7, ime: 'Сузана', prezime: 'Алексић' }, { id: 8, ime: 'Ana', prezime: 'Anić' }];
+    const k = konfliktiSaRasporedom({ casovi, predmet: { naziv: 'Linearna algebra', sifra: '19.MA1', godina: 2 }, dezurni });
+    assert.deepEqual(k.map((x) => x.tip), ['studenti', 'nastava']);
+    assert.equal(k[0].tekst, 'Studenti 2. godine imaju nastavu: „Analiza 2“, dr Suzana Aleksić, 11:15–13:00 (Matematika – profesor matematike; Matematika – teorijska matematika i primene).');
+    assert.equal(k[1].tekst, 'Dežurni Сузана Алексић drži nastavu: „Analiza 2“, 11:15–13:00, sala A-II-25.');
+    assert.deepEqual(konfliktiSaRasporedom({ casovi, predmet: { naziv: 'Analiza 2', godina: 2 }, dezurni: [] }), [], 'čas istog predmeta nije konflikt');
+    assert.deepEqual(konfliktiSaRasporedom({ casovi, predmet: { naziv: 'X', sifra: 'MAS-G2-Z-x', godina: 2 }, dezurni: [] }), [], 'master nije 2. godina osnovnih');
+    assert.deepEqual(grupaStudenata({ sifra: 'MAS-G1-L-zavrsni_rad', godina: 1 }), { nivo: 'MAS', godina: 1, opis: 'master studija' });
+    // predmet se predaje samo na Informatici: časovi Matematike iste godine nisu konflikt
+    const { smeroviPredmeta } = require('../src/services/rasporedCasova');
+    const svi = [
+        { ...cas({ izvor: 'IIgodMatLet15_pm' }) },
+        { ...cas({ predmet: 'Operativni sistemi 1 (I grupa)', izvor: 'IIgodInfLet15_rn', dan: 3 }) },
+        { ...cas({ predmet: 'Objektno-orijentisano programiranje', odsek: 'Informatika', smer: 'računarske nauke', izvor: 'IIgodInfLet15_rn' }) }
+    ];
+    const os = { naziv: 'Оперативни системи 1', sifra: '19.IN2', godina: 2 };
+    const smerovi = smeroviPredmeta(svi, os);
+    assert.deepEqual([...smerovi], ['IIgodInfLet15_rn']);
+    const samoInf = konfliktiSaRasporedom({ casovi: svi.filter((c) => c.dan === 2), predmet: os, smerovi });
+    assert.deepEqual(samoInf.map((x) => x.tekst), ['Studenti 2. godine imaju nastavu: „Objektno-orijentisano programiranje“, dr Suzana Aleksić, 11:15–13:00 (Informatika – računarske nauke).']);
+});
+
+test('raspored časova važi samo u semestru u kome je preuzet', () => {
+    const { semestar } = require('../src/services/rasporedCasova')._internal;
+    assert.equal(semestar(new Date('2026-11-12T00:00:00Z')), 'Z2026');
+    assert.equal(semestar(new Date('2027-01-10T00:00:00Z')), 'Z2026');
+    assert.equal(semestar(new Date('2027-01-25T00:00:00Z')), null, 'ispitni rok');
+    assert.equal(semestar(new Date('2027-04-01T00:00:00Z')), 'L2027');
+    assert.equal(semestar(new Date('2027-07-01T00:00:00Z')), null);
+});

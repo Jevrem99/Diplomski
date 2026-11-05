@@ -115,10 +115,10 @@ export class CrudModal {
 
   tipPolja(key: string): TipPolja {
     if (key === 'password') return 'password';
-    if (key === 'uloga' || key === 'semestar' || key === 'status') return 'pills';
+    if (key === 'uloga' || key === 'semestar' || key === 'status' || key === 'nema_kolokvijume' || key === 'bez_rezervacije') return 'pills';
     if (key === 'profesor_id' || key === 'predmet_id') return 'select';
     if (key === 'predmeti_ids') return 'multi';
-    if (key === 'godina' || key === 'broj_studenata') return 'number';
+    if (key === 'godina' || key === 'broj_studenata' || key === 'kapacitet') return 'number';
     if (key.includes('datum')) return 'date';
     if (key.includes('vreme')) return 'time';
     return 'text';
@@ -139,6 +139,8 @@ export class CrudModal {
     if (key === 'uloga') return (this.data.rolesList || []).map((r: any) => ({ value: r.id, label: r.naziv }));
     if (key === 'semestar') return [{ value: 'Zimski', label: 'Zimski' }, { value: 'Letnji', label: 'Letnji' }];
     if (key === 'status') return [{ value: 'О', label: 'Obavezan' }, { value: 'И', label: 'Izborni' }]; // ćirilica, kao u bazi
+    if (key === 'nema_kolokvijume') return [{ value: false, label: 'Ima kolokvijume' }, { value: true, label: 'Nema kolokvijume' }];
+    if (key === 'bez_rezervacije') return [{ value: false, label: 'Rezerviše se na fakultetu' }, { value: true, label: 'Ne rezerviše se' }];
     return [];
   }
 
@@ -153,8 +155,9 @@ export class CrudModal {
     if (['id', 'saradnici_ids'].includes(key)) return false;
     if (key === 'password' && this.jeIzmena) return false;
     if (this.vrsta === 'osoba' && key === 'email') return false;
-    if (this.vrsta === 'predmet' && ['broj_studenata', 'status', 'profesor_id'].includes(key)) return false;
+    if (this.vrsta === 'predmet' && ['broj_studenata', 'status', 'profesor_id', 'nema_kolokvijume'].includes(key)) return false;
     if (this.vrsta === 'ispit' && ['vreme_kraja', 'sala_id'].includes(key)) return false;
+    if (['kapacitet', 'bez_rezervacije'].includes(key)) return false;
     return true;
   }
 
@@ -352,6 +355,7 @@ export class CrudModal {
 
     if (sanitizedData.godina) sanitizedData.godina = Number(sanitizedData.godina);
     if (sanitizedData.broj_studenata) sanitizedData.broj_studenata = Number(sanitizedData.broj_studenata);
+    if (sanitizedData.kapacitet) sanitizedData.kapacitet = Number(sanitizedData.kapacitet);
     if (sanitizedData.profesor_id) sanitizedData.profesor_id = Number(sanitizedData.profesor_id);
     if (sanitizedData.predmet_id) sanitizedData.predmet_id = Number(sanitizedData.predmet_id);
     if (sanitizedData.sala_id) sanitizedData.sala_id = Number(sanitizedData.sala_id);

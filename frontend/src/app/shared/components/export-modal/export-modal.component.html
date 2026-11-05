@@ -131,6 +131,11 @@
       </div>
     </div>
 
+    <label class="inline-flex items-center gap-2 text-sm font-bold text-slate-600 cursor-pointer">
+      <input type="checkbox" [(ngModel)]="izvozPodaci.iJson" class="w-4 h-4 rounded cursor-pointer">
+      <span>Preuzmi i <span data-lat>JSON</span> fajl (za uvoz u aplikaciju)</span>
+    </label>
+
     <!-- DUGMAD AKCIJA -->
     <div class="flex gap-4 pt-5 mt-2 border-t border-slate-200">
       <button (click)="onCancel()"

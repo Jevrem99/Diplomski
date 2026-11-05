@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { MatDialogRef, MAT_DIALOG_DATA, MatDialogModule } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { PotvrdaService } from '../../../core/services/potvrda.service';
 
 export interface RokIzvoz {
   naziv: string;
@@ -15,6 +16,7 @@ export interface ExportDataResult {
   tip: 'ispiti' | 'kolokvijumi';
   naslovRasporeda: string;
   isApsolventski?: boolean;
+  iJson?: boolean; // uz Excel i JSON fajl (za uvoz nazad)
   datumOd?: string;
   datumDo?: string;
   rokovi?: RokIzvoz[];
@@ -31,11 +33,13 @@ export interface ExportDataResult {
 })
 export class ExportModalComponent {
   private dialogRef = inject(MatDialogRef);
+  private potvrda = inject(PotvrdaService);
   public data = inject(MAT_DIALOG_DATA, { optional: true });
 
   izvozPodaci: ExportDataResult = {
     tip: 'ispiti',
     isApsolventski: false,
+    iJson: false,
     naslovRasporeda: '',
     datumOd: '',
     datumDo: '',
@@ -74,8 +78,19 @@ export class ExportModalComponent {
     if (this.izvozPodaci.tip === 'ispiti') {
       this.izvozPodaci.naslovRasporeda = 'Распоред испита у апсолвентским роковима\nза предмете са ОАС и МАС Информатике';
     } else {
-      this.izvozPodaci.naslovRasporeda = 'Распоред колоквијума на ОАС Информатика\nлетњи семестар 2025/26';
+      this.izvozPodaci.naslovRasporeda = 'Распоред колоквијума на ОАС Информатика\n' + this.semestar(this.izvozPodaci.datumOd);
     }
+  }
+
+  // Zimski semestar: oktobar–januar (2026/27), letnji: februar–septembar (2025/26 za 2026)
+  private semestar(datum?: string): string {
+    const d = datum ? new Date(datum) : new Date();
+    const dan = isNaN(d.getTime()) ? new Date() : d;
+    const m = dan.getMonth() + 1;
+    const g = dan.getFullYear();
+    const pocetna = m >= 10 ? g : g - 1;
+    const sk = `${pocetna}/${String(pocetna + 1).slice(-2)}`;
+    return (m >= 10 || m === 1 ? 'зимски' : 'летњи') + ' семестар ' + sk;
   }
 
   dodajRok(): void {
@@ -104,13 +119,13 @@ export class ExportModalComponent {
   onSave(): void {
     if (this.izvozPodaci.tip === 'kolokvijumi') {
       if (!this.izvozPodaci.datumOd || !this.izvozPodaci.datumDo) {
-        alert('Molimo unesite oba datuma za kolokvijume.');
+        this.potvrda.obavesti('Molimo unesite oba datuma za kolokvijume.', 'Nedostaju podaci');
         return;
       }
     } else {
       const neispravniRokovi = this.izvozPodaci.rokovi?.some(r => !r.naziv || !r.datumOd || !r.datumDo);
       if (neispravniRokovi || !this.izvozPodaci.rokovi || this.izvozPodaci.rokovi.length === 0) {
-        alert('Molimo popunite sve podatke za odabrane rokove.');
+        this.potvrda.obavesti('Molimo popunite sve podatke za odabrane rokove.', 'Nedostaju podaci');
         return;
       }
     }

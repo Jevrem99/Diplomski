@@ -2,13 +2,14 @@ import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { HttpClient } from '@angular/common/http';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { FormsModule } from '@angular/forms';
 import { CrudModal } from '../../shared/components/crud-modal/crud-modal.component';
 import { ToastService } from '../../core/services/toast.service';
 import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { procitajGresku } from '../../core/utils/validacija';
 
-export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'korisnici' | 'dnevnik';
+export type EntityType = 'profesori' | 'predmeti' | 'ispiti' | 'saradnici' | 'sale' | 'korisnici' | 'dnevnik';
 
 interface ColumnDef {
   key: string;           // ključ u JSON objektu sa bekenda
@@ -17,12 +18,16 @@ interface ColumnDef {
 }
 
 import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
+import { PotvrdaService } from '../../core/services/potvrda.service';
+import { DuplikatiDialogComponent } from '../../shared/components/duplikati-dialog/duplikati-dialog.component';
+import { presloviULatinicu } from '../main/main.utils';
 @Component({
   selector: 'app-database-management',
   standalone: true,
   imports: [
     SidebarMenu,
-    MatDialogModule
+    MatDialogModule,
+    FormsModule
   ],
   templateUrl: './database-management.html',
   styleUrl: './database-management.css',
@@ -30,7 +35,18 @@ import { proveriLozinku, proveriEmail } from '../../core/utils/validacija';
 export class DatabaseManagement implements OnInit {
   activeEntity: EntityType = 'profesori';
   tableData: any[] = [];
+  // Pretraga po svim kolonama aktivne tabele (latinica i ćirilica, bez obzira na dijakritike i velika slova)
+  pretraga = '';
+
+  get filtriraniRedovi(): any[] {
+    const q = presloviULatinicu(this.pretraga.trim());
+    if (!q) return this.tableData;
+    const kolone = this.currentColumnsDef.map((c: any) => c.key);
+    return this.tableData.filter((row) =>
+      kolone.some((k: string) => presloviULatinicu(String(this.formatCellValue(row, k) ?? '')).includes(q)));
+  }
   private readonly toast = inject(ToastService);
+  private potvrda = inject(PotvrdaService);
   private readonly dialog = inject(MatDialog);
   displayedColumnsKeys: string[] = [];
   currentColumnsDef: ColumnDef[] = [];
@@ -82,7 +98,15 @@ export class DatabaseManagement implements OnInit {
       { key: 'profesor_id', label: 'Glavni profesor (ID)' }, 
       { key: 'status', label: 'Status (O / I)' },
       { key: 'broj_studenata', label: 'Broj studenata' },
+      { key: 'nema_kolokvijume', label: 'Kolokvijumi' },
       { key: 'saradnici_ids', label: 'Saradnici na predmetu' }
+    ],
+    sale: [
+      { key: 'id', label: 'ID' },
+      { key: 'naziv', label: 'Naziv sale' },
+      { key: 'kapacitet', label: 'Kapacitet' },
+      { key: 'bez_rezervacije', label: 'Rezervacija na fakultetu' },
+      { key: 'broj_termina', label: 'Termina' }
     ],
     ispiti: [
       { key: 'id', label: 'ID' },
@@ -108,6 +132,11 @@ export class DatabaseManagement implements OnInit {
     this.http.get<any[]>(`${this.API_URL}/users/roles`).subscribe(data => this.allRoles = data);
   }
 
+  // Kolone za formu: broj termina u sali se samo prikazuje u tabeli
+  get kolonePrikaza(): ColumnDef[] {
+    return this.currentColumnsDef.filter((c) => c.key !== 'broj_termina');
+  }
+
   // Vraća samo definicije kolona koje treba prikazati u tabeli
   get visibleColumns(): ColumnDef[] {
     return this.currentColumnsDef.filter(col => !col.hideInTable);
@@ -125,6 +154,7 @@ export class DatabaseManagement implements OnInit {
 
   selectEntity(entity: EntityType): void {
     this.activeEntity = entity;
+    this.pretraga = '';
     this.currentColumnsDef = this.columnConfigurations[entity];
     // Prikazujemo u tabeli samo ključeve kolona koje nisu skrivene
     this.displayedColumnsKeys = this.visibleColumns.map(col => col.key);
@@ -138,6 +168,7 @@ export class DatabaseManagement implements OnInit {
       saradnici: '/profesors/saradnici',
       predmeti: '/predmet',
       ispiti: '/ispit',
+      sale: '/ucionice/sale',
       korisnici: '/users',
       dnevnik: '/admin/logs'
     };
@@ -166,8 +197,8 @@ export class DatabaseManagement implements OnInit {
     const dialogRef = this.dialog.open(CrudModal, {
       width: '850px',
       data: {
-        title: `Dodaj ${this.activeEntity === 'profesori' ? 'profesora' : this.activeEntity === 'saradnici' ? 'saradnika' : this.activeEntity === 'predmeti' ? 'predmet' : 'ispit'}`,
-        columns: this.currentColumnsDef, // Modalu šaljemo SVE kolone (uključujući i skrivene iz tabele)
+        title: `Dodaj ${this.getSingularName(this.activeEntity)}`,
+        columns: this.kolonePrikaza, // Modalu šaljemo SVE kolone (uključujući i skrivene iz tabele)
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori, 
         predmetiList: this.allPredmeti,
@@ -204,7 +235,7 @@ export class DatabaseManagement implements OnInit {
       width: '850px',
       data: {
         title: `Izmeni ${this.getSingularName(this.activeEntity)}`,
-        columns: this.currentColumnsDef, // Modalu šaljemo SVE kolone
+        columns: this.kolonePrikaza, // Modalu šaljemo SVE kolone
         rowData: formDataRow, 
         saradniciList: this.allSaradnici,
         profesoriList: this.allProfesori,
@@ -223,8 +254,13 @@ export class DatabaseManagement implements OnInit {
     });
   }
 
-  deleteRow(id: number): void {
-    if (confirm('Da li ste sigurni da želite da obrišete ovaj zapis?')) {
+  otvoriDuplikate(): void {
+    this.dialog.open(DuplikatiDialogComponent, { width: '820px', maxWidth: '95vw', panelClass: 'potvrda-panel' })
+      .afterClosed().subscribe((spojeno) => { if (spojeno) this.fetchData(this.activeEntity); });
+  }
+
+  async deleteRow(id: number): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje zapisa', poruka: 'Da li ste sigurni da želite da obrišete ovaj zapis?', potvrdi: 'Obriši', opasno: true })) {
       this.http.delete(`${this.getEndpoint(this.activeEntity)}/${id}`).subscribe({
         next: () => {
           this.toast.show('Zapis je obrisan!', 'success');
@@ -254,7 +290,7 @@ export class DatabaseManagement implements OnInit {
         },
         error: (err) => {
           console.error('Greška pri slanju Excel fajla:', err);
-          alert('Greška pri uvozu: ' + (err.error?.message || err.message));
+          this.potvrda.obavesti('Greška pri uvozu: ' + (err.error?.message || err.message), 'Uvoz nije uspeo');
           this.uploading = false;
         }
       });
@@ -299,17 +335,17 @@ export class DatabaseManagement implements OnInit {
     }
   }
 
-  deleteDatabase(): void {
-    if (confirm('Da li ste sigurni da želite da obrišete celu bazu podataka? Ova akcija je nepovratna.')) {
+  async deleteDatabase(): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje cele baze', poruka: 'Da li ste sigurni da želite da obrišete celu bazu podataka? Ova akcija je nepovratna.', potvrdi: 'Obriši sve', opasno: true })) {
       this.http.post<any>(`${this.API_URL}/admin/reset-database`, { confirm: 'RESET' }).subscribe({
         next: () => {
-          alert('Baza podataka je uspešno obrisana.');
+          this.toast.show('Baza podataka je uspešno obrisana.', 'success');
           this.tableData = [];
           this.fetchData(this.activeEntity);
         },
         error: (err) => {
           console.error('Greška pri brisanju baze podataka:', err);
-          alert('Greška pri brisanju baze podataka: ' + (err.error?.message || err.message));
+          this.potvrda.obavesti('Greška pri brisanju baze podataka: ' + (err.error?.message || err.message), 'Brisanje nije uspelo');
         }
       });
     }
@@ -317,7 +353,7 @@ export class DatabaseManagement implements OnInit {
 
   // Podaci koji su po prirodi latinični (ne preslovljavaju se u ćirilicu)
   jeLatinicnaKolona(colKey: string): boolean {
-    return ['username', 'email', 'korisnik', 'password', 'sifra'].includes(colKey);
+    return ['username', 'email', 'korisnik', 'password', 'sifra', 'akcija'].includes(colKey);
   }
 
   formatCellValue(row: any, colKey: string): string {
@@ -337,6 +373,9 @@ export class DatabaseManagement implements OnInit {
       }
       return 'Nema saradnika';
     }
+
+    if (colKey === 'nema_kolokvijume') return row[colKey] ? 'Nema' : 'Ima';
+    if (colKey === 'bez_rezervacije') return row[colKey] ? 'Ne rezerviše se' : 'Rezerviše se';
 
     const val = row[colKey];
     if (val === null || val === undefined || val === '') return '-';

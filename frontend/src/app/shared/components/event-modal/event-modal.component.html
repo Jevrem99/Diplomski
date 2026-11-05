@@ -7,6 +7,10 @@
         <span class="meta-item">Predmet: <strong>{{ data.title }}</strong></span>
         <span class="meta-separator">•</span>
         <span class="meta-item">Datum: <strong>{{ data.date }}</strong></span>
+        @if (data.brojStudenata) {
+          <span class="meta-separator">•</span>
+          <span class="meta-item">Studenata: <strong>{{ data.brojStudenata }}</strong></span>
+        }
       </div>
       @if (data.grupaPredmeti?.length) {
         <div class="modal-grupa-note">
@@ -69,17 +73,39 @@
       @if (vremeGreska) {
         <div class="text-sm font-bold" style="color: var(--danger-text);" role="alert">⚠ {{ vremeGreska }}</div>
       }
+      @if (krajPoTrajanju && formData.endTime !== krajPoTrajanju) {
+        <button type="button" class="kraj-po-trajanju" (click)="postaviKrajPoTrajanju()">
+          Postavi kraj po unetom trajanju ({{ trajanjeIzabranog }} min) → {{ krajPoTrajanju }}
+        </button>
+      }
+
+      <!-- Termini koje je nastavnik uneo na stranici Termini kolokvijuma -->
+      @if (uneti.length || napomenaTermina) {
+        <div class="uneti-termini">
+          <span class="uneti-naslov">Uneti termini (Termini kolokvijuma)</span>
+          @for (k of uneti; track k.kljuc) {
+            <div class="uneti-red">{{ opis(k) }}</div>
+          }
+          @if (napomenaTermina) {
+            <div class="uneti-napomena">Napomena: {{ napomenaTermina }}</div>
+          }
+        </div>
+      }
 
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="w-full">
-        <mat-label>Izaberi salu*</mat-label>
-        <mat-select [(ngModel)]="formData.room">
+        <mat-label>Sale*</mat-label>
+        <mat-select [(ngModel)]="formData.sale" multiple>
+          <mat-select-trigger>{{ formData.sale.join(', ') }}</mat-select-trigger>
           @for (sala of sveUcionice; track sala.id || sala) {
-            <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}</mat-option>
+            <mat-option [value]="sala.naziv || sala">{{ sala.naziv || sala }}@if (isSalaZauzeta(sala.naziv || sala)) { <span class="sala-zauzeta">zauzeta</span> }</mat-option>
           } @empty {
             <mat-option disabled>Nema učionica za prikaz</mat-option>
           }
         </mat-select>
       </mat-form-field>
+      @for (z of zauzeteIzabrane; track z) {
+        <div class="text-sm font-bold" style="color: var(--danger-text);" role="alert">⚠ Sala {{ z }}</div>
+      }
 
       <!-- Izabrani dežurni saradnici -->
       <div class="selected-box">
@@ -133,6 +159,14 @@
         </select>
       </div>
       <p class="side-col-hint">Sati dežurstva u ovom semestru (bez ovog termina).</p>
+
+      <div class="saradnik-search">
+        <input type="text" [(ngModel)]="searchSaradnik" name="searchSaradnik" placeholder="Pretraži saradnike..."
+               class="saradnik-search-input" autocomplete="off">
+        @if (searchSaradnik) {
+          <button type="button" class="saradnik-search-clear" (click)="searchSaradnik = ''" title="Obriši pretragu">×</button>
+        }
+      </div>
       
       <div class="saradnici-scroll-list">
         @for (saradnik of sortiraniSaradnici; track saradnik.id) {
@@ -159,7 +193,7 @@
             </button>
           </div>
         } @empty {
-          <div class="empty-hint text-center py-6">Nema slobodnih saradnika u ovom terminu.</div>
+          <div class="empty-hint text-center py-6">{{ searchSaradnik ? 'Nema saradnika koji odgovaraju pretrazi.' : 'Nema slobodnih saradnika u ovom terminu.' }}</div>
         }
       </div>
     </div>

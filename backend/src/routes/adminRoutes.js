@@ -8,6 +8,10 @@ const router = express.Router();
 router.post('/reset-database', protect, restrictToAdmin, adminController.resetDatabase);
 router.post('/sync-imi', protect, restrictToAdmin, adminController.runImiSync);
 
+// Verovatni duplikati osoba (isto ime i prezime u različitom zapisu) i njihovo spajanje
+router.get('/duplikati', protect, restrictToAdmin, adminController.getDuplikati);
+router.post('/duplikati/spoji', protect, restrictToAdmin, adminController.spojiDuplikate);
+
 // Pregled dnevnika rada
 router.get('/logs', protect, restrictToAdmin, async (req, res) => {
     try {

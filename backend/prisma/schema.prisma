@@ -40,7 +40,9 @@ model Predmet {
   godina      Int
   semestar    String
   status         String     // O ili I
-  broj_studenata Int        @default(0) // <--- DODATO
+  broj_studenata Int        @default(0)
+  // Predmet nema kolokvijume (označava nastavnik ili admin na stranici Termini kolokvijuma)
+  nema_kolokvijume Boolean  @default(false) // <--- DODATO
   
   // Glavni profesor
   profesor_id Int?
@@ -58,8 +60,10 @@ model Predmet {
 model Sala {
   id        Int      @id @default(autoincrement())
   naziv     String   @unique
-  kapacitet Int?     
+  kapacitet Int?
+  bez_rezervacije Boolean @default(false) // ne šalje se na rezervaciju u sistem fakulteta
   ispiti    Ispit[]
+  ispitiDodatne Ispit[] @relation("DodatneSale")
   redovnaNastava RedovnaNastava[]
 }
 model Ispit {
@@ -77,6 +81,12 @@ model Ispit {
   sala       Sala?       @relation(fields: [sala_id], references: [id])
   // Termini nastali jednim prevlacenjem grupe predmeta dele isti kljuc i ponasaju se kao celina
   grupa_kljuc String?
+  // Termin u više sala: sala_id je prva, ovde su ostale
+  dodatneSale Sala[]  @relation("DodatneSale")
+  // Slanje rezervacije sistemu fakulteta: 'ok' | 'greska' (null = nije poslato); izmena termina briše upis
+  rezervacija_status String?
+  rezervacija_poruka String?
+  rezervacija_vreme  DateTime?
   
   dezurstva  Dezurstva[] 
 
@@ -169,6 +179,7 @@ model TerminKolokvijuma {
   popravni_dezurni        Int?
 
   napomena                String?
+  izmenio                 String?  // korisnik koji je poslednji sačuvao termine
 
   created_at              DateTime @default(now())
   updated_at              DateTime @updatedAt
@@ -200,4 +211,58 @@ model GrupaPredmeta {
   naziv      String
   predmeti   Predmet[] @relation("PredmetiUGrupi")
   created_at DateTime  @default(now())
+}
+
+// Podešavanja koja se menjaju u aplikaciji (npr. ključ i adresa za integraciju sa sistemom fakulteta)
+model Podesavanje {
+  kljuc     String   @id
+  vrednost  String
+  azurirano DateTime @default(now()) @updatedAt
+}
+
+// Sačuvane verzije rasporeda (snimak termina u istom JSON obliku kao izvoz)
+model SacuvaniRaspored {
+  id           Int      @id @default(autoincrement())
+  naziv        String
+  autor        String?
+  datum_od     String?
+  datum_do     String?
+  broj_termina Int      @default(0)
+  podaci       Json
+  created_at   DateTime @default(now())
+
+  @@index([created_at])
+}
+
+// Rezervacije napravljene u sistemu fakulteta (IMI): id je potreban za brisanje kad se termin izmeni ili obriše
+model RezervacijaFakulteta {
+  id             Int      @id @default(autoincrement())
+  kljuc          String
+  id_rezervacije Int
+  ispiti         Int[]
+  sala           String
+  datum          String
+  vreme_od       String
+  vreme_do       String
+  created_at     DateTime @default(now())
+
+  @@index([id_rezervacije])
+}
+
+// Nedeljni raspored časova sa IMI sajta (stranica "Raspored časova"): ko ima nastavu i ko je drži
+model CasRasporeda {
+  id        Int     @id @default(autoincrement())
+  dan       Int     // 1 = ponedeljak ... 6 = subota
+  od        String  // "10:15"
+  do        String
+  predmet   String
+  nastavnik String?
+  sala      String?
+  nivo      String  // OAS ili MAS
+  godina    Int?    // null za master
+  odsek     String  // Matematika / Informatika
+  smer      String
+  izvor     String  // fajl sa IMI sajta
+
+  @@index([dan])
 }

@@ -1,8 +1,8 @@
-/* Osnovna veličina slova: sve što je u rem jedinicama (Tailwind, Material) raste srazmerno.
+/* Osnovna veličina slova (75% ranije vrednosti): sve što je u rem jedinicama (Tailwind, Material) se menja srazmerno.
    Na manjim ekranima je nešto manja da sve stane. */
-html { font-size: 19px; }
-@media (max-width: 1100px) { html { font-size: 17.5px; } }
-@media (max-width: 640px) { html { font-size: 16.5px; } }
+html { font-size: 14.25px; }
+@media (max-width: 1100px) { html { font-size: 13.1px; } }
+@media (max-width: 640px) { html { font-size: 12.4px; } }
 
 
 html, body, :host {
@@ -247,4 +247,13 @@ body > .fc-event-dragging .bank-card-color-bar {
   background: color-mix(in srgb, var(--primary) 16%, transparent) !important;
   outline: 2px dashed var(--primary);
   outline-offset: -2px;
+}
+
+/* Prozor za potvrdu (PotvrdaService) */
+.potvrda-panel .mat-mdc-dialog-surface { background: var(--surface) !important; border-radius: 14px !important; }
+
+/* Kalendar: termin bez dovoljno dežurnih */
+.cal-card-dez {
+  display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; margin-left: 4px;
+  border-radius: 50%; background: #f59e0b; color: #fff; font-size: 11px; font-weight: 900; line-height: 1; flex-shrink: 0;
 }

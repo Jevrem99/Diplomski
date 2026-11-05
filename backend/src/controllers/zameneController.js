@@ -1,6 +1,7 @@
 const prisma = require('../db/prisma');
 const { _proveriKonflikte: proveriKonflikte } = require('./ispitController');
 const { logAction } = require('../services/auditService');
+const { naziviSala } = require('../utils/sale');
 
 // Zamena dežurstva: asistent traži zamenu (uz razlog, a može i da predloži kolegu sa istog predmeta),
 // a administrator odobrava ili odbija. Asistent nikada ne vidi tuđi raspored - samo imena kolega
@@ -45,15 +46,27 @@ const konfliktiZaSaradnika = (dezurstvo, saradnikId) =>
         excludeIspitId: dezurstvo.ispit.id
     });
 
-// Saradnici istog predmeta koji mogu da preuzmu dežurstvo (isključen je onaj ko ga ima i već raspoređeni na tom ispitu)
-const kandidatiZa = async (dezurstvo) => {
+// Ko može da preuzme dežurstvo: saradnici istog predmeta, a za administratora (svi = true) i svi ostali nastavnici
+// i saradnici. Isključeni su onaj ko ga ima i već raspoređeni na tom ispitu.
+const kandidatiZa = async (dezurstvo, { svi = false } = {}) => {
     const vecNaIspitu = new Set(dezurstvo.ispit.dezurstva.map((d) => d.saradnik_id));
-    const moguci = (dezurstvo.ispit.predmet?.saradnici || []).filter((s) => !vecNaIspitu.has(s.id));
+    const naPredmetu = new Set((dezurstvo.ispit.predmet?.saradnici || []).map((s) => s.id));
+    const osobe = svi
+        ? await prisma.profesor.findMany({ select: { id: true, ime: true, prezime: true, is_saradnik: true } })
+        : (dezurstvo.ispit.predmet?.saradnici || []);
     const rezultat = [];
-    for (const s of moguci) {
+    for (const s of osobe.filter((o) => !vecNaIspitu.has(o.id))) {
         const konflikti = await konfliktiZaSaradnika(dezurstvo, s.id);
-        rezultat.push({ id: s.id, ime: s.ime, prezime: s.prezime, konflikti: konflikti.map((k) => k.tekst) });
+        rezultat.push({
+            id: s.id, ime: s.ime, prezime: s.prezime,
+            is_saradnik: s.is_saradnik ?? true,
+            naPredmetu: naPredmetu.has(s.id),
+            konflikti: konflikti.map((k) => k.tekst)
+        });
     }
+    // prvo ljudi sa predmeta, pa slobodni, pa po prezimenu
+    rezultat.sort((a, b) => (b.naPredmetu - a.naPredmetu) || (a.konflikti.length > 0) - (b.konflikti.length > 0)
+        || `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`, 'sr'));
     return rezultat;
 };
 
@@ -74,7 +87,7 @@ const uPrikaz = (z) => ({
             vreme: vremeStr(z.dezurstvo.ispit.vreme),
             vreme_kraja: z.dezurstvo.ispit.vreme_kraja ? vremeStr(z.dezurstvo.ispit.vreme_kraja) : null,
             predmet: z.dezurstvo.ispit.predmet?.naziv || '',
-            sala: z.dezurstvo.ispit.sala?.naziv || ''
+            sala: naziviSala(z.dezurstvo.ispit) || ''
         }
         : null
 });
@@ -82,7 +95,7 @@ const uPrikaz = (z) => ({
 const UKLJUCI_PRIKAZ = {
     trazilac: true,
     predlozeni: true,
-    dezurstvo: { include: { ispit: { include: { predmet: true, sala: true } } } }
+    dezurstvo: { include: { ispit: { include: { predmet: true, sala: true, dodatneSale: true } } } }
 };
 
 // ---------- asistent ----------
@@ -203,7 +216,7 @@ const kandidati = async (req, res) => {
         if (!zahtev) return res.status(404).json({ error: 'Zahtev nije pronađen.' });
         const dezurstvo = await ucitajDezurstvo(zahtev.dezurstvo_id);
         if (!dezurstvo) return res.status(404).json({ error: 'Dežurstvo više ne postoji.' });
-        res.json(await kandidatiZa(dezurstvo));
+        res.json(await kandidatiZa(dezurstvo, { svi: req.query.svi === '1' }));
     } catch (err) {
         console.error('Greška pri dohvatanju kandidata:', err);
         res.status(500).json({ error: 'Greška na serveru.' });
@@ -226,9 +239,10 @@ const odobri = async (req, res) => {
             return res.status(409).json({ error: 'Dežurstvo je u međuvremenu promenjeno. Odbijte zahtev i napravite novu dodelu ručno.' });
         }
 
-        const lista = await kandidatiZa(dezurstvo);
+        // Administrator sme da dodeli dežurstvo bilo kom nastavniku ili saradniku (ne samo sa predmeta)
+        const lista = await kandidatiZa(dezurstvo, { svi: true });
         const izabran = lista.find((k) => k.id === zamenaId);
-        if (!izabran) return res.status(400).json({ error: 'Izabrani saradnik nije na ovom predmetu ili je već na ovom ispitu.' });
+        if (!izabran) return res.status(400).json({ error: 'Izabrana osoba ne postoji ili je već na ovom ispitu.' });
         if (izabran.konflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: izabran.konflikti });
         }

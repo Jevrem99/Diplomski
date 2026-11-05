@@ -31,6 +31,8 @@ interface RedPredmeta {
   napomena: string;
   cuva: boolean;
   izmenjen: boolean;
+  uredjuje?: boolean; // admin: forma otvorena ispod reda u tabeli
+  nemaKolokvijume: boolean;
 }
 
 // Server koristi DD.MM.GGGG, a input type="date" koristi GGGG-MM-DD.
@@ -106,6 +108,7 @@ export class TerminiKolokvijuma implements OnInit {
       broj_studenata: p.broj_studenata ?? null,
       saradniciTekst: this.izvuciSaradnike(p),
       terminiKolokvijuma: t,
+      nemaKolokvijume: !!p.nema_kolokvijume,
 
       k: [1, 2, 3].map((n) => ({
         datum: izServera(t[`k${n}_datum`]),
@@ -218,6 +221,7 @@ export class TerminiKolokvijuma implements OnInit {
       popravni_racunarska_sala: r.popravniRacunarskaSala,
       popravni_dezurni: r.popravniDezurni,
       napomena: r.napomena || null,
+      nema_kolokvijume: r.nemaKolokvijume,
     };
 
     r.k.forEach((k, i) => {
@@ -230,12 +234,14 @@ export class TerminiKolokvijuma implements OnInit {
     this.http
       .post<any>(`${this.api}/termini-kolokvijuma/sacuvaj`, telo)
       .subscribe({
-        next: () => {
+        next: (odgovor) => {
           r.cuva = false;
           r.izmenjen = false;
 
           // Ažuriramo lokalni prikaz nakon uspešnog odgovora servera.
-          r.terminiKolokvijuma = {
+          // Tabela i oznaka "poslednja izmena" se osvežavaju iz onoga što je server sačuvao
+          const sacuvano = (odgovor as any)?.data;
+          r.terminiKolokvijuma = sacuvano || {
             ...r.terminiKolokvijuma,
             popravni_datum: telo.popravni_datum,
             popravni_u_terminu_ispita: r.popravniUTerminuIspita,
@@ -280,6 +286,16 @@ export class TerminiKolokvijuma implements OnInit {
           this.toast.show('Greška pri izvozu Excel fajla.', 'error');
         },
       });
+  }
+
+  // "admin, 29.10.2026. 14:05" (ko je poslednji sačuvao termine)
+  poslednjaIzmena(r: RedPredmeta): string {
+    const t = r.terminiKolokvijuma || {};
+    if (!t.updated_at) return '';
+    const d = new Date(t.updated_at);
+    const dd = (n: number) => String(n).padStart(2, '0');
+    const kada = `${dd(d.getDate())}.${dd(d.getMonth() + 1)}.${d.getFullYear()}. ${dd(d.getHours())}:${dd(d.getMinutes())}`;
+    return t.izmenio ? `${t.izmenio}, ${kada}` : kada;
   }
 
   nazivSemestra(s: string): string {

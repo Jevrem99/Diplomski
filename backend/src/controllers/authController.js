@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const config = require('../config/config');
 const { jeValidnaUloga, proveriLozinku, proveriEmail } = require('../utils/validators');
 const { sendResetLozinkeEmail } = require('../services/emailService');
+const pmfPrijava = require('../services/pmfPrijava');
 
 const loginUser = async (req, res) => {
     const { username, password } = req.body;
@@ -47,6 +48,39 @@ const forgotPassword = async (req, res) => {
         await sendResetLozinkeEmail(user.email, user.username, resetUrl);
     } catch (error) {
         console.error('Greška u forgotPassword:', error);
+    }
+};
+
+// GET /auth/pmf-podesavanja: kuda front end šalje korisnika na PMF prijavu
+const pmfPodesavanja = (req, res) => res.status(200).json({ prijavaUrl: config.pmfPrijavaUrl });
+
+// POST /auth/pmf { token }: prijava preko PMF (IMI) naloga; vraća isti { token } kao /auth/login
+const pmfLogin = async (req, res) => {
+    try {
+        const { email, korisnickoIme, imePrezime, vrsta } = await pmfPrijava.proveriToken(req.body && req.body.token);
+        const nalog = await pmfPrijava.nadjiIliNapraviKorisnika(email, korisnickoIme, imePrezime, vrsta);
+        if (nalog.odbijen) {
+            const ko = String(email || korisnickoIme).slice(0, 60);
+            const poruke = {
+                student: 'Aplikacija je namenjena zaposlenima. Studentski nalozi nemaju pristup.',
+                nepoznat: `Nalog ${ko} nije u aplikaciji. Obratite se administratoru da vas doda.`,
+                bez_emaila: 'PMF sistem nije poslao e-mail adresu ovog naloga. Obratite se administratoru.',
+                vise_osoba: 'U aplikaciji postoji više osoba sa vašim imenom i prezimenom. Obratite se administratoru da poveže nalog.'
+            };
+            await logAction(ko, 'LOGIN_FAILED', 'Sesija', `PMF prijava odbijena: ${nalog.odbijen}`);
+            return res.status(403).json({ error: poruke[nalog.odbijen], kod: 'NEMA_PRISTUPA' });
+        }
+        const korisnik = nalog.korisnik;
+        if (nalog.nov) await logAction(korisnik.username, 'CREATE', 'Korisnik', 'Nalog napravljen pri prvoj PMF prijavi (asistent)');
+        await logAction(korisnik.username, 'LOGIN', 'Sesija', 'Uspešna prijava preko PMF naloga');
+        return res.status(200).json({ token: pmfPrijava.izdajSesiju(korisnik) });
+    } catch (error) {
+        if (error instanceof pmfPrijava.PmfGreska) {
+            if (error.status === 401) await logAction('PMF', 'LOGIN_FAILED', 'Sesija', 'PMF prijava: token nije važeći');
+            return res.status(error.status).json({ error: error.poruka, kod: error.kod });
+        }
+        console.error('Greška u pmfLogin:', error);
+        return res.status(500).json({ error: 'Greška na serveru.' });
     }
 };
 
@@ -131,6 +165,8 @@ const adminResetPassword = async (req, res) => {
 };
 
 module.exports = {
+    pmfLogin,
+    pmfPodesavanja,
     loginUser,
     forgotPassword,
     resetPassword,

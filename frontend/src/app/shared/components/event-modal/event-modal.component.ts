@@ -10,9 +10,12 @@ import { HttpClient } from '@angular/common/http';
 import { MatIcon } from "@angular/material/icon";
 
 import { forkJoin } from 'rxjs';
+import { presloviULatinicu } from '../../../features/main/main.utils';
 import { environment } from '../../../../environments/environment';
 import { DataCacheService } from '../../../core/services/data-cache.service';
-import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
+import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
+import { PotvrdaService } from '../../../core/services/potvrda.service';
+import { unetiKolokvijumi, opisKolokvijuma, kljucZaTip, UnetiKolokvijum } from '../../../core/utils/termini-kolokvijuma';
 
 @Component({
   selector: 'app-event-modal',
@@ -28,12 +31,14 @@ import { trajanjeUSatima, formatSati } from '../../../core/utils/vreme';
 export class EventModal implements OnInit {
   private http = inject(HttpClient);
   private cache = inject(DataCacheService);
+  private potvrda = inject(PotvrdaService);
   private cdr = inject(ChangeDetectorRef);
   formData = {
     startTime: '',
     endTime: '',
     tip_kolokvijuma: 'I',
     room: '',
+    sale: [] as string[],
     is_ispit: true,
     dezurni_ids: [] as number[]
   };
@@ -66,9 +71,16 @@ export class EventModal implements OnInit {
     return formatSati(n);
   }
 
+  // Pretraga po imenu i prezimenu (latinica i ćirilica, bez obzira na veličinu slova)
+  searchSaradnik = '';
+
   get sortiraniSaradnici(): any[] {
     const prezime = (a: any, b: any) => `${a.prezime} ${a.ime}`.localeCompare(`${b.prezime} ${b.ime}`, 'sr');
-    return [...this.slobodniSaradnici].sort((a, b) => {
+    const q = presloviULatinicu(this.searchSaradnik.trim());
+    const lista = q
+      ? this.slobodniSaradnici.filter(s => presloviULatinicu(`${s.ime} ${s.prezime} ${s.prezime} ${s.ime}`).includes(q))
+      : this.slobodniSaradnici;
+    return [...lista].sort((a, b) => {
       // odsutni uvek na dnu
       const oa = this.odsutniSaradniciMap.has(a.id) ? 1 : 0;
       const ob = this.odsutniSaradniciMap.has(b.id) ? 1 : 0;
@@ -77,6 +89,33 @@ export class EventModal implements OnInit {
       const razlika = this.satiSaradnika(a) - this.satiSaradnika(b);
       return (this.sortiranje === 'manje' ? razlika : -razlika) || prezime(a, b);
     });
+  }
+
+  // Termini koje je nastavnik uneo na stranici "Termini kolokvijuma" (data.potrebnoDezurnih nosi ceo zapis)
+  get uneti(): UnetiKolokvijum[] {
+    return unetiKolokvijumi(this.data.potrebnoDezurnih);
+  }
+  get napomenaTermina(): string {
+    return (this.data.potrebnoDezurnih as any)?.napomena || '';
+  }
+  opis(k: UnetiKolokvijum): string {
+    return opisKolokvijuma(k);
+  }
+  // Uneto trajanje za izabranu vrstu kolokvijuma (za dugme "kraj po trajanju")
+  get trajanjeIzabranog(): number | null {
+    const k = kljucZaTip(this.formData.tip_kolokvijuma, this.formData.is_ispit);
+    return this.uneti.find((x) => x.kljuc === k)?.trajanje ?? null;
+  }
+  get krajPoTrajanju(): string | null {
+    const t = this.trajanjeIzabranog;
+    if (!t || !this.formData.startTime) return null;
+    const kraj = this.timeToMins(this.formData.startTime) + t;
+    const zaokruzeno = Math.ceil(kraj / 15) * 15; // izbor vremena ide na 15 minuta
+    if (zaokruzeno > 22 * 60) return null;
+    return `${String(Math.floor(zaokruzeno / 60)).padStart(2, '0')}:${String(zaokruzeno % 60).padStart(2, '0')}`;
+  }
+  postaviKrajPoTrajanju(): void {
+    if (this.krajPoTrajanju) this.formData.endTime = this.krajPoTrajanju;
   }
 
   // Potreban broj dežurnih koji je saradnik uneo na stranici "Termini kolokvijuma" (samo za kolokvijume)
@@ -94,15 +133,16 @@ export class EventModal implements OnInit {
 
   constructor(
     public dialogRef: MatDialogRef<EventModal>,
-    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
-      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[],
+    @Inject(MAT_DIALOG_DATA) public data: { title: string; date: string; startTime?: string; endTime?: string; room?: string; sale?: string[]; predmetId?: number; dezurni?: any[], zauzeteSaleNaDan?: any[], is_ispit?: boolean, tip_kolokvijuma?: string,
+      satiPoSaradniku?: Record<number, { sati: number; broj: number }>, saradniciPredmeta?: number[], grupaPredmeti?: string[], brojStudenata?: number,
       potrebnoDezurnih?: { k1_dezurni?: number | null; k2_dezurni?: number | null; k3_dezurni?: number | null; popravni_dezurni?: number | null } | null } 
   ) {
     if (this.data.startTime) this.formData.startTime = this.data.startTime;
     if (this.data.endTime) this.formData.endTime = this.data.endTime;
     if (this.data.room) this.formData.room = this.data.room;
+    this.formData.sale = this.data.sale?.length ? [...this.data.sale] : (this.data.room && this.data.room !== 'Bez sale' ? [this.data.room] : []);
     if (this.data.is_ispit !== undefined) this.formData.is_ispit = this.data.is_ispit;
-    if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma; // <--- DODANO OVDJ
+    if (this.data.tip_kolokvijuma) this.formData.tip_kolokvijuma = this.data.tip_kolokvijuma;
     if (this.data.dezurni) {
       this.izabraniSaradnici = [...this.data.dezurni];
       this.formData.dezurni_ids = this.izabraniSaradnici.map(s => s.id);
@@ -128,9 +168,8 @@ export class EventModal implements OnInit {
   fetchUcionice(): void {
     this.cache.get<any[]>('/ucionice', 300_000).subscribe({
       next: (res) => {
-        console.log('Učionice stigle sa beka:', res);
         this.sveUcionice = res;
-        this.cdr.detectChanges(); // <--- OBAVEZNO: primorava Angular da osveži padajući meni
+        this.cdr.detectChanges();
       },
       error: (err) => console.error('Greška pri dohvatanju učionica:', err)
     });
@@ -184,11 +223,11 @@ export class EventModal implements OnInit {
     this.slobodniSaradnici.push(saradnik);
   }
 
-  onDelete(): void {
+  async onDelete(): Promise<void> {
     const pitanje = this.data.grupaPredmeti?.length
       ? `Termin je deo grupe (${this.data.grupaPredmeti.length} predmeta). Obrisati termine svih predmeta iz grupe?`
       : 'Da li ste sigurni da želite da obrišete ovaj termin?';
-    if (confirm(pitanje)) {
+    if (await this.potvrda.pitaj({ naslov: 'Brisanje termina', poruka: pitanje, potvrdi: 'Obriši', opasno: true })) {
       this.dialogRef.close({ action: 'delete', eventId: this.data.predmetId });
     }
   }
@@ -199,17 +238,26 @@ export class EventModal implements OnInit {
     return (h * 60) + m;
   }
 
-  isSalaZauzeta(salaNaziv: string): boolean {
-    if (!this.formData.startTime || !this.data.zauzeteSaleNaDan) return false;
+  // Ko zauzima salu u izabranom vremenu (drugi termin ili redovna nastava); null ako je slobodna
+  zauzetoSa(salaNaziv: string): string | null {
+    if (!this.formData.startTime || !this.data.zauzeteSaleNaDan) return null;
     const start1 = this.timeToMins(this.formData.startTime);
     const end1 = this.formData.endTime ? this.timeToMins(this.formData.endTime) : (start1 + 120);
-
-    return this.data.zauzeteSaleNaDan.some((z: any) => {
-      if (z.sala !== salaNaziv || z.sala === 'Bez sale') return false;
-      const start2 = this.timeToMins(z.vreme);
-      const end2 = z.vremeKraja ? this.timeToMins(z.vremeKraja) : (start2 + 120);
-      return start1 < end2 && start2 < end1; 
+    const z = this.data.zauzeteSaleNaDan.find((x: any) => {
+      if (x.sala !== salaNaziv || x.sala === 'Bez sale') return false;
+      const start2 = this.timeToMins(x.vreme);
+      const end2 = x.vremeKraja ? this.timeToMins(x.vremeKraja) : (start2 + 120);
+      return start1 < end2 && start2 < end1;
     });
+    return z ? `${z.naziv || 'drugi termin'} (${z.vreme}${z.vremeKraja ? '–' + z.vremeKraja : ''})` : null;
+  }
+
+  isSalaZauzeta(salaNaziv: string): boolean {
+    return this.zauzetoSa(salaNaziv) !== null;
+  }
+
+  get zauzeteIzabrane(): string[] {
+    return this.formData.sale.filter((s) => this.isSalaZauzeta(s)).map((s) => `${s}: ${this.zauzetoSa(s)}`);
   }
 
   onCancel(): void {
@@ -233,13 +281,14 @@ export class EventModal implements OnInit {
       return;
     }
 
-    if (this.formData.startTime && this.formData.endTime && this.formData.room) {
+    if (this.formData.startTime && this.formData.endTime && this.formData.sale.length) {
       this.showError = false;
       this.odsustvoErrorPoruka = '';
+      this.formData.room = this.formData.sale[0];
       this.dialogRef.close({ 
         ...this.data, 
         ...this.formData, 
-        tip_kolokvijuma: this.formData.tip_kolokvijuma || 'I', // <--- EKSPLICITNO PROSLEDITI
+        tip_kolokvijuma: this.formData.tip_kolokvijuma || 'I',
         izabraniSaradnici: this.izabraniSaradnici 
       });
     } else {

@@ -1,20 +1,30 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
 import { LoadingService } from '../../../core/services/loading.service';
 
+// Sopstveni stilovi (ne Tailwind klase), da ih tema ne prepiše: tema boji sve ivice istom bojom
 @Component({
   selector: 'app-spinner',
   standalone: true,
-  imports: [CommonModule],
   template: `
     @if (loadingService.isLoading()) {
-      <div class="fixed inset-0 z-[999999] flex items-center justify-center bg-slate-900/30 backdrop-blur-[2px] transition-all">
-        <div class="flex flex-col items-center gap-3 p-5 bg-white rounded-2xl shadow-2xl border border-slate-100">
-          <div class="w-10 h-10 border-4 border-slate-100 border-t-[#34b9f7] rounded-full animate-spin"></div>
-        </div>
+      <div class="sp-pozadina">
+        <div class="sp-kartica"><div class="sp-krug"></div></div>
       </div>
     }
-  `
+  `,
+  styles: [`
+    .sp-pozadina {
+      position: fixed; inset: 0; z-index: 999999; display: flex; align-items: center; justify-content: center;
+      background: rgba(15, 23, 42, 0.3); backdrop-filter: blur(2px);
+    }
+    .sp-kartica { padding: 20px; border-radius: 16px; background: var(--surface, #fff); box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25); }
+    .sp-krug {
+      width: 40px; height: 40px; border-radius: 50%;
+      border: 4px solid var(--border, #e2e8f0); border-top-color: #34b9f7;
+      animation: sp-okret 0.9s linear infinite;
+    }
+    @keyframes sp-okret { to { transform: rotate(360deg); } }
+  `]
 })
 export class SpinnerComponent {
   loadingService = inject(LoadingService);

@@ -17,7 +17,7 @@ export const jwtInterceptor: HttpInterceptorFn = (req, next) => {
   return next(outgoing).pipe(
     catchError((err: unknown) => {
       // Istekao ili nevažeći token (ne računa se pogrešna lozinka na samoj prijavi) -> nazad na login
-      if (err instanceof HttpErrorResponse && err.status === 401 && token && !req.url.includes('/auth/login')) {
+      if (err instanceof HttpErrorResponse && err.status === 401 && token && !req.url.includes('/auth/login') && !req.url.includes('/auth/pmf')) {
         SESSION_KEYS.forEach((k) => localStorage.removeItem(k));
         router.navigate(['/login']);
       }

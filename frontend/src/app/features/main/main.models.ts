@@ -7,6 +7,8 @@ export interface Profesor {
 }
 
 export interface Predmet {
+  nema_kolokvijume?: boolean;
+  broj_studenata?: number;
   id: number;
   sifra: string;
   naziv: string;

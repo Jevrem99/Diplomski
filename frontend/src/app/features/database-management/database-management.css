@@ -250,3 +250,13 @@
   font-weight: 600;
   font-size: 0.95rem;
 }
+
+.db-pretraga { display: flex; align-items: center; gap: 10px; margin: 0 0 12px; position: relative; max-width: 520px; }
+.db-pretraga-polje {
+  flex: 1; height: 38px; padding: 0 12px; border-radius: 10px; border: 1px solid var(--border-strong);
+  background: var(--surface); color: var(--text); font: inherit; font-size: 0.85rem; outline: none;
+}
+.db-pretraga-polje:focus { border-color: var(--primary-text); }
+.db-pretraga-ocisti { border: none; background: none; color: var(--muted); font-size: 1.2rem; cursor: pointer; }
+.db-pretraga-broj { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+.db-prazno { margin: 0; padding: 18px; text-align: center; font-size: 0.85rem; color: var(--muted); }

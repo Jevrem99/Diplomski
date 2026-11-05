@@ -1,3 +1,4 @@
+const prisma = require('../db/prisma');
 const { logAction } = require('../services/auditService');
 const { validirajPredmet, odbaciAkoImaGresaka, mapirajPrismaGresku } = require('../utils/validators');
 const predmetModel = require('../models/predmetModel');
@@ -30,9 +31,12 @@ const createPredmet = async (req, res) => {
     const { sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids } = req.body;
     if (odbaciAkoImaGresaka(res, validirajPredmet(req.body))) return;
     try {
-        const newPredmet = await predmetModel.createPredmet(
+        let newPredmet = await predmetModel.createPredmet(
             sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids
         );
+        if (typeof req.body.nema_kolokvijume === 'boolean' && newPredmet?.id) {
+            newPredmet = await prisma.predmet.update({ where: { id: newPredmet.id }, data: { nema_kolokvijume: req.body.nema_kolokvijume } });
+        }
         await logAction(req.user?.username || 'Korisnik', 'CREATE', 'Predmet', `Dodat predmet ${sifra} ${naziv}`);
         res.status(201).json(newPredmet);
     } catch (err) {
@@ -51,6 +55,9 @@ const updatePredmet = async (req, res) => {
             id, sifra, naziv, godina, semestar, status, broj_studenata, profesor_id, saradnici_ids
         );
         if (!updatedPredmet) return res.status(404).json({ error: 'Predmet not found' });
+        if (typeof req.body.nema_kolokvijume === 'boolean') {
+            await prisma.predmet.update({ where: { id: Number(id) }, data: { nema_kolokvijume: req.body.nema_kolokvijume } });
+        }
         await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Predmet', `Izmenjen predmet ${sifra} ${naziv}`);
         res.status(200).json(updatedPredmet);
     } catch (err) {

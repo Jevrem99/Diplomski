@@ -3,13 +3,19 @@ import { ToastService } from '../../../core/services/toast.service';
 import { ExportDataResult } from '../../../shared/components/export-modal/export-modal.component';
 import { Predmet } from '../main.models';
 
+// xlsx-js-style je CommonJS: u produkcijskom build-u modul dolazi umotan u default
+async function ucitajXlsx(): Promise<any> {
+  const m: any = await import('xlsx-js-style');
+  return m.utils ? m : m.default;
+}
+
 // Pravi Excel fajlove rasporeda (ispiti i kolokvijumi). Ne zavisi od komponente: sve što mu treba dobija kao argumente.
 @Injectable({ providedIn: 'root' })
 export class ExcelIzvozService {
   private toast = inject(ToastService);
 
   async generisiIspite(podaci: ExportDataResult, events: any[], predmeti: Predmet[]): Promise<void> {
-    const XLSX = await import('xlsx-js-style');
+    const XLSX = await ucitajXlsx();
     const rokovi = podaci.rokovi || [];
     if (rokovi.length === 0) {
       this.toast.show('Niste uneli nijedan ispitni rok!', 'error');
@@ -168,7 +174,7 @@ export class ExcelIzvozService {
         const colLetter = String.fromCharCode(65 + c);
         cellStyles[colLetter + rowIndex] = {
           alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-          font: { bold: false, sz: 11, name: 'Calibri' }, // <--- TAČNO 11pt REGULAR
+          font: { bold: false, sz: 11, name: 'Calibri' },
           border: punOkvir
         };
       }
@@ -306,7 +312,7 @@ export class ExcelIzvozService {
   }
 
   async generisiKolokvijume(podaci: ExportDataResult, events: any[], predmeti: Predmet[]): Promise<void> {
-    const XLSX = await import('xlsx-js-style');
+    const XLSX = await ucitajXlsx();
 
     if (!podaci.datumOd || !podaci.datumDo) {
       this.toast.show('Izaberite oba datuma!', 'error');
@@ -512,7 +518,7 @@ export class ExcelIzvozService {
           }
 
           cellStyles[col + rowIndex] = {
-            alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, // <--- CENTER I MIDDLE!
+            alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
             font: { name: 'Calibri', sz: 11, bold: false },
             border: tankiOkvir
           };

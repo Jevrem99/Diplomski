@@ -5,7 +5,8 @@ import { HttpClient } from '@angular/common/http';
 import { SidebarMenu } from '../sidebar-menu/sidebar-menu';
 import { forkJoin } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { trajanjeUSatima } from '../../core/utils/vreme';
+import { trajanjeUSatima } from '../../core/utils/vreme';
+import { PotvrdaService } from '../../core/services/potvrda.service';
 @Component({
   selector: 'app-zaduzenja',
   standalone: true,
@@ -100,7 +101,8 @@ import { trajanjeUSatima } from '../../core/utils/vreme';
 })
 export class ZaduzenjaComponent implements OnInit {
   private http = inject(HttpClient);
-  private cdr = inject(ChangeDetectorRef); // OVO REŠAVA PROBLEM SA UČITAVANJEM!
+  private potvrda = inject(PotvrdaService);
+  private cdr = inject(ChangeDetectorRef);
   private API_URL = environment.apiUrl;
 
   sviSaradnici: any[] = [];
@@ -209,7 +211,7 @@ export class ZaduzenjaComponent implements OnInit {
 
   izveziUExcel() {
     if (this.filtriraniIspiti.length === 0) {
-      alert("Nema ispita za izvoz pod izabranim filterima.");
+      this.potvrda.obavesti('Nema ispita za izvoz pod izabranim filterima.', 'Izvoz');
       return;
     }
 
@@ -232,7 +234,7 @@ export class ZaduzenjaComponent implements OnInit {
       },
       error: (err) => {
         console.error('Greška pri izvozu:', err);
-        alert('Greška pri generisanju Excel fajla.');
+        this.potvrda.obavesti('Greška pri generisanju Excel fajla.', 'Izvoz nije uspeo');
       }
     });
   }

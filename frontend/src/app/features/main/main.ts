@@ -1,7 +1,7 @@
 import { Component, AfterViewInit, ElementRef, ViewChild, inject, OnInit, ChangeDetectorRef, NgZone, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
+import { forkJoin, Observable, timeout } from 'rxjs';
 import { FullCalendarModule, FullCalendarComponent } from '@fullcalendar/angular';
 import { MatDialogModule, MatDialog } from '@angular/material/dialog';
 import { MatSelectModule } from '@angular/material/select';
@@ -24,6 +24,11 @@ import { trajanjeUSatima, semestarOpseg } from '../../core/utils/vreme';
 import { GodinaColorService } from './services/godina-color.service';
 import { KALENDAR_STATICKA_PODESAVANJA } from './calendar-config';
 import { environment } from '../../../environments/environment';
+import { PotvrdaService } from '../../core/services/potvrda.service';
+import { RezervacijeSalaDialogComponent } from '../../shared/components/rezervacije-sala-dialog/rezervacije-sala-dialog.component';
+import { UvozPregledDialogComponent, UvozPregled, UvozStavka } from '../../shared/components/uvoz-pregled-dialog/uvoz-pregled-dialog.component';
+import { VerzijeDialogComponent } from '../../shared/components/verzije-dialog/verzije-dialog.component';
+import { kratkiDatumi, unetiKolokvijumi, opisKolokvijuma, kljucZaTip, potrebnoDezurnihZa } from '../../core/utils/termini-kolokvijuma';
 // Boja kartica redovne nastave (namerno drugačija od boja godina)
 const NASTAVA_BOJA = '#7a6fa8';
 
@@ -40,6 +45,7 @@ export class Main implements OnInit, AfterViewInit {
 
   private http = inject(HttpClient);
   private dialog = inject(MatDialog);
+  private potvrda = inject(PotvrdaService);
   private API_URL = environment.apiUrl;
   private cdr = inject(ChangeDetectorRef);
   private toastService = inject(ToastService);
@@ -93,6 +99,10 @@ export class Main implements OnInit, AfterViewInit {
   bankaTab: 'predmeti' | 'grupe' = 'predmeti'; // šta banka prikazuje
   grupe: any[] = [];                           // grupe predmeta (isti dan i vreme)
   filterLevoSemestar: 'svi' | 'zimski' | 'letnji' = 'svi';
+  sakrijBezKolokvijuma = true; // predmeti označeni "nema kolokvijume" su podrazumevano sakriveni u banci
+  sakrijRasporedjene = false;   // predmeti kojima su svi uneti kolokvijumi već u rasporedu
+  // predmetId -> vrste kolokvijuma koje su već u rasporedu (k1, k2, k3, popravni); osvežava se u applyFilters
+  private rasporedjeniPoPredmetu = new Map<number, Set<string>>();
   readonly semestarOpcije: { id: 'svi' | 'zimski' | 'letnji'; label: string }[] = [
     { id: 'svi', label: 'Svi' }, { id: 'zimski', label: 'Zimski' }, { id: 'letnji', label: 'Letnji' }
   ];
@@ -128,7 +138,7 @@ export class Main implements OnInit, AfterViewInit {
     firstDay: 1,
     displayEventEnd: false,
     dayMaxEvents: 4,
-    datesSet: () => { setTimeout(() => this.azurirajPrazno(), 0); },
+    datesSet: () => { setTimeout(() => this.azurirajPrazno(), 0); this.detectConflicts(); },
     // ispiti i kolokvijumi uvek ispred redovne nastave, da ih "+N još" nikad ne sakrije
     eventOrder: (a: any, b: any) => (a.extendedProps?.isNastava ? 1 : 0) - (b.extendedProps?.isNastava ? 1 : 0) || String(a.start).localeCompare(String(b.start)),
     moreLinkContent: (arg) => `+${arg.num} još`,
@@ -300,8 +310,7 @@ export class Main implements OnInit, AfterViewInit {
       const godina = arg.event.extendedProps['godina'] || 1;
       const jeNastava = !!arg.event.extendedProps['isNastava'];
       const boja = jeNastava ? NASTAVA_BOJA : this.getGodinaColor(godina);
-      const salaProp = arg.event.extendedProps['sala'];
-      const salaNaziv = (typeof salaProp === 'object' ? salaProp?.naziv : salaProp) || '';
+      const salaNaziv = this.saleDogadjaja(arg.event.extendedProps).join(', ');
       const salaTag = salaNaziv && salaNaziv !== 'Bez sale' ? `<small class="cal-card-sala">${salaNaziv}</small>` : '';
       const krajSirov = String(arg.event.extendedProps['vremeKraja'] || arg.event.extendedProps['vreme_kraja'] || '').substring(0, 5);
       const vremeTekst = krajSirov && krajSirov !== '00:00' && krajSirov !== '0:00' ? `${String(vreme).substring(0, 5)}<span class="cal-card-kraj">–${krajSirov}</span>` : String(vreme).substring(0, 5);
@@ -310,11 +319,23 @@ export class Main implements OnInit, AfterViewInit {
         ? '<span class="cal-card-grupa" title="Deo grupe predmeta: isti dan, vreme i sala"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.07 0l2.83-2.83a5 5 0 00-7.07-7.07L11.5 4.4"/><path d="M14 11a5 5 0 00-7.07 0L4.1 13.83a5 5 0 007.07 7.07l1.33-1.3"/></svg></span>'
         : '';
 
+      // Upozorenje kad termin nema dovoljno dežurnih (potreban broj sa stranice Termini kolokvijuma; bez njega: nijedan)
+      let dezTag = '';
+      if (!jeNastava) {
+        const predmet: any = this.predmeti.find(p => p.id == arg.event.extendedProps['predmetId']);
+        const potrebno = potrebnoDezurnihZa(predmet?.terminiKolokvijuma, arg.event.extendedProps['tip_kolokvijuma'], isIspit);
+        const ima = (arg.event.extendedProps['dezurni'] || []).length;
+        if (potrebno !== null ? ima < potrebno : ima === 0) {
+          const opis = potrebno !== null ? `Dežurnih ${ima} od ${potrebno}` : 'Nema dodeljenih dežurnih';
+          dezTag = `<span class="cal-card-dez" title="${opis}">!</span>`;
+        }
+      }
+
       // --ev = boja godine; sve ostalo (pozadina, ivica, tekst) određuje CSS aktivnog dizajna
       return {
         html: `
           <div class="clean-cal-card ${isIspit ? 'is-ispit' : 'is-kolokvijum'}${jeNastava ? ' is-nastava' : ''}" style="--ev: ${boja}; --ev-ink: ${ink}; --ev-chip: ${chip};">
-            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${grupaTag}${salaTag}</div>
+            <div class="cal-card-time"><span class="cal-card-vreme">${vremeTekst}</span>${dezTag}${grupaTag}${salaTag}</div>
             <div class="cal-title-container cal-ticker-wrap">
               <span class="cal-title-text cal-ticker-text">${title}</span>
             </div>
@@ -335,7 +356,7 @@ export class Main implements OnInit, AfterViewInit {
       const k = props['vremeKraja'] || props['vreme_kraja'];
       const vremeKraja = (k && k !== '00:00' && k !== '0:00') ? ` - ${k}h` : '';
       const vremePocetka = props['vreme'] || '09:00';
-      const sala = props['sala'] || 'Bez sale';
+      const sala = this.saleDogadjaja(props).join(', ') || 'Bez sale';
       const naslov = jeNastava ? info.event.title.replace(/^Nastava:\s*/, '').split(' (')[0] : info.event.title.split(' (')[0];
       const dezurniImena = (props['dezurni'] || []).map((d: any) => `${d.ime} ${d.prezime}`).join(', ') || 'Nema dodeljenih';
       const uGrupiSa = props['grupa_kljuc']
@@ -457,6 +478,7 @@ export class Main implements OnInit, AfterViewInit {
           vreme: stari.extendedProps.vreme,
           vreme_kraja: stari.extendedProps.vreme_kraja || stari.extendedProps.vremeKraja || '',
           sala: stari.extendedProps.sala,
+          sale: stari.extendedProps.sale,
           is_ispit: stari.extendedProps.is_ispit,
           tip_kolokvijuma: stari.extendedProps.tip_kolokvijuma || 'I',
           grupa_kljuc: kljucKopije,
@@ -511,6 +533,7 @@ export class Main implements OnInit, AfterViewInit {
           vreme: stari.extendedProps.vreme,
           vreme_kraja: stari.extendedProps.vreme_kraja || stari.extendedProps.vremeKraja || '',
           sala: stari.extendedProps.sala,
+          sale: stari.extendedProps.sale,
           is_ispit: stari.extendedProps.is_ispit,
           tip_kolokvijuma: stari.extendedProps.tip_kolokvijuma || 'I',
           grupa_kljuc: kljucKopije,
@@ -584,21 +607,14 @@ export class Main implements OnInit, AfterViewInit {
     const imaIzmenjenih = this.modifiedEvents && this.modifiedEvents.length > 0;
     const imaObrisanih = this.obrisaniIspitiServerIds && this.obrisaniIspitiServerIds.length > 0;
 
-    console.group('🚀 [KLIKNUTO SAČUVAJ] Slanje rasporeda na server');
-    console.log('📊 Stanje izmena:', { imaNovih, imaIzmenjenih, imaObrisanih });
 
     if (!imaNovih && !imaIzmenjenih && !imaObrisanih) {
-      console.log('⚠️ Nema detektovanih izmena za bazu.');
-      console.groupEnd();
       this.toastService.show('Nema izmena za čuvanje.', 'success');
       return;
     }
 
     const validniIzmenjeni = (this.modifiedEvents || []).filter(e => e.id && !String(e.id).startsWith('temp_'));
 
-    console.log('📤 NOVI ISPITI (POST /ispit/bulk):', JSON.stringify(this.unsavedEvents, null, 2));
-    console.log('📤 IZMENJENI ISPITI (PUT /ispit/:id):', JSON.stringify(validniIzmenjeni, null, 2));
-    console.log('📤 OBRISANI ID-jevi (DELETE /ispit/:id):', this.obrisaniIspitiServerIds);
 
     // Server prvo proveri celu seriju izmena (ništa ne čuva); konflikte prikazujemo u čitljivom prozoru
     this.proveraUToku = true;
@@ -610,7 +626,6 @@ export class Main implements OnInit, AfterViewInit {
       next: (r) => {
         this.proveraUToku = false;
         if (r?.konflikti?.length) {
-          console.groupEnd();
           this.konfliktiPriCuvanju = r.konflikti;
           this.prikaziKonfliktePriCuvanju = true;
           this.cdr.detectChanges();
@@ -650,15 +665,12 @@ export class Main implements OnInit, AfterViewInit {
     if (validniIzmenjeni.length > 0) {
       validniIzmenjeni.forEach(evt => {
         const url = this.API_URL + '/ispit/' + evt.id + '?force=1';
-        console.log('➡️️ Šaljem PUT na ' + url + ' sa payloadom:', evt);
         requests.push(this.http.put(url, evt));
       });
     }
 
     forkJoin(requests).subscribe({
       next: (odgovori) => {
-        console.log('✅ SERVER JE ODGOVORIO SA USPEHOM:', odgovori);
-        console.groupEnd();
 
         this.toastService.show('Raspored je uspešno sačuvan!', 'success');
         this.unsavedEvents = [];
@@ -669,33 +681,53 @@ export class Main implements OnInit, AfterViewInit {
         this.cdr.detectChanges();
       },
       error: (err) => {
-        console.error('❌ GREŠKA OD STRANE SERVERA PRI ČUVANJU:', err);
-        console.log('🔍 Status kod:', err.status);
-        console.log('🔍 Detalji tela greške:', err.error);
-        console.groupEnd();
+      console.error('Greška pri čuvanju rasporeda:', err);
         this.toastService.show(err.error?.error || err.error?.message || 'Došlo je do greške pri čuvanju.', 'error');
       }
     });
   }
 
-  objaviRaspored(): void {
-    if (confirm('Da li ste sigurni da želite da objavite raspored? Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu. Za kolokvijume se pravi i fajl sa rezervacijama sala.')) {
+  async objaviRaspored(): Promise<void> {
+    if (await this.potvrda.pitaj({ naslov: 'Objavljivanje rasporeda', poruka: 'Svi saradnici će od ovog trenutka moći da vide svoja zaduženja na portalu. Za kolokvijume se pravi i fajl sa rezervacijama sala.', potvrdi: 'Objavi' })) {
       this.http.put<any>(`${this.API_URL}/ispit/publish-all`, {}).subscribe({
         next: (odgovor) => {
           if (odgovor?.objavljeno === 0) {
-            // Svi termini su već objavljeni: nema šta novo da se rezerviše
-            this.toastService.show('Nema novih termina za objavljivanje. Fajl sa rezervacijama za već objavljene kolokvijume preuzmite dugmetom „Rezervacije sala“.', 'error');
+            this.potvrda.obavesti('Svi termini su već objavljeni. Rezervacije za objavljene kolokvijume su u „Pregled rezervacija sala“.', 'Nema novih termina');
             return;
           }
+          // Rezultat ostaje na ekranu dok ga korisnik ne zatvori (obaveštenje bi nestalo pre nego što se pročita)
           const rez = odgovor?.rezervacije;
           const broj = rez?.rezervacije?.length ?? 0;
+          const slanje = odgovor?.slanje;
+          const redovi = [`Objavljeno termina: ${odgovor?.objavljeno ?? 0}.`];
           if (broj > 0) {
             this.preuzmiRezervacije(rez);
-            const bezSale = rez.bez_sale?.length ? ` Bez sale: ${rez.bez_sale.length} (nisu u fajlu).` : '';
-            this.toastService.show(`Raspored je objavljen. Preuzet je fajl sa ${broj} rezervacija sala za kolokvijume.${bezSale}`, 'success');
+            redovi.push(`Rezervacija sala za kolokvijume: ${broj} (fajl je preuzet).`);
           } else {
-            this.toastService.show('Raspored je uspešno objavljen! Među objavljenim terminima nema kolokvijuma sa izabranom salom, pa nema rezervacija.', 'success');
+            redovi.push('Među objavljenim terminima nema kolokvijuma sa salom, pa nema rezervacija.');
           }
+          if (rez?.bez_sale?.length) redovi.push(`Kolokvijumi bez izabrane sale: ${rez.bez_sale.length} (nisu rezervisani).`);
+          const m = odgovor?.mejlovi;
+          if (m) {
+            if (!m.podesen && (m.ukupno || m.bezEmaila?.length)) {
+              redovi.push('Mejlovi dežurnima nisu poslati: slanje mejlova nije podešeno na serveru (EMAIL_USER i EMAIL_PASS u .env).');
+            } else if (m.ukupno) {
+              redovi.push(`Obaveštenja dežurnima: poslato ${m.poslato} od ${m.ukupno}.` + (m.neuspelo ? ` Greška: ${m.greska || 'nepoznata'}` : ''));
+            }
+            if (m.bezEmaila?.length) {
+              redovi.push(`Bez e-maila (nisu obavešteni): ${m.bezEmaila.length} – ${m.bezEmaila.slice(0, 5).join(', ')}${m.bezEmaila.length > 5 ? '…' : ''}. E-mail se upisuje u Upravljaj bazom.`);
+            }
+          }
+          if (slanje?.ukljuceno) {
+            redovi.push(slanje.poslato
+              ? `Fakultet: rezervisano ${slanje.uspesno} od ${slanje.ukupno}.`
+              : `Fakultet: rezervisano ${slanje.uspesno ?? 0} od ${slanje.ukupno ?? broj}. ${slanje.greska || ''}`.trim());
+            if (!slanje.poslato) redovi.push('Nerezervisane možete poslati ponovo: Podešavanja → Integracija → „Pošalji neposlate“.');
+          }
+          const mejlProblem = !!m && ((!m.podesen && m.ukupno > 0) || m.neuspelo > 0 || m.bezEmaila?.length > 0);
+          this.potvrda.obavesti(redovi.join('\n'),
+            slanje?.ukljuceno && !slanje.poslato ? 'Raspored je objavljen, rezervacija nije potpuna'
+              : mejlProblem ? 'Raspored je objavljen, obaveštenja nisu svima poslata' : 'Raspored je objavljen');
         },
         error: (err) => {
           console.error('Greška:', err);
@@ -705,7 +737,7 @@ export class Main implements OnInit, AfterViewInit {
     }
   }
 
-  // Rezervacije sala za već objavljene kolokvijume (od danas nadalje), za ponovno preuzimanje fajla
+  // Pregled rezervacija sala za već objavljene kolokvijume (od danas nadalje); iz prozora se može preuzeti i fajl
   izveziRezervacijeSala(): void {
     this.http.get<any>(`${this.API_URL}/ispit/rezervacije-sala`).subscribe({
       next: (rez) => {
@@ -713,14 +745,16 @@ export class Main implements OnInit, AfterViewInit {
           this.toastService.show('Nema objavljenih kolokvijuma sa salom od danas nadalje.', 'error');
           return;
         }
-        this.preuzmiRezervacije(rez);
+        this.dialog.open(RezervacijeSalaDialogComponent, { data: { rez }, width: '860px', maxWidth: '94vw', panelClass: 'potvrda-panel' })
+          .afterClosed().subscribe((preuzmi) => { if (preuzmi) this.preuzmiRezervacije(rez); });
       },
-      error: () => this.toastService.show('Greška pri pravljenju fajla sa rezervacijama.', 'error')
+      error: () => this.toastService.show('Greška pri učitavanju rezervacija sala.', 'error')
     });
   }
 
   private preuzmiRezervacije(rez: any): void {
-    const blob = new Blob([JSON.stringify(rez, null, 2)], { type: 'application/json' });
+    const { statusi, bez_rezervacije, ...bezStatusa } = rez || {};
+    const blob = new Blob([JSON.stringify(bezStatusa, null, 2)], { type: 'application/json' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
@@ -772,14 +806,22 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   // Zauzeća sala tog dana (uključuje i redovnu nastavu, čak i kad je sakrivena filterom)
-  private zauzecaNaDan(datum: string, iskljuci: string[]): { sala: string; vreme: string; vremeKraja: string }[] {
+  private zauzecaNaDan(datum: string, iskljuci: string[]): { sala: string; vreme: string; vremeKraja: string; naziv: string }[] {
     return this.allLoadedEvents
       .filter(e => String(e.start || '').split('T')[0] === datum && !iskljuci.includes(String(e.id)))
-      .map(e => ({
-        sala: e.extendedProps?.sala,
+      .flatMap(e => this.saleDogadjaja(e.extendedProps).map(sala => ({
+        sala,
         vreme: e.extendedProps?.vreme,
-        vremeKraja: e.extendedProps?.vreme_kraja || e.extendedProps?.vremeKraja || ''
-      }));
+        vremeKraja: e.extendedProps?.vreme_kraja || e.extendedProps?.vremeKraja || '',
+        naziv: String(e.title || '').replace(/^Nastava:\s*/, 'Nastava: ').split(' (')[0]
+      })));
+  }
+
+  // Sve sale termina (prva + dodatne); stari termini imaju samo "sala"
+  private saleDogadjaja(p: any): string[] {
+    if (Array.isArray(p?.sale) && p.sale.length) return p.sale;
+    const s = typeof p?.sala === 'object' ? p.sala?.naziv : p?.sala;
+    return s && s !== 'Bez sale' && s !== 'undefined' ? [s] : [];
   }
 
   private unijaSaradnika(predmetiLista: any[]): any[] {
@@ -809,6 +851,7 @@ export class Main implements OnInit, AfterViewInit {
         startTime: p.vreme,
         endTime: p.vreme_kraja || p.vremeKraja || '',
         room: p.sala,
+        sale: this.saleDogadjaja(p),
         predmetId: p.predmetId,
         tip_kolokvijuma: p.tip_kolokvijuma || 'I',
         is_ispit: p.is_ispit ?? true,
@@ -816,7 +859,8 @@ export class Main implements OnInit, AfterViewInit {
         zauzeteSaleNaDan: this.zauzecaNaDan(eventDate, clanovi),
         satiPoSaradniku: this.satiPoSaradniku(eventDate, clanovi),
         ...(uGrupi
-          ? { saradniciPredmeta: this.unijaSaradnika(predmetiGrupe).map((s: any) => Number(s.id)), potrebnoDezurnih: null }
+          ? { saradniciPredmeta: this.unijaSaradnika(predmetiGrupe).map((s: any) => Number(s.id)), potrebnoDezurnih: null,
+              brojStudenata: this.zbirStudenata(predmetiGrupe) }
           : this.podaciPredmetaZaModal(p.predmetId)),
         grupaPredmeti: uGrupi ? naslovi : undefined
       },
@@ -875,6 +919,7 @@ export class Main implements OnInit, AfterViewInit {
         draftEvt.vreme = result.startTime;
         draftEvt.vreme_kraja = krajVreme;
         draftEvt.sala = result.room;
+        draftEvt.sale = result.sale;
         draftEvt.is_ispit = isIspit;
         draftEvt.tip_kolokvijuma = tipKolokvijuma;
         draftEvt.dezurni_ids = dezurniIds;
@@ -886,6 +931,7 @@ export class Main implements OnInit, AfterViewInit {
         vreme: result.startTime,
         vreme_kraja: krajVreme,
         sala: result.room,
+        sale: result.sale,
         predmet_id: sp.predmetId,
         is_ispit: isIspit,
         tip_kolokvijuma: tipKolokvijuma,
@@ -902,7 +948,7 @@ export class Main implements OnInit, AfterViewInit {
       ...stari,
       start: eventDate + 'T' + result.startTime + ':00',
       end: krajVreme ? (eventDate + 'T' + krajVreme + ':00') : undefined,
-      title: cistNaslov + ' (' + result.room + ')',
+      title: cistNaslov + ' (' + (result.sale || [result.room]).join(', ') + ')',
       backgroundColor: isIspit ? boja : '#ffffff',
       textColor: isIspit ? '#ffffff' : boja,
       borderColor: boja,
@@ -913,6 +959,7 @@ export class Main implements OnInit, AfterViewInit {
         vremeKraja: krajVreme,
         tip_kolokvijuma: tipKolokvijuma,
         sala: result.room,
+        sale: result.sale,
         is_ispit: isIspit,
         dezurni: izabraniSaradnici
       }
@@ -938,6 +985,7 @@ export class Main implements OnInit, AfterViewInit {
         satiPoSaradniku: this.satiPoSaradniku(eventDate),
         saradniciPredmeta: dezurni.map((s: any) => Number(s.id)),
         potrebnoDezurnih: jeGrupa ? null : ((prvi as any).terminiKolokvijuma || null),
+        brojStudenata: this.zbirStudenata(predmetiZaTermin),
         grupaPredmeti: jeGrupa ? predmetiZaTermin.map(p => p.naziv) : undefined
       },
       disableClose: true
@@ -963,6 +1011,7 @@ export class Main implements OnInit, AfterViewInit {
             vreme: result.startTime,
             vreme_kraja: result.endTime,
             sala: result.room,
+            sale: result.sale,
             is_ispit: isIspit,
             tip_kolokvijuma: tipKolokvijuma,
             dezurni_ids: [...dezurniIds],
@@ -972,12 +1021,12 @@ export class Main implements OnInit, AfterViewInit {
           });
 
           this.allLoadedEvents.push({
-            id: tempId, title: `${predmet.naziv} (${result.room})`,
+            id: tempId, title: `${predmet.naziv} (${(result.sale || [result.room]).join(', ')})`,
             start: `${eventDate}T${result.startTime}:00`, end: result.endTime ? `${eventDate}T${result.endTime}:00` : undefined,
             display: 'block', backgroundColor: isIspit ? boja : '#ffffff',
             borderColor: boja,
             extendedProps: {
-              vreme: result.startTime, vremeKraja: result.endTime, vreme_kraja: result.endTime, sala: result.room,
+              vreme: result.startTime, vremeKraja: result.endTime, vreme_kraja: result.endTime, sala: result.room, sale: result.sale,
               predmetId: predmet.id, godina: predmet.godina, profesorId: predmet.profesor_id,
               profesorIme: predmet.profesorImePrezime, is_ispit: isIspit, tip_kolokvijuma: tipKolokvijuma,
               dezurni: [...izabraniSaradnici], grupa_kljuc: kljuc
@@ -1020,6 +1069,7 @@ export class Main implements OnInit, AfterViewInit {
         vreme: vreme,
         vreme_kraja: kraj,
         sala: sp.sala || 'Bez sale',
+        sale: sp.sale,
         predmet_id: sp.predmetId,
         is_ispit: sp.is_ispit ?? true,
         tip_kolokvijuma: sp.tip_kolokvijuma || 'I',
@@ -1103,8 +1153,8 @@ export class Main implements OnInit, AfterViewInit {
     });
   }
 
-  obrisiGrupu(grupa: any): void {
-    if (!confirm(`Obrisati grupu „${grupa.naziv}“? Termini koji su već zakazani ostaju u rasporedu.`)) return;
+  async obrisiGrupu(grupa: any): Promise<void> {
+    if (!(await this.potvrda.pitaj({ naslov: 'Brisanje grupe', poruka: `Obrisati grupu „${grupa.naziv}“? Termini koji su već zakazani ostaju u rasporedu.`, potvrdi: 'Obriši', opasno: true }))) return;
     this.http.delete(`${this.API_URL}/grupe/${grupa.id}`).subscribe({
       next: () => {
         this.toastService.show('Grupa je obrisana.', 'success');
@@ -1144,12 +1194,18 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   // Šta prozor termina dobija o predmetu: saradnici na predmetu i potreban broj dežurnih
-  private podaciPredmetaZaModal(predmetId: any): { saradniciPredmeta: number[]; potrebnoDezurnih: any } {
+  private podaciPredmetaZaModal(predmetId: any): { saradniciPredmeta: number[]; potrebnoDezurnih: any; brojStudenata: number } {
     const predmet: any = this.predmeti.find(p => p.id == predmetId);
     return {
       saradniciPredmeta: (predmet?.saradnici || []).map((x: any) => Number(x.id)),
-      potrebnoDezurnih: predmet?.terminiKolokvijuma || null
+      potrebnoDezurnih: predmet?.terminiKolokvijuma || null,
+      brojStudenata: predmet?.broj_studenata || 0
     };
+  }
+
+  // Ukupan broj studenata za termin (za grupu predmeta zbir svih predmeta u grupi)
+  private zbirStudenata(predmeti: any[]): number {
+    return (predmeti || []).reduce((s, p: any) => s + (Number(p?.broj_studenata) || 0), 0);
   }
 
   // Kopija grupe na nekom danu dobija svoj (novi) zajednički ključ; termini bez grupe ostaju bez ključa
@@ -1179,6 +1235,15 @@ export class Main implements OnInit, AfterViewInit {
   }
 
   // Escape zatvara iskačuće prozore (birač datuma, konflikti, padajuće menije)
+  // Osvežavanje ili zatvaranje stranice sa nesačuvanim izmenama: pregledač pita da li je korisnik siguran
+  @HostListener('window:beforeunload', ['$event'])
+  upozoriNaNesacuvano(event: BeforeUnloadEvent): void {
+    if (this.hasUnsavedChanges) {
+      event.preventDefault();
+      event.returnValue = '';
+    }
+  }
+
   @HostListener('document:keydown.escape')
   naEscape(): void {
     document.querySelectorAll('.custom-conflict-tooltip').forEach((el: any) => el.style.setProperty('display', 'none', 'important'));
@@ -1324,6 +1389,12 @@ export class Main implements OnInit, AfterViewInit {
 
   get filtriraniPredmeti() {
     let filtrirano = this.predmeti;
+    if (this.sakrijBezKolokvijuma) {
+      filtrirano = filtrirano.filter(p => !(p as any).nema_kolokvijume);
+    }
+    if (this.sakrijRasporedjene) {
+      filtrirano = filtrirano.filter(p => !this.stanjeRasporeda(p).sve);
+    }
     if (this.izabraneGodine.length > 0) {
       filtrirano = filtrirano.filter(p => this.izabraneGodine.includes(Number(p.godina)));
     }
@@ -1363,7 +1434,43 @@ export class Main implements OnInit, AfterViewInit {
     this.prikazaniBrojPredmeta += 10;
   }
 
+  // Koliko je unetih kolokvijuma predmeta već u rasporedu (po vrsti: I, II, III, popravni)
+  stanjeRasporeda(p: any): { uneto: number; rasporedjeno: number; sve: boolean } {
+    const uneti = unetiKolokvijumi(p?.terminiKolokvijuma).map(k => k.kljuc);
+    const u = this.rasporedjeniPoPredmetu.get(Number(p?.id)) || new Set<string>();
+    const rasporedjeno = uneti.filter(k => u.has(k)).length;
+    return { uneto: uneti.length, rasporedjeno, sve: uneti.length > 0 && rasporedjeno === uneti.length };
+  }
+
+  kratkiDatumi(p: any): string {
+    return kratkiDatumi(p?.terminiKolokvijuma);
+  }
+
+  // Oblačić kartice u banci: nastavnik, uneti termini i napomena
+  opisPredmetaUBanci(p: any): string {
+    const t = p?.terminiKolokvijuma;
+    const redovi = [p?.profesor ? `Prof. ${p.profesor.ime} ${p.profesor.prezime}` : '', ...unetiKolokvijumi(t).map(opisKolokvijuma)];
+    if (t?.napomena) redovi.push(`Napomena: ${t.napomena}`);
+    if (!unetiKolokvijumi(t).length) redovi.push('Termini kolokvijuma nisu uneti.');
+    return redovi.filter(Boolean).join('\n');
+  }
+
+  private osveziRasporedjene(): void {
+    const mapa = new Map<number, Set<string>>();
+    for (const e of this.allLoadedEvents) {
+      const p = e.extendedProps;
+      if (!p || p.isNastava || !p.predmetId) continue;
+      const k = kljucZaTip(p.tip_kolokvijuma, p.is_ispit ?? true);
+      if (!k) continue;
+      const id = Number(p.predmetId);
+      if (!mapa.has(id)) mapa.set(id, new Set());
+      mapa.get(id)!.add(k);
+    }
+    this.rasporedjeniPoPredmetu = mapa;
+  }
+
   applyFilters(): void {
+    this.osveziRasporedjene();
     let filtered = [...this.allLoadedEvents];
 
     filtered = filtered.filter(e => {
@@ -1389,10 +1496,8 @@ export class Main implements OnInit, AfterViewInit {
 
     if (this.filterSala !== 'sve') {
       filtered = filtered.filter(e => {
-        const eventSala = e.extendedProps?.sala;
-        const salaVal = typeof eventSala === 'object' ? eventSala?.naziv : eventSala;
         const selectedSalaVal = typeof this.filterSala === 'object' ? (this.filterSala as any)?.naziv : this.filterSala;
-        return salaVal === selectedSalaVal;
+        return this.saleDogadjaja(e.extendedProps).includes(selectedSalaVal);
       });
     }
 
@@ -1451,6 +1556,7 @@ export class Main implements OnInit, AfterViewInit {
 
     this.cdr.detectChanges();
     setTimeout(() => this.azurirajPrazno(), 50);
+    this.detectConflicts();
   }
 
   fetchStats(): void {
@@ -1515,6 +1621,7 @@ export class Main implements OnInit, AfterViewInit {
 
           const isIspit = i.is_ispit ?? true;
           const salaNaziv = i.sala?.naziv || i.sala || 'Bez sale';
+          const saleTermina = [...new Set([i.sala?.naziv, ...(i.dodatneSale || []).map((s: any) => s.naziv)].filter(Boolean))] as string[];
 
           // 1. ČIŠĆENJE DATUMA KOJI STIGNE IZ BAZE
           // 1. ČIŠĆENJE DATUMA
@@ -1547,7 +1654,7 @@ export class Main implements OnInit, AfterViewInit {
 
           return {
             id: String(i.id),
-            title: nazivPredmeta + ' (' + salaNaziv + ')',
+            title: nazivPredmeta + ' (' + (saleTermina.join(', ') || salaNaziv) + ')',
             start: cistDatum + 'T' + formatiranoVreme + ':00',
             end: formatiranoVremeKraja ? (cistDatum + 'T' + formatiranoVremeKraja + ':00') : undefined,
             display: 'block',
@@ -1558,6 +1665,7 @@ export class Main implements OnInit, AfterViewInit {
               vreme: formatiranoVreme,
               vreme_kraja: formatiranoVremeKraja, // SAMO JEDNO POLJE
               sala: salaNaziv,
+              sale: saleTermina,
               predmetId: i.predmet_id || i.predmet?.id,
               godina: godina,
               tip_kolokvijuma: i.tip_kolokvijuma || 'I',
@@ -1681,23 +1789,28 @@ export class Main implements OnInit, AfterViewInit {
     }
 
     document.querySelectorAll('body > .custom-conflict-tooltip').forEach(el => el.remove()); // ostaci prethodnog crtanja
-    const allEvents = this.calendarComponent.getApi().getEvents();
+    // Svi učitani termini, i redovna nastava sakrivena filterom: zauzeta sala je zauzeta i kad se ne prikazuje
     const conflictsByDate = new Map<string, string[]>();
     const eventsByDate: Record<string, any[]> = {};
+    const daniSaTerminima = new Set<string>();
 
-    allEvents.forEach(evt => {
-      const dateStr = evt.start?.toISOString().split('T')[0] || evt.startStr.split('T')[0];
+    this.allLoadedEvents.forEach(evt => {
+      const dateStr = String(evt.start || '').split('T')[0];
+      if (!dateStr) return;
       if (!eventsByDate[dateStr]) eventsByDate[dateStr] = [];
       eventsByDate[dateStr].push(evt);
+      if (!evt.extendedProps?.isNastava) daniSaTerminima.add(dateStr);
     });
 
-    for (const date in eventsByDate) {
+    for (const date of daniSaTerminima) {
       const evts = eventsByDate[date];
       const razlozi: string[] = [];
       for (let i = 0; i < evts.length; i++) {
         for (let j = i + 1; j < evts.length; j++) {
           const e1 = evts[i];
           const e2 = evts[j];
+          // preklapanja unutar samog rasporeda nastave (podaci sa IMI sajta) nisu naš konflikt
+          if (e1.extendedProps?.isNastava && e2.extendedProps?.isNastava) continue;
           const g1 = e1.extendedProps['grupa_kljuc'];
           if (g1 && g1 === e2.extendedProps['grupa_kljuc']) continue;
           const kraj1 = String(e1.extendedProps['vremeKraja'] || e1.extendedProps['vreme_kraja'] || '').trim();
@@ -1709,13 +1822,12 @@ export class Main implements OnInit, AfterViewInit {
           const opseg = (e: any, kraj: string) => kraj ? `${e.extendedProps['vreme']}–${kraj.substring(0, 5)}` : `${e.extendedProps['vreme']}`;
 
           if (start1 < end2 && start2 < end1) {
-            const s1 = String(e1.extendedProps['sala'] || '').trim();
-            const s2 = String(e2.extendedProps['sala'] || '').trim();
-            if (s1 && s2 && s1 === s2 && s1 !== 'Bez sale' && s1 !== 'undefined') {
+            const sale2 = this.saleDogadjaja(e2.extendedProps);
+            this.saleDogadjaja(e1.extendedProps).filter(s => sale2.includes(s)).forEach(s1 => {
               const n1 = String(e1.title).split(' (')[0];
               const n2 = String(e2.title).split(' (')[0];
               razlozi.push(`Sala ${s1}: „${n1}“ (${opseg(e1, kraj1)}) i „${n2}“ (${opseg(e2, kraj2)}) se preklapaju.`);
-            }
+            });
             const dezurni1: any[] = e1.extendedProps['dezurni'] || [];
             const dezurni2: any[] = e2.extendedProps['dezurni'] || [];
             dezurni1.forEach(d1 => {
@@ -1827,13 +1939,134 @@ export class Main implements OnInit, AfterViewInit {
       }
 
       if (rezultat.action === 'export' || !rezultat.action) {
-        if (rezultat.tip === 'kolokvijumi') {
-          this.excel.generisiKolokvijume(rezultat, this.allLoadedEvents, this.predmeti);
-        } else if (rezultat.tip === 'ispiti') {
-          this.excel.generisiIspite(rezultat, this.allLoadedEvents, this.predmeti);
-        }
+        // Prvo Excel; JSON samo na zahtev i tek posle Excel-a (pregledač inače blokira drugo preuzimanje)
+        const excel = rezultat.tip === 'kolokvijumi'
+          ? this.excel.generisiKolokvijume(rezultat, this.allLoadedEvents, this.predmeti)
+          : this.excel.generisiIspite(rezultat, this.allLoadedEvents, this.predmeti);
+        excel
+          .then(() => { if (rezultat.iJson) this.preuzmiJsonIzvoz(rezultat); })
+          .catch((e) => { console.error('Excel izvoz nije uspeo:', e); this.toastService.show('Excel izvoz nije uspeo.', 'error'); });
       }
     });
+  }
+
+  // JSON uz Excel: isti period, može da se uveze nazad (i na drugom serveru)
+  private preuzmiJsonIzvoz(podaci: ExportDataResult): void {
+    let od = podaci.datumOd;
+    let doDatuma = podaci.datumDo;
+    if (podaci.tip === 'ispiti') {
+      const rokovi = (podaci.rokovi || []).filter(r => r.datumOd && r.datumDo);
+      if (!rokovi.length) return;
+      od = rokovi.map(r => r.datumOd).sort()[0];
+      doDatuma = rokovi.map(r => r.datumDo).sort().reverse()[0];
+    }
+    if (!od || !doDatuma) return;
+    this.http.get<any>(`${this.API_URL}/ispit/izvoz`, { params: { od, do: doDatuma, tip: podaci.tip } }).subscribe({
+      next: (json) => {
+        if (!json?.termini?.length) return;
+        const ime = (podaci.naslovRasporeda || ('Raspored_' + podaci.tip)).replace(/[\r\n]+/g, ' ').replace(/[\\/:*?"<>|]/g, '').trim() || 'Raspored';
+        const blob = new Blob([JSON.stringify(json, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = ime + '.json';
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: () => this.toastService.show('JSON izvoz nije uspeo.', 'error')
+    });
+  }
+
+  // ============================================
+  // UVOZ I VERZIJE RASPOREDA
+  // ============================================
+
+  uveziFajl(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const fajl = input.files?.[0];
+    input.value = '';
+    if (!fajl) return;
+    const posalji = (godina?: number): Observable<UvozPregled> => {
+      const fd = new FormData();
+      fd.append('file', fajl);
+      const params: any = godina ? { godina: String(godina) } : {};
+      return this.http.post<UvozPregled>(`${this.API_URL}/ispit/uvoz/pregled`, fd, { params }).pipe(timeout(30000));
+    };
+    const godina = new Date().getFullYear();
+    posalji(godina).subscribe({
+      next: (pregled) => this.otvoriPregledUvoza(fajl.name, pregled, posalji, godina),
+      error: (err) => this.toastService.show(this.porukaUvoza(err, 'Fajl nije moguće uvesti.'), 'error')
+    });
+  }
+
+  otvoriVerzije(): void {
+    this.dialog.open(VerzijeDialogComponent, {
+      width: '760px', maxWidth: '95vw', panelClass: 'potvrda-panel',
+      data: { imaNesacuvanih: this.hasUnsavedChanges }
+    }).afterClosed().subscribe((r) => {
+      if (r?.akcija !== 'ucitaj') return;
+      const ucitaj = (): Observable<UvozPregled> => this.http.post<UvozPregled>(`${this.API_URL}/verzije/${r.verzija.id}/pregled`, {}).pipe(timeout(30000));
+      ucitaj().subscribe({
+        next: (pregled) => this.otvoriPregledUvoza(r.verzija.naziv, pregled, ucitaj),
+        error: (err) => this.toastService.show(this.porukaUvoza(err, 'Verzija nije učitana.'), 'error')
+      });
+    });
+  }
+
+  private porukaUvoza(err: any, podrazumevano: string): string {
+    if (err?.name === 'TimeoutError') return 'Server ne odgovara. Pokušajte ponovo.';
+    return err?.error?.error || err?.error?.message || podrazumevano;
+  }
+
+  private otvoriPregledUvoza(naslov: string, pregled: UvozPregled, ucitaj: (godina: number) => Observable<UvozPregled>, godina?: number): void {
+    this.dialog.open(UvozPregledDialogComponent, {
+      width: '1100px', maxWidth: '96vw', panelClass: 'potvrda-panel', disableClose: true,
+      data: { naslov, pregled, ucitaj, godina }
+    }).afterClosed().subscribe((stavke: UvozStavka[] | null) => {
+      if (stavke?.length) this.dodajUvezeneTermine(stavke);
+    });
+  }
+
+  // Uvezeni termini ulaze kao nesačuvane izmene, isto kao prevučeni iz banke predmeta
+  private dodajUvezeneTermine(stavke: UvozStavka[]): void {
+    const noviKljucevi = new Map<string, string>();
+    stavke.forEach(s => {
+      if (!s.predmet || !s.datum || !s.vreme) return;
+      const predmet: any = this.predmeti.find(p => p.id === s.predmet!.id) || s.predmet;
+      const tempId = 'temp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6);
+      const boja = this.getGodinaColor(predmet.godina);
+      const sala = s.sala || '';
+      const sale = s.sale?.length ? s.sale : (sala ? [sala] : []);
+      const kraj = s.vremeKraja || '';
+      const tip = s.tip || 'I';
+      let kljuc: string | null = null;
+      if (s.grupaKljuc) {
+        if (!noviKljucevi.has(s.grupaKljuc)) noviKljucevi.set(s.grupaKljuc, this.noviKljucGrupe());
+        kljuc = noviKljucevi.get(s.grupaKljuc)!;
+      }
+
+      this.unsavedEvents.push({
+        tempId, predmet_id: predmet.id, title: predmet.naziv, datum: s.datum, vreme: s.vreme, vreme_kraja: kraj,
+        sala, sale, is_ispit: s.isIspit, tip_kolokvijuma: tip, dezurni_ids: s.dezurni.map(d => d.id), grupa_kljuc: kljuc,
+        backgroundColor: boja, borderColor: boja
+      });
+      this.allLoadedEvents.push({
+        id: tempId, title: `${predmet.naziv} (${sale.join(', ') || 'Bez sale'})`,
+        start: `${s.datum}T${s.vreme}:00`, end: kraj ? `${s.datum}T${kraj}:00` : undefined,
+        display: 'block', backgroundColor: s.isIspit ? boja : '#ffffff', borderColor: boja,
+        extendedProps: {
+          vreme: s.vreme, vremeKraja: kraj, vreme_kraja: kraj, sala, sale,
+          predmetId: predmet.id, godina: predmet.godina, profesorId: predmet.profesor_id,
+          profesorIme: predmet.profesorImePrezime, is_ispit: s.isIspit, tip_kolokvijuma: tip,
+          dezurni: [...s.dezurni], grupa_kljuc: kljuc
+        }
+      });
+    });
+
+    this.hasUnsavedChanges = true;
+    this.applyFilters();
+    setTimeout(() => this.detectConflicts(), 150);
+    this.toastService.show(`Dodato ${stavke.length} termina. Kliknite „Sačuvaj“ da ih upišete.`, 'success');
   }
 
   obradiIzborDatumaZaIzvoz(kliknutiDatum: string): void {

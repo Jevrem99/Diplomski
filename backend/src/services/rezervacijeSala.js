@@ -16,6 +16,8 @@
 //   }],
 //   "bez_sale": [{ "id": "kol-124", "datum": "...", "od": "...", "naziv": "..." }]   termini bez izabrane sale
 // }
+// Sale označene da se ne rezervišu na fakultetu se preskaču; spisak takvih termina je nevidljivo polje
+// bezRezervacije (nije deo objavljenog formata, prikazuje se samo u aplikaciji).
 // Termini iste grupe predmeta (isti dan, vreme i sala) čine JEDNU rezervaciju sa više predmeta.
 
 const DEFAULT_TRAJANJE_MIN = 120;
@@ -60,6 +62,7 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
     const kolokvijumi = ispiti.filter((i) => i && i.is_ispit === false);
     const poKljucu = new Map();
     const bezSale = [];
+    const bezRezervacije = [];
 
     kolokvijumi
         .slice()
@@ -73,7 +76,14 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
             }
             const kraj = hhmm(i.vreme_kraja);
             const doVreme = kraj || (od ? dodajMinute(od, DEFAULT_TRAJANJE_MIN) : null);
-            const kljuc = [i.sala.naziv, dan(i.datum), od, doVreme, i.tip_kolokvijuma || 'I', i.grupa_kljuc || `bez-grupe-${i.id}`].join('|');
+            // Termin u više sala: po jedna rezervacija za svaku salu (prva zadržava id "kol-<id>")
+            const sale = [i.sala, ...(i.dodatneSale || []).filter((s) => s && s.naziv && s.id !== i.sala.id)];
+            sale.forEach((sala, rb) => {
+            if (sala.bez_rezervacije) {
+                bezRezervacije.push({ id: `kol-${i.id}`, sala: sala.naziv, datum: dan(i.datum), od, naziv });
+                return;
+            }
+            const kljuc = [sala.naziv, dan(i.datum), od, doVreme, i.tip_kolokvijuma || 'I', i.grupa_kljuc || `bez-grupe-${i.id}`].join('|');
             const predmet = {
                 sifra: i.predmet?.sifra || null,
                 naziv,
@@ -84,14 +94,16 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
             const postojeca = poKljucu.get(kljuc);
             if (postojeca) {
                 postojeca.predmeti.push(predmet);
+                if (!postojeca._ispiti.includes(i.id)) postojeca._ispiti.push(i.id);
                 postojeca.izmena = postojeca.izmena || Boolean(i.is_izmenjen);
                 postojeca.racunarska_sala = postojeca.racunarska_sala || trazenaRacunarskaSala(i);
                 return;
             }
             poKljucu.set(kljuc, {
-                id: `kol-${i.id}`,
+                _ispiti: [i.id],
+                id: rb === 0 ? `kol-${i.id}` : `kol-${i.id}-s${sala.id}`,
                 izmena: Boolean(i.is_izmenjen),
-                sala: i.sala.naziv,
+                sala: sala.naziv,
                 datum: dan(i.datum),
                 od,
                 do: doVreme,
@@ -102,21 +114,45 @@ const napraviRezervacije = (ispiti, { objavio = null, sada = new Date() } = {}) 
                 racunarska_sala: trazenaRacunarskaSala(i),
                 predmeti: [predmet]
             });
+            });
         });
 
-    const rezervacije = [...poKljucu.values()].map((r) => ({
+    // ispitIds (termini koji čine rezervaciju) je nevidljivo polje: ne ide u JSON, služi za beleženje slanja
+    const rezervacije = [...poKljucu.values()].map(({ _ispiti, ...r }) => Object.defineProperty({
         ...r,
         ukupno_studenata: r.predmeti.reduce((zbir, p) => zbir + (p.broj_studenata || 0), 0)
-    }));
+    }, 'ispitIds', { value: _ispiti, enumerable: false }));
 
-    return {
+    return Object.defineProperty({
         format: 'raspored-rezervacije-sala',
         verzija: 1,
         generisano: sada.toISOString(),
         objavio,
         rezervacije,
         bez_sale: bezSale
-    };
+    }, 'bezRezervacije', { value: bezRezervacije, enumerable: false });
 };
 
-module.exports = { napraviRezervacije, hhmm, _internal: { trazenaRacunarskaSala, opisTipa, dodajMinute } };
+// Objavljeni kolokvijumi u periodu (od, do kao "GGGG-MM-DD"; do je opciono) -> rezervacije.
+// Snimak TRENUTNOG stanja: ko preuzima fajl sam vidi izmene i otkazivanja po stabilnom "id".
+const ucitajObjavljeneRezervacije = async ({ od, doDatuma = null, objavio = null }) => {
+    const prisma = require('../db/prisma');
+    const ispiti = await prisma.ispit.findMany({
+        where: {
+            is_ispit: false,
+            is_published: true,
+            datum: { gte: new Date(`${od}T00:00:00.000Z`), ...(doDatuma ? { lte: new Date(`${doDatuma}T00:00:00.000Z`) } : {}) }
+        },
+        include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true, dodatneSale: true }
+    });
+    return napraviRezervacije(ispiti, { objavio });
+};
+
+// "2026-10-28" je ispravan datum; "2026-13-45" i "28.10.2026" nisu
+const jeDatum = (v) => {
+    if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+    const d = new Date(`${v}T00:00:00.000Z`);
+    return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(v);
+};
+
+module.exports = { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm, _internal: { trazenaRacunarskaSala, opisTipa, dodajMinute } };

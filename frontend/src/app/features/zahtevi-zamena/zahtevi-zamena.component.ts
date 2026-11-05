@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../core/services/toast.service';
 import { procitajGresku } from '../../core/utils/validacija';
+import { presloviULatinicu } from '../main/main.utils';
 
 @Component({
   selector: 'app-zahtevi-zamena',
@@ -68,10 +69,10 @@ import { procitajGresku } from '../../core/utils/validacija';
                 @if (otvoreni === z.id) {
                   <div class="border border-slate-200 rounded-lg p-4 bg-slate-50 flex flex-col gap-3">
                     <span class="text-xs font-extrabold text-slate-600 uppercase">Ko preuzima dežurstvo?</span>
-                    @if (kandidati.length === 0) {
-                      <span class="text-sm text-slate-500">Na ovom predmetu nema drugih saradnika koji mogu da preuzmu dežurstvo.</span>
+                    @if (saPredmeta.length === 0) {
+                      <span class="text-sm text-slate-500">Na ovom predmetu nema drugih saradnika; izaberite nekog od ostalih.</span>
                     }
-                    @for (k of kandidati; track k.id) {
+                    @for (k of saPredmeta; track k.id) {
                       <label class="flex items-start gap-3 p-2 rounded-lg border cursor-pointer"
                              [ngClass]="izabranId === k.id ? 'border-[#1F63A0] bg-white' : 'border-transparent'">
                         <input type="radio" name="kandidat" [value]="k.id" [(ngModel)]="izabranId" class="mt-1" />
@@ -87,6 +88,31 @@ import { procitajGresku } from '../../core/utils/validacija';
                           }
                         </span>
                       </label>
+                    }
+                    <span class="text-xs font-extrabold text-slate-600 uppercase mt-1">Ostali nastavnici i saradnici</span>
+                    <input type="text" [(ngModel)]="pretragaOstalih" placeholder="Pretraži po imenu..."
+                           class="h-9 border border-slate-300 rounded-lg px-3 text-sm focus:outline-none focus:border-[#1F63A0]" />
+                    @for (k of ostaliPrikaz; track k.id) {
+                      <label class="flex items-start gap-3 p-2 rounded-lg border cursor-pointer"
+                             [ngClass]="izabranId === k.id ? 'border-[#1F63A0] bg-white' : 'border-transparent'">
+                        <input type="radio" name="kandidat" [value]="k.id" [(ngModel)]="izabranId" class="mt-1" />
+                        <span class="flex flex-col">
+                          <span class="text-sm font-bold text-slate-800">
+                            {{ k.ime }} {{ k.prezime }}
+                            <span class="text-[10px] text-slate-500 font-bold ml-1">{{ k.is_saradnik ? 'saradnik' : 'profesor' }}</span>
+                          </span>
+                          @if (k.konflikti.length === 0) {
+                            <span class="text-xs font-semibold text-emerald-700">Slobodan/na u tom terminu</span>
+                          } @else {
+                            @for (kf of k.konflikti; track kf) { <span class="text-xs font-semibold text-amber-700">⚠ {{ kf }}</span> }
+                          }
+                        </span>
+                      </label>
+                    } @empty {
+                      <span class="text-sm text-slate-500">Nema osoba koje odgovaraju pretrazi.</span>
+                    }
+                    @if (ostaliUkupno > ostaliPrikaz.length) {
+                      <span class="text-xs text-slate-500">Prikazano {{ ostaliPrikaz.length }} od {{ ostaliUkupno }}; suzite pretragu.</span>
                     }
                     @if (greska) { <div class="text-xs font-bold text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">{{ greska }}</div> }
                     @if (konfliktPoruke.length > 0) {
@@ -145,6 +171,22 @@ export class ZahteviZamenaComponent implements OnInit {
   odbijanje: number | null = null;    // zahtev koji se odbija
   kandidati: any[] = [];
   izabranId: number | null = null;
+  pretragaOstalih = '';
+
+  // Prvo saradnici sa predmeta, a ispod pretraga svih ostalih nastavnika i saradnika
+  get saPredmeta(): any[] {
+    return this.kandidati.filter((k) => k.naPredmetu);
+  }
+  private get ostaliFiltrirani(): any[] {
+    const q = presloviULatinicu(this.pretragaOstalih.trim());
+    return this.kandidati.filter((k) => !k.naPredmetu && (!q || presloviULatinicu(`${k.ime} ${k.prezime}`).includes(q)));
+  }
+  get ostaliPrikaz(): any[] {
+    return this.ostaliFiltrirani.slice(0, 25);
+  }
+  get ostaliUkupno(): number {
+    return this.ostaliFiltrirani.length;
+  }
   napomena = '';
   greska = '';
   konfliktPoruke: string[] = [];
@@ -180,6 +222,7 @@ export class ZahteviZamenaComponent implements OnInit {
     this.odbijanje = null;
     this.kandidati = [];
     this.izabranId = null;
+    this.pretragaOstalih = '';
     this.napomena = '';
     this.greska = '';
     this.konfliktPoruke = [];
@@ -188,11 +231,11 @@ export class ZahteviZamenaComponent implements OnInit {
   otvoriOdobravanje(z: any): void {
     this.zatvori();
     this.otvoreni = z.id;
-    this.http.get<any[]>(`${this.api}/zamene/${z.id}/kandidati`).subscribe({
+    this.http.get<any[]>(`${this.api}/zamene/${z.id}/kandidati?svi=1`).subscribe({
       next: (k) => {
         this.kandidati = k;
-        // unapred izabran predloženi kolega, a inače prvi slobodan
-        this.izabranId = z.predlozeni?.id ?? k.find((x) => x.konflikti.length === 0)?.id ?? null;
+        // unapred izabran predloženi kolega, a inače prvi slobodan sa predmeta
+        this.izabranId = z.predlozeni?.id ?? k.find((x) => x.naPredmetu && x.konflikti.length === 0)?.id ?? null;
         this.cdr.detectChanges();
       },
       error: (err) => this.greska = procitajGresku(err, 'Kandidati nisu učitani.').opsta

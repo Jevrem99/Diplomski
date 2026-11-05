@@ -1,0 +1,6 @@
+# Tajne i lokalna podešavanja
+.env
+.env.*
+!.env.example
+!.env.docker.example
+.claude/

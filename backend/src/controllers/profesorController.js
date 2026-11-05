@@ -1,7 +1,7 @@
 const { logAction } = require('../services/auditService');
 const { validirajOsobu, odbaciAkoImaGresaka, mapirajPrismaGresku } = require('../utils/validators');
 const profesorModel = require('../models/profesorModel');
-const prisma = require('../db/prisma'); // <--- DODAJ OVU LINIJU NA SAM VRH FAJLA
+const prisma = require('../db/prisma');
 const getAllPredavaci = async (req, res) => {
     try {
         const predavaci = await profesorModel.getAllPredavaci();

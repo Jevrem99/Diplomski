@@ -21,9 +21,18 @@ const ucionicaRoutes = require('./routes/ucioniceRoutes');
 const terminiKolokvijumaRoutes = require('./routes/terminiKolokvijumaRoutes');
 const zameneRoutes = require('./routes/zameneRoutes');
 const grupaRoutes = require('./routes/grupaRoutes');
+const integracijeRoutes = require('./routes/integracijeRoutes');
+const integracijaPodesavanjaRoutes = require('./routes/integracijaPodesavanjaRoutes');
+const verzijeRoutes = require('./routes/verzijeRoutes');
 const app = express();
 
 app.disable('x-powered-by');
+// Iza reverse proxy-ja (nginx u Docker-u) prava IP korisnika stiže u zaglavlju X-Forwarded-For;
+// bez ovoga bi ograničenje pokušaja prijave računalo sve korisnike kao jednu adresu.
+if (process.env.TRUST_PROXY) {
+    const v = process.env.TRUST_PROXY;
+    app.set('trust proxy', /^\d+$/.test(v) ? Number(v) : v === 'true' ? true : v);
+}
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(compression());
 
@@ -45,6 +54,7 @@ const authLimiter = rateLimit({
     message: { error: 'Previše pokušaja. Pokušajte ponovo za nekoliko minuta.' }
 });
 app.use('/auth/login', authLimiter);
+app.use('/auth/pmf', authLimiter);
 app.use('/auth/forgot-password', authLimiter);
 app.use('/auth/reset-password', authLimiter);
 
@@ -55,6 +65,7 @@ app.use('/auth', authRoutes);
 app.use('/profesors', profesorRoutes);
 app.use('/predmet', predmetRoutes);
 app.use('/ispit', ispitRoutes);
+app.use('/admin/integracija', integracijaPodesavanjaRoutes);
 app.use('/admin', adminRoutes);
 app.use('/upload', uploadRoutes);
 app.use('/dezurstva', dezurstvaRoutes);
@@ -63,6 +74,8 @@ app.use('/ucionice', ucionicaRoutes);
 app.use('/termini-kolokvijuma', terminiKolokvijumaRoutes);
 app.use('/zamene', zameneRoutes);
 app.use('/grupe', grupaRoutes);
+app.use('/integracije', integracijeRoutes);
+app.use('/verzije', verzijeRoutes);
 
 // 404 + centralni handler grešaka (npr. multer: prevelik fajl, pogrešan tip fajla)
 app.use((req, res) => res.status(404).json({ message: 'Ruta ne postoji.' }));

@@ -55,9 +55,15 @@ export class Login implements OnInit {
   }
 
   private pocetnaStranica(uloga: string): string {
-    if (uloga === 'admin') return '/main';
-    if (uloga === 'profesor') return '/termini-kolokvijuma';
-    return '/moja-dezurstva';
+    return this.authService.pocetnaStranica(uloga);
+  }
+
+  prijavaPrekoPmf() {
+    const idi = (osnova: string) => { window.location.href = this.authService.pmfPrijavaAdresa(osnova); };
+    this.authService.pmfPodesavanja().subscribe({
+      next: (r) => idi(r.prijavaUrl || environment.pmfPrijavaUrl),
+      error: () => idi(environment.pmfPrijavaUrl)
+    });
   }
 
   onLogin() {
@@ -78,7 +84,7 @@ export class Login implements OnInit {
       },
       error: () => {
         this.loading = false;
-        this.toast.show('Pogrešno korisničko ime ili lozinka!', 'error');
+        this.toast.show('Pogrešno korisničko ime ili lozinka. Za PMF (IMI) nalog koristite dugme „Prijava preko PMF naloga“.', 'error');
       }
     });
   }

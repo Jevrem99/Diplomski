@@ -81,6 +81,75 @@
         </form>
       </div>
 
+      <!-- Integracija (samo administrator) -->
+      @if (jeAdmin) {
+        <div class="col-span-1 md:col-span-2 settings-card">
+          <h2 class="card-title text-base mb-4">Integracija</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="flex flex-col gap-3">
+              <div class="form-group">
+                <label class="form-label">Adresa za preuzimanje</label>
+                <div class="flex gap-2">
+                  <input type="text" readonly [value]="adresaPreuzimanja" class="custom-input-field" data-lat>
+                  <button type="button" class="btn-reset-colors" (click)="kopiraj(adresaPreuzimanja)">Kopiraj</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label"><span data-lat>API</span> ključ</label>
+                @if (noviKljuc) {
+                  <div class="flex gap-2">
+                    <input type="text" readonly [value]="noviKljuc" class="custom-input-field" data-lat>
+                    <button type="button" class="btn-reset-colors" (click)="kopiraj(noviKljuc)">Kopiraj</button>
+                  </div>
+                  <p class="card-desc">Prikazan samo jednom.</p>
+                } @else {
+                  <p class="card-desc">{{ integracija?.kljucPodesen ? 'Podešen' : 'Nije podešen' }}</p>
+                }
+              </div>
+
+              <div class="flex gap-2 flex-wrap">
+                <button type="button" class="btn-save-colors" (click)="napraviNoviKljuc()">
+                  {{ integracija?.kljucPodesen ? 'Novi ključ' : 'Napravi ključ' }}
+                </button>
+                @if (integracija?.kljucIzvor === 'baza') {
+                  <button type="button" class="btn-reset-colors" (click)="ukloniKljuc()">Ukloni</button>
+                }
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <div class="form-group">
+                <label class="form-label">Adresa za slanje</label>
+                <input type="text" [(ngModel)]="postUrlUnos" name="postUrl" class="custom-input-field" data-lat placeholder="https://...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Lozinka za rezervacije</label>
+                <input type="password" [(ngModel)]="postKljucUnos" name="postKljuc" class="custom-input-field" autocomplete="off"
+                       [placeholder]="integracija?.postKljucPodesen ? 'Podešen' : ''">
+              </div>
+              <div class="form-group">
+                <label class="form-label">IMI nalog koji rezerviše</label>
+                <input type="text" [(ngModel)]="postUsernameUnos" name="postUsername" class="custom-input-field" data-lat
+                       placeholder="prazno = ko objavljuje">
+              </div>
+              <div class="flex gap-2 flex-wrap">
+                <button type="button" class="btn-save-colors" (click)="sacuvajSlanje()">Sačuvaj</button>
+                @if (integracija?.postUrl) {
+                  <button type="button" class="btn-reset-colors" [disabled]="slanjeUToku" (click)="posaljiNeposlate()">
+                    {{ slanjeUToku ? 'Šaljem...' : 'Pošalji neposlate' }}
+                  </button>
+                }
+                @if (integracija?.postKljucPodesen) {
+                  <button type="button" class="btn-reset-colors" (click)="obrisiKljucZaSlanje()">Obriši lozinku</button>
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
       <!-- KARTICA PREKO CELE ŠIRINE: Boje po godinama -->
       @if (userInfo?.uloga === 'profesor' || userInfo?.uloga === 'admin') {
         <div class="col-span-1 md:col-span-2 settings-card">

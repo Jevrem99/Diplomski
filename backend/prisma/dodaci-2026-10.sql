@@ -27,3 +27,85 @@ CREATE TABLE IF NOT EXISTS "_PredmetiUGrupi" (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS "_PredmetiUGrupi_AB_unique" ON "_PredmetiUGrupi"("A", "B");
 CREATE INDEX IF NOT EXISTS "_PredmetiUGrupi_B_index" ON "_PredmetiUGrupi"("B");
+
+-- Podešavanja integracije (ključ za preuzimanje rezervacija, adresa za slanje JSON-a)
+CREATE TABLE IF NOT EXISTS "Podesavanje" (
+    "kljuc" TEXT NOT NULL,
+    "vrednost" TEXT NOT NULL,
+    "azurirano" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "Podesavanje_pkey" PRIMARY KEY ("kljuc")
+);
+
+-- Sačuvane verzije rasporeda
+CREATE TABLE IF NOT EXISTS "SacuvaniRaspored" (
+    "id" SERIAL NOT NULL,
+    "naziv" TEXT NOT NULL,
+    "autor" TEXT,
+    "datum_od" TEXT,
+    "datum_do" TEXT,
+    "broj_termina" INTEGER NOT NULL DEFAULT 0,
+    "podaci" JSONB NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "SacuvaniRaspored_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "SacuvaniRaspored_created_at_idx" ON "SacuvaniRaspored"("created_at");
+
+-- Termin u više sala
+CREATE TABLE IF NOT EXISTS "_DodatneSale" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+    CONSTRAINT "_DodatneSale_A_fkey" FOREIGN KEY ("A") REFERENCES "Ispit"("id") ON DELETE CASCADE ON UPDATE CASCADE,
+    CONSTRAINT "_DodatneSale_B_fkey" FOREIGN KEY ("B") REFERENCES "Sala"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+CREATE UNIQUE INDEX IF NOT EXISTS "_DodatneSale_AB_unique" ON "_DodatneSale"("A", "B");
+CREATE INDEX IF NOT EXISTS "_DodatneSale_B_index" ON "_DodatneSale"("B");
+
+-- Status slanja rezervacije sistemu fakulteta
+ALTER TABLE "Ispit"
+    ADD COLUMN IF NOT EXISTS "rezervacija_status" TEXT,
+    ADD COLUMN IF NOT EXISTS "rezervacija_poruka" TEXT,
+    ADD COLUMN IF NOT EXISTS "rezervacija_vreme" TIMESTAMP(3);
+
+-- Rezervacije napravljene u sistemu fakulteta
+CREATE TABLE IF NOT EXISTS "RezervacijaFakulteta" (
+    "id" SERIAL NOT NULL,
+    "kljuc" TEXT NOT NULL,
+    "id_rezervacije" INTEGER NOT NULL,
+    "ispiti" INTEGER[] NOT NULL DEFAULT '{}',
+    "sala" TEXT NOT NULL,
+    "datum" TEXT NOT NULL,
+    "vreme_od" TEXT NOT NULL,
+    "vreme_do" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT "RezervacijaFakulteta_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "RezervacijaFakulteta_id_rezervacije_idx" ON "RezervacijaFakulteta"("id_rezervacije");
+
+-- Termini kolokvijuma: datum popravnog, ko je poslednji menjao
+ALTER TABLE "TerminKolokvijuma"
+    ADD COLUMN IF NOT EXISTS "popravni_datum" TEXT,
+    ADD COLUMN IF NOT EXISTS "izmenio" TEXT;
+
+-- Predmeti bez kolokvijuma
+ALTER TABLE "Predmet" ADD COLUMN IF NOT EXISTS "nema_kolokvijume" BOOLEAN NOT NULL DEFAULT false;
+
+-- Sale koje se ne rezervišu u sistemu fakulteta (npr. lab koji nije u rasporedu zauzeća)
+ALTER TABLE "Sala" ADD COLUMN IF NOT EXISTS "bez_rezervacije" BOOLEAN NOT NULL DEFAULT false;
+
+-- Nedeljni raspored časova sa IMI sajta
+CREATE TABLE IF NOT EXISTS "CasRasporeda" (
+    "id" SERIAL NOT NULL,
+    "dan" INTEGER NOT NULL,
+    "od" TEXT NOT NULL,
+    "do" TEXT NOT NULL,
+    "predmet" TEXT NOT NULL,
+    "nastavnik" TEXT,
+    "sala" TEXT,
+    "nivo" TEXT NOT NULL,
+    "godina" INTEGER,
+    "odsek" TEXT NOT NULL,
+    "smer" TEXT NOT NULL,
+    "izvor" TEXT NOT NULL,
+    CONSTRAINT "CasRasporeda_pkey" PRIMARY KEY ("id")
+);
+CREATE INDEX IF NOT EXISTS "CasRasporeda_dan_idx" ON "CasRasporeda"("dan");

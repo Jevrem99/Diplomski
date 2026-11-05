@@ -6,13 +6,14 @@ import { roleGuard } from './core/guards/role.guard';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', loadComponent: () => import('./features/login/login').then(m => m.Login) },
+  { path: 'auth/callback', loadComponent: () => import('./features/pmf-callback/pmf-callback').then(m => m.PmfCallback) },
   {
     path: '',
     loadComponent: () => import('./features/sidebar-menu/sidebar-menu').then(m => m.SidebarMenu),
     canActivate: [authGuard],
     children: [
       {
-        path: 'main',
+        path: 'raspored',
         loadComponent: () => import('./features/main/main').then(m => m.Main),
         canActivate: [roleGuard(['admin'])]
       },
@@ -33,5 +34,6 @@ export const routes: Routes = [
       { path: 'moja-dezurstva', loadComponent: () => import('./features/moja-dezurstva/moja-dezurstva.component').then(m => m.MojaDezurstva) }
     ]
   },
+  { path: 'main', redirectTo: 'raspored', pathMatch: 'full' },
   { path: '**', redirectTo: 'login' }
 ];

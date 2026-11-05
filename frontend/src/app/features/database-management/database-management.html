@@ -25,6 +25,13 @@
         <span>{{ uploading ? 'Učitavanje...' : 'Import EXCEL' }}</span>
       </button>
 
+      <button class="btn-action-secondary" (click)="otvoriDuplikate()" title="Iste osobe zapisane više puta">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h8m-8 4h8m-8 4h5M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"></path>
+        </svg>
+        <span>Duplikati</span>
+      </button>
+
       <button class="btn-action-danger" (click)="deleteDatabase()" title="Reset baze">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
@@ -41,9 +48,19 @@
       <button class="tab-btn" [class.active]="activeEntity === 'saradnici'" (click)="selectEntity('saradnici')">Saradnici</button>
       <button class="tab-btn" [class.active]="activeEntity === 'predmeti'" (click)="selectEntity('predmeti')">Predmeti</button>
       <button class="tab-btn" [class.active]="activeEntity === 'ispiti'" (click)="selectEntity('ispiti')">Ispiti</button>
+      <button class="tab-btn" [class.active]="activeEntity === 'sale'" (click)="selectEntity('sale')">Sale</button>
       <button class="tab-btn" [class.active]="activeEntity === 'korisnici'" (click)="selectEntity('korisnici')">Nalozi</button>
       <button class="tab-btn" [class.active]="activeEntity === 'dnevnik'" (click)="selectEntity('dnevnik')">Dnevnik rada</button>
     </div>
+  </div>
+
+  <!-- PRETRAGA -->
+  <div class="db-pretraga">
+    <input type="text" [(ngModel)]="pretraga" placeholder="Pretraži..." class="db-pretraga-polje" autocomplete="off">
+    @if (pretraga) {
+      <button type="button" class="db-pretraga-ocisti" (click)="pretraga = ''" title="Obriši pretragu">×</button>
+      <span class="db-pretraga-broj">Prikazano {{ filtriraniRedovi.length }} od {{ tableData.length }}</span>
+    }
   </div>
 
   <!-- TABELA SA PODACIMA -->
@@ -67,7 +84,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (row of tableData; track $index) {
+            @for (row of filtriraniRedovi; track $index) {
               <tr>
                 @for (col of visibleColumns; track col.key) {
                   <td [attr.data-lat]="jeLatinicnaKolona(col.key) ? '' : null">{{ formatCellValue(row, col.key) }}</td>
@@ -105,6 +122,9 @@
             }
           </tbody>
         </table>
+        @if (pretraga && !filtriraniRedovi.length) {
+          <p class="db-prazno">Nema rezultata za „<span data-lat>{{ pretraga }}</span>“.</p>
+        }
       } @else {
         <div class="empty-state">
           <svg class="w-12 h-12 text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

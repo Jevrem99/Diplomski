@@ -9,6 +9,11 @@
 
     <!-- 1. LOGIN FORMA -->
     @if (prikazModala === 'login') {
+      <button type="button" class="submit-button" (click)="prijavaPrekoPmf()" data-testid="pmf-dugme">
+        Prijava preko PMF naloga
+      </button>
+      <p class="text-xs text-slate-500 text-center my-3">ili korisničkim imenom i lozinkom</p>
+
       <form class="form-fields" (ngSubmit)="onLogin()">
         <mat-form-field appearance="outline" subscriptSizing="dynamic" class="custom-field">
           <mat-label>Korisničko ime ili email</mat-label>

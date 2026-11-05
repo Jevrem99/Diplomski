@@ -4,11 +4,13 @@ const isoWeek = require('dayjs/plugin/isoWeek');
 dayjs.extend(isoWeek);
 const ispitModel = require('../models/ispitModel');
 const prisma = require('../db/prisma');
-const { normalizujNazivSale, nadjiIliNapraviSalu } = require('../utils/sale');
+const { normalizujNazivSale, nadjiIliNapraviSalu, naziviSala } = require('../utils/sale');
 const { proveriVremena, ocistiGrupaKljuc } = require('../utils/validators');
-const { napraviRezervacije, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
-const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail } = require('../services/emailService');
+const { napraviRezervacije, ucitajObjavljeneRezervacije, jeDatum, hhmm: vremeHHMM } = require('../services/rezervacijeSala');
+const { sendGrupniDezurstvoEmail, sendIzmenaDezurstvaEmail, mejlPodesen, poslednjaGreskaSlanja } = require('../services/emailService');
 const { logAction } = require('../services/auditService');
+const { vaziZaDatum, konfliktiSaRasporedom, smeroviPredmeta, grupaStudenata } = require('../services/rasporedCasova');
+const slanjeRezervacija = require('../services/slanjeRezervacija');
 
 exports.exportKalendar = async (req, res) => {
     try {
@@ -201,12 +203,15 @@ const prikazDatuma = (dan) => dan.split('-').reverse().slice(0, 2).join('.') + '
 // Vraća listu konflikata { tip: 'dezurstvo' | 'odsustvo' | 'sala', tekst } za dati termin:
 //  - asistent ima obavezu/odsustvo (jedan dan, više dana ili celodnevno),
 //  - asistent već dežura u istom terminu,
-//  - ista sala je zauzeta drugim ispitom u istom terminu.
+//  - ista sala je zauzeta drugim ispitom u istom terminu,
+//  - studenti iste godine imaju nastavu ili drugi kolokvijum/ispit u isto vreme (tip 'studenti'),
+//  - dežurni u to vreme drži nastavu (tip 'nastava').
+// predmet_id: predmet termina (iz njega se zna godina studija); bez njega se ne proverava godina
 // excludeIspitId(s): ispiti koji se menjaju/brišu (ne računaju se kao konflikt sa samim sobom)
 // grupa_kljuc: termini nastali jednim postavljanjem grupe predmeta dele salu, vreme i dežurne,
 //              pa se međusobno ne prijavljuju kao konflikt
 // planirani: termini koji se tek čuvaju u istoj seriji ({ datum, vreme, vreme_kraja, sala_id, dezurni_ids, naziv, saradnici })
-const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, db = prisma }) => {
+const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_id, sale_ids = [], excludeIspitId, excludeIspitIds = [], planirani = [], grupa_kljuc = null, predmet_id = null, db = prisma }) => {
     const dan = String(datum).split('T')[0];
     const ispitDatum = new Date(`${dan}T00:00:00.000Z`);
     const pocetak = formatTimeToDateTime(dan, vreme);
@@ -220,6 +225,7 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
     const konflikti = [];
     const preklapa = (poc, zav) => minutaOdPonoci(poc) < minutaOdPonoci(kraj) && minutaOdPonoci(zav) > minutaOdPonoci(pocetak);
     const imenaSaradnika = new Map();
+    const saleIds = [...new Set([sala_id, ...(sale_ids || [])].map(Number).filter((x) => Number.isInteger(x) && x > 0))];
 
     // 1. Obaveze / odsustva
     if (ids.length > 0) {
@@ -264,26 +270,83 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         });
     }
 
-    // 3. Zauzeta sala drugim ispitom (već sačuvanim)
-    if (sala_id) {
+    // 3. Zauzeta sala drugim ispitom (već sačuvanim), u bilo kojoj od sala termina
+    if (saleIds.length > 0) {
         const uSali = await db.ispit.findMany({
-            where: { sala_id: Number(sala_id), datum: ispitDatum, ...notIn },
-            include: { predmet: true, sala: true }
+            where: {
+                datum: ispitDatum,
+                ...notIn,
+                AND: [{ OR: [{ sala_id: { in: saleIds } }, { dodatneSale: { some: { id: { in: saleIds } } } }] }]
+            },
+            include: { predmet: true, sala: true, dodatneSale: true }
         });
         uSali.forEach((i) => {
             const poc = vremeUDate(i.vreme);
             if (!poc) return;
             const zav = vremeUDate(i.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
-            if (preklapa(poc, zav)) {
+            if (!preklapa(poc, zav)) return;
+            [i.sala, ...(i.dodatneSale || [])].filter((s) => s && saleIds.includes(s.id)).forEach((s) => {
                 konflikti.push({
                     tip: 'sala',
-                    tekst: `Sala ${i.sala?.naziv || ''} je zauzeta: „${i.predmet?.naziv || 'drugi ispit'}“ (${hhmm(poc)}–${hhmm(zav)}).`
+                    tekst: `Sala ${s.naziv} je zauzeta: „${i.predmet?.naziv || 'drugi ispit'}“ (${hhmm(poc)}–${hhmm(zav)}).`
                 });
-            }
+            });
+        });
+
+        // Redovna nastava (IMI raspored); datum se u toj tabeli čuva po lokalnom vremenu, zato opseg ±12 h
+        const nastava = await db.redovnaNastava.findMany({
+            where: {
+                sala_id: { in: saleIds },
+                datum: { gte: new Date(ispitDatum.getTime() - 12 * 3600 * 1000), lt: new Date(ispitDatum.getTime() + 12 * 3600 * 1000) }
+            },
+            include: { sala: true }
+        });
+        nastava.forEach((n) => {
+            const poc = formatTimeToDateTime(dan, n.vreme_pocetka);
+            const zav = formatTimeToDateTime(dan, n.vreme_kraja);
+            if (!poc || !zav || !preklapa(poc, zav)) return;
+            konflikti.push({
+                tip: 'sala',
+                tekst: `Sala ${n.sala?.naziv || ''} je zauzeta nastavom: „${n.predmet}“ (${hhmm(poc)}–${hhmm(zav)}).`
+            });
         });
     }
 
-    // 4. Isti konflikti sa terminima koji se čuvaju u istoj seriji (još nisu u bazi)
+    // 4. Nedeljni raspored časova (IMI): studenti te godine imaju nastavu, dežurni drži nastavu
+    const predmetId = Number(predmet_id) || null;
+    const predmet = predmetId ? await db.predmet.findUnique({ where: { id: predmetId }, select: { id: true, naziv: true, sifra: true, godina: true } }) : null;
+    const grupa = grupaStudenata(predmet);
+    if ((grupa || ids.length > 0) && await vaziZaDatum(ispitDatum, db)) {
+        const sviCasovi = await db.casRasporeda.findMany();
+        const casovi = sviCasovi.filter((c) => c.dan === ispitDatum.getUTCDay()).filter((c) => {
+            const poc = formatTimeToDateTime(dan, c.od);
+            const zav = formatTimeToDateTime(dan, c.do);
+            return poc && zav && preklapa(poc, zav);
+        });
+        if (casovi.length) {
+            const dezurni = ids.length ? await db.profesor.findMany({ where: { id: { in: ids } }, select: { id: true, ime: true, prezime: true } }) : [];
+            konflikti.push(...konfliktiSaRasporedom({ casovi, predmet, dezurni, smerovi: smeroviPredmeta(sviCasovi, predmet) }));
+        }
+    }
+    if (grupa) {
+        // drugi kolokvijum ili ispit istih studenata u isto vreme (drugi predmet; termini iste grupe se ne računaju)
+        const istaGodina = (await db.ispit.findMany({
+            where: { datum: ispitDatum, ...notIn, predmet: { godina: { in: [predmet.godina, 1, 5].filter((g, i, a) => a.indexOf(g) === i) } }, NOT: { predmet_id: predmetId } },
+            include: { predmet: true }
+        })).filter((i) => { const g = grupaStudenata(i.predmet); return g && g.nivo === grupa.nivo && g.godina === grupa.godina; });
+        istaGodina.forEach((i) => {
+            const poc = vremeUDate(i.vreme);
+            if (!poc) return;
+            const zav = vremeUDate(i.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
+            if (!preklapa(poc, zav)) return;
+            konflikti.push({
+                tip: 'studenti',
+                tekst: `Studenti ${grupa.opis} u isto vreme imaju i „${i.predmet?.naziv || '?'}“ (${hhmm(poc)}–${hhmm(zav)}).`
+            });
+        });
+    }
+
+    // 5. Isti konflikti sa terminima koji se čuvaju u istoj seriji (još nisu u bazi)
     for (const o of planirani) {
         if (String(o.datum).split('T')[0] !== dan) continue;
         if (grupa_kljuc && o.grupa_kljuc === grupa_kljuc) continue;
@@ -291,8 +354,14 @@ const proveriKonflikte = async ({ datum, vreme, vreme_kraja, dezurni_ids, sala_i
         if (!poc) continue;
         const zav = formatTimeToDateTime(dan, o.vreme_kraja) || new Date(poc.getTime() + DEFAULT_TRAJANJE_MS);
         if (!preklapa(poc, zav)) continue;
-        if (sala_id && o.sala_id && Number(o.sala_id) === Number(sala_id)) {
-            konflikti.push({ tip: 'sala', tekst: `Sala ${o.salaNaziv || ''} je zauzeta: „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
+        const saleDrugog = [o.sala_id, ...(o.sale_ids || [])].map(Number).filter(Boolean);
+        const naziviDrugog = o.naziviSala || new Map();
+        saleIds.filter((id) => saleDrugog.includes(id)).forEach((id) => {
+            konflikti.push({ tip: 'sala', tekst: `Sala ${naziviDrugog.get(id) || o.salaNaziv || ''} je zauzeta: „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
+        });
+        const go = grupa && o.predmet_id !== predmetId ? grupaStudenata(o.predmet) : null;
+        if (go && go.nivo === grupa.nivo && go.godina === grupa.godina) {
+            konflikti.push({ tip: 'studenti', tekst: `Studenti ${grupa.opis} u isto vreme imaju i „${o.naziv}“ (${hhmm(poc)}–${hhmm(zav)}).` });
         }
         const zajednicki = ids.filter((id) => (o.dezurni_ids || []).map(Number).includes(id));
         zajednicki.forEach((id) => {
@@ -314,6 +383,17 @@ const odrediSalaId = async (sala, cache = new Map(), db = prisma) => {
     if (!naziv || naziv === 'Bez sale') return null;
     const nadjena = await nadjiIliNapraviSalu(db, naziv, cache);
     return nadjena ? nadjena.id : null;
+};
+
+// Dodatne sale (sve osim prve) iz liste naziva; vraća id-jeve bez ponavljanja
+const odrediDodatneSale = async (sale, prvaId, cache = new Map(), db = prisma) => {
+    if (!Array.isArray(sale)) return null;
+    const ids = [];
+    for (const s of sale.slice(1)) {
+        const id = await odrediSalaId(s, cache, db);
+        if (id && id !== prvaId && !ids.includes(id)) ids.push(id);
+    }
+    return ids;
 };
 
 const createIspit = async (req, res) => {
@@ -345,12 +425,13 @@ const createIspit = async (req, res) => {
             }
         }
 
-        const salaId = await odrediSalaId(finalSala);
+        const salaId = await odrediSalaId(Array.isArray(req.body.sale) && req.body.sale.length ? req.body.sale[0] : finalSala);
+        const dodatne = (await odrediDodatneSale(req.body.sale, salaId)) || [];
 
         // PROVERA KONFLIKATA
         const konflikti = await proveriKonflikte({
             datum: finalDatum, vreme: finalVreme, vreme_kraja: finalVremeKraja, dezurni_ids: finalDezurni, sala_id: salaId,
-            grupa_kljuc: grupaKljuc
+            sale_ids: dodatne, grupa_kljuc: grupaKljuc, predmet_id
         });
         if (konflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({
@@ -372,6 +453,9 @@ const createIspit = async (req, res) => {
             prisma,
             grupaKljuc
         );
+        if (dodatne.length) {
+            await prisma.ispit.update({ where: { id: newIspit.id }, data: { dodatneSale: { set: dodatne.map((id) => ({ id })) } } });
+        }
         await logAction(
             req.user?.username || 'Korisnik',
             'CREATE',
@@ -453,7 +537,8 @@ const updateIspit = async (req, res) => {
       return res.status(400).json({ error: g, polja: { vreme_kraja: g } });
     }
 
-    // 3. Sala
+    // 3. Sala (prva iz liste "sale", ako je poslata)
+    if (Array.isArray(body.sale) && body.sale.length) body.sala = body.sale[0];
     let salaConnect = undefined;
     if (body.sala_id && Number(body.sala_id)) {
       salaConnect = { connect: { id: Number(body.sala_id) } };
@@ -485,14 +570,23 @@ const updateIspit = async (req, res) => {
 
     // Provera konflikata (ispit koji menjamo se ne računa kao konflikt sam sa sobom)
     const salaZaProveru = salaConnect ? salaConnect.connect.id : postojeciIspit.sala_id;
+    // Dodatne sale: ako ih zahtev ne pominje, ostaju postojeće
+    let dodatne = await odrediDodatneSale(body.sale, salaZaProveru);
+    const menjajDodatne = dodatne !== null;
+    if (!menjajDodatne) {
+      const stare = await prisma.ispit.findUnique({ where: { id: numericId }, select: { dodatneSale: { select: { id: true } } } });
+      dodatne = (stare?.dodatneSale || []).map((s) => s.id);
+    }
     const konflikti = await proveriKonflikte({
       datum: noviDatum instanceof Date ? noviDatum.toISOString() : String(noviDatum),
       vreme: vremeUDate(novoVreme)?.toISOString().substring(11, 19) || null,
       vreme_kraja: vremeUDate(novoVremeKraja)?.toISOString().substring(11, 19) || null,
       dezurni_ids: dezurniIds,
       sala_id: salaZaProveru,
+      sale_ids: dodatne,
       excludeIspitId: numericId,
-      grupa_kljuc: grupaKljuc
+      grupa_kljuc: grupaKljuc,
+      predmet_id: pId || postojeciIspit.predmet_id
     });
     if (konflikti.length > 0 && req.query.force !== '1') {
       return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: tekstovi(konflikti), konflikti });
@@ -516,7 +610,11 @@ const updateIspit = async (req, res) => {
           grupa_kljuc: grupaKljuc,
           ...(predmetConnect ? { predmet: predmetConnect } : {}),
           ...(salaConnect ? { sala: salaConnect } : {}),
+          ...(menjajDodatne ? { dodatneSale: { set: dodatne.map((sid) => ({ id: sid })) } } : {}),
           ...izmenaObjavljenog,
+          rezervacija_status: null,
+          rezervacija_poruka: null,
+          rezervacija_vreme: null,
           dezurstva: {
             create: dezurniIds.map(dId => ({
               saradnik_id: Number(dId)
@@ -526,6 +624,7 @@ const updateIspit = async (req, res) => {
         include: {
           predmet: true,
           sala: true,
+          dodatneSale: true,
           dezurstva: { include: { saradnik: true } }
         }
       });
@@ -548,6 +647,13 @@ const updateIspit = async (req, res) => {
 const deleteIspit = async (req, res) => {
     const { id } = req.params;
     try {
+        // Rezervacija sale u sistemu fakulteta se briše zajedno sa terminom (neuspeh ne sprečava brisanje)
+        try {
+            const { upozorenja } = await slanjeRezervacija.otkaziZaIspite([Number(id)]);
+            if (upozorenja.length) await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija', upozorenja.join(' | ').slice(0, 500));
+        } catch (e) {
+            console.error('Brisanje rezervacije na fakultetu nije uspelo:', e.message);
+        }
         const deletedIspit = await ispitModel.deleteIspit(id);
         if (!deletedIspit || deletedIspit.count === 0) {
             return res.status(404).json({ error: 'Ispit not found' });
@@ -585,12 +691,17 @@ const saveBulkIspiti = async (req, res) => {
             }
             const greskaVremena = proveriVremena(vreme, vremeKraja);
             if (greskaVremena) return res.status(400).json({ error: `${greskaVremena} (termin: ${ispit.title || ispit.naziv || datum})` });
-            const salaId = await odrediSalaId(ispit.sala || ispit.room, salaCache);
+            const prvaSala = Array.isArray(ispit.sale) && ispit.sale.length ? ispit.sale[0] : (ispit.sala || ispit.room);
+            const salaId = await odrediSalaId(prvaSala, salaCache);
+            const dodatne = (await odrediDodatneSale(ispit.sale, salaId, salaCache)) || [];
             const dezurni = ispit.dezurni_ids || [];
             const grupaKljuc = ocistiGrupaKljuc(ispit.grupa_kljuc);
-            const konflikti = await proveriKonflikte({ datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, grupa_kljuc: grupaKljuc });
+            const konflikti = await proveriKonflikte({
+                datum, vreme, vreme_kraja: vremeKraja, dezurni_ids: dezurni, sala_id: salaId, sale_ids: dodatne, grupa_kljuc: grupaKljuc,
+                predmet_id: ispit.predmet_id || ispit.predmetId || ispit.predmet?.id || null
+            });
             sviKonflikti.push(...konflikti);
-            pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dezurni, grupaKljuc });
+            pripremljeni.push({ ispit, datum, vreme, vremeKraja, salaId, dodatne, dezurni, grupaKljuc });
         }
         if (sviKonflikti.length > 0 && req.query.force !== '1') {
             return res.status(409).json({ error: 'Konflikt u rasporedu', poruke: tekstovi(sviKonflikti), konflikti: sviKonflikti });
@@ -612,6 +723,10 @@ const saveBulkIspiti = async (req, res) => {
                     tx,
                     p.grupaKljuc
                 ));
+                if (p.dodatne.length) {
+                    const novi = rezultat[rezultat.length - 1];
+                    await tx.ispit.update({ where: { id: novi.id }, data: { dodatneSale: { set: p.dodatne.map((id) => ({ id })) } } });
+                }
             }
             return rezultat;
         });
@@ -650,21 +765,30 @@ const proveriRaspored = async (req, res) => {
 
         // Normalizacija jednog termina iz tela zahteva (isti oblici kao u bulk/update)
         const predmetNazivi = new Map();
+        const predmetGodine = new Map();
         const normalizuj = async (t, id = null) => {
             const datum = t.datum || t.date;
             const vreme = t.vreme || t.startTime;
             if (!datum || !vreme) return null;
-            let salaId = t.sala_id ? Number(t.sala_id) : null;
+            const listaSala = Array.isArray(t.sale) && t.sale.length ? t.sale : null;
+            let salaId = !listaSala && t.sala_id ? Number(t.sala_id) : null;
             let salaNaziv = '';
             if (!salaId) {
-                const r = await trazi(t.sala || t.room);
+                const r = await trazi(listaSala ? listaSala[0] : (t.sala || t.room));
                 salaId = r.id;
                 salaNaziv = r.naziv;
+            }
+            const saleIdsT = [];
+            const naziviSalaT = new Map(salaId ? [[salaId, salaNaziv]] : []);
+            for (const s of (listaSala || []).slice(1)) {
+                const r = await trazi(s);
+                if (r.id && r.id !== salaId && !saleIdsT.includes(r.id)) { saleIdsT.push(r.id); naziviSalaT.set(r.id, r.naziv); }
             }
             const predmetId = Number(t.predmet_id || t.predmetId || t.predmet?.id) || null;
             if (predmetId && !predmetNazivi.has(predmetId)) {
                 const p = await prisma.predmet.findUnique({ where: { id: predmetId } });
                 predmetNazivi.set(predmetId, p ? p.naziv : '?');
+                predmetGodine.set(predmetId, p ? { sifra: p.sifra, godina: p.godina } : null);
             }
             const dezurni = (t.dezurni_ids || t.dezurni || []).map((d) => (typeof d === 'object' ? d.id : Number(d))).filter(Boolean);
             return {
@@ -676,9 +800,13 @@ const proveriRaspored = async (req, res) => {
                     : null,
                 sala_id: salaId,
                 salaNaziv,
+                sale_ids: saleIdsT,
+                naziviSala: naziviSalaT,
                 dezurni_ids: dezurni,
                 grupa_kljuc: ocistiGrupaKljuc(t.grupa_kljuc),
-                naziv: predmetNazivi.get(predmetId) || t.title || 'Ispit'
+                naziv: predmetNazivi.get(predmetId) || t.title || 'Ispit',
+                predmet_id: predmetId,
+                predmet: predmetGodine.get(predmetId) || null
             };
         };
 
@@ -701,8 +829,10 @@ const proveriRaspored = async (req, res) => {
         for (const p of planirani) {
             const konflikti = await proveriKonflikte({
                 datum: p.datum, vreme: p.vreme, vreme_kraja: p.vreme_kraja, dezurni_ids: p.dezurni_ids, sala_id: p.sala_id,
+                sale_ids: p.sale_ids,
                 excludeIspitIds: izuzeti,
                 grupa_kljuc: p.grupa_kljuc,
+                predmet_id: p.predmet_id,
                 planirani: planirani.filter((o) => o !== p)
             });
             if (konflikti.length > 0) {
@@ -724,6 +854,7 @@ const publishAll = async (req, res) => {
             include: {
                 predmet: { include: { profesor: true, terminiKolokvijuma: true } },
                 sala: true,
+                dodatneSale: true,
                 dezurstva: { include: { saradnik: true } }
             }
         });
@@ -736,16 +867,18 @@ const publishAll = async (req, res) => {
         const rezervacije = napraviRezervacije(draftIspiti, { objavio: req.user?.username || null });
 
         const saradniciMap = new Map();
+        const bezEmaila = new Map(); // dežurni kojima mejl ne može da stigne (npr. uvezeni iz Excel-a bez e-maila)
 
         draftIspiti.forEach(ispit => {
             const datumStr = ispit.datum;
             // vreme stiže iz baze kao tekst ili kao Date; oba se čitaju (inače bi vreme kraja ispadalo prazno)
             const vremeStr = vremeHHMM(ispit.vreme) || '00:00';
             const vremeKrajaStr = vremeHHMM(ispit.vreme_kraja) || '';
-            const salaNaziv = ispit.sala?.naziv || 'Bez sale';
+            const salaNaziv = naziviSala(ispit) || 'Bez sale';
             const predmetNaziv = ispit.predmet?.naziv || 'Ispit';
 
             ispit.dezurstva.forEach(d => {
+                if (d.saradnik && !d.saradnik.email) bezEmaila.set(d.saradnik.id, `${d.saradnik.ime} ${d.saradnik.prezime}`);
                 if (d.saradnik && d.saradnik.email) {
                     const sId = d.saradnik.id;
                     if (!saradniciMap.has(sId)) {
@@ -779,18 +912,44 @@ const publishAll = async (req, res) => {
         const slanja = await Promise.allSettled(
             [...saradniciMap.values()].map((data) => sendGrupniDezurstvoEmail(data.email, data.imePrezime, data.dezurstva))
         );
-        const neuspela = slanja.filter((r) => r.status === 'rejected').length;
+        // posalji() vraća false kad mejl nije otišao (ne baca grešku), pa se broje i takvi
+        const poslato = slanja.filter((r) => r.status === 'fulfilled' && r.value === true).length;
+        const neuspela = slanja.length - poslato;
         if (neuspela > 0) console.error(`Nije poslato ${neuspela} od ${slanja.length} obaveštenja.`);
+        const mejlovi = {
+            podesen: mejlPodesen(),
+            ukupno: slanja.length,
+            poslato,
+            neuspelo: neuspela,
+            greska: neuspela > 0 ? poslednjaGreskaSlanja() : null,
+            bezEmaila: [...bezEmaila.values()]
+        };
         await logAction(
             req.user?.username || 'Korisnik',
             'PUBLISH',
             'Raspored',
-            `Objavljen raspored sa ${result.count} ispita i poslata obaveštenja saradnicima`
+            `Objavljen raspored sa ${result.count} ispita; obaveštenja: poslato ${poslato} od ${slanja.length}` +
+            (bezEmaila.size ? `, bez e-maila ${bezEmaila.size}` : '') + (mejlovi.greska ? ` (${mejlovi.greska})` : '')
         );
+        // Opciono: rezervacije upravo objavljenih kolokvijuma šaljemo i na adresu koju je administrator podesio
+        // (samo nove: sistem fakulteta odbija rezervaciju koja već postoji). Greška ne ruši objavljivanje.
+        let slanje = { ukljuceno: false, poslato: false, status: null, greska: null };
+        try {
+            slanje = await slanjeRezervacija.posaljiIZabelezi(rezervacije, req.user);
+            if (slanje.ukljuceno) {
+                await logAction(req.user?.username || 'Korisnik', 'UPDATE', 'Integracija',
+                    slanje.poslato ? `Rezervisano ${slanje.uspesno} sala` : `Slanje rezervacija: ${slanje.greska}`);
+            }
+        } catch (err) {
+            console.error('Greška pri slanju rezervacija:', err);
+            slanje = { ukljuceno: true, poslato: false, status: null, greska: err.message };
+        }
         res.status(200).json({
             message: `Uspešno objavljeno ${result.count} ispita i poslata zbirna obaveštenja!`,
             objavljeno: result.count,
-            rezervacije
+            rezervacije,
+            slanje,
+            mejlovi
         });
     } catch (err) {
         console.error('Greška pri objavljivanju:', err);
@@ -803,19 +962,26 @@ const publishAll = async (req, res) => {
 const getRezervacijeSala = async (req, res) => {
     try {
         const danas = new Date().toISOString().substring(0, 10);
-        const od = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.od || '')) ? req.query.od : danas;
-        const doDatuma = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.do || '')) ? req.query.do : null;
-        const ispiti = await prisma.ispit.findMany({
-            where: {
-                is_ispit: false,
-                is_published: true,
-                datum: { gte: new Date(`${od}T00:00:00.000Z`), ...(doDatuma ? { lte: new Date(`${doDatuma}T00:00:00.000Z`) } : {}) }
-            },
-            include: { predmet: { include: { profesor: true, terminiKolokvijuma: true } }, sala: true }
-        });
-        res.status(200).json(napraviRezervacije(ispiti, { objavio: req.user?.username || null }));
+        const od = jeDatum(req.query.od) ? req.query.od : danas;
+        const doDatuma = jeDatum(req.query.do) ? req.query.do : null;
+        const paket = await ucitajObjavljeneRezervacije({ od, doDatuma, objavio: req.user?.username || null });
+        // statusi slanja su samo za pregled u aplikaciji (nisu deo fajla ni odgovora za fakultet)
+        res.status(200).json({ ...paket, bez_rezervacije: paket.bezRezervacije, statusi: await slanjeRezervacija.statusiRezervacija(paket) });
     } catch (err) {
         console.error('Greška pri pravljenju rezervacija sala:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+};
+
+// POST /ispit/rezervacije-sala/sakrij { kljucevi, sakrij }: uklanja termine iz pregleda rezervacija (ili ih vraća)
+const sakrijRezervacije = async (req, res) => {
+    try {
+        const kljucevi = Array.isArray(req.body?.kljucevi) ? req.body.kljucevi.slice(0, 50) : [];
+        const sakrij = req.body?.sakrij !== false;
+        const broj = await slanjeRezervacija.sakrijIzPregleda(kljucevi, sakrij);
+        res.status(200).json({ broj });
+    } catch (err) {
+        console.error('Greška pri uklanjanju iz pregleda rezervacija:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 };
@@ -869,6 +1035,7 @@ const getDashboardStats = async (req, res) => {
 };
 
 module.exports = {
+    sakrijRezervacije,
     _proveriKonflikte: proveriKonflikte,
     proveriRaspored,
     getAllIspiti,
